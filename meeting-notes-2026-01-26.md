@@ -120,8 +120,6 @@ Lauren referenced a recent AI wizard they built for the roofing industry - a two
 | **Katie Schaeffer** | Document detailed use cases with full process steps (12-step level detail) including tools used at each step | Wednesday, Jan 28 |
 | **Chad Craven** | Provide Zoho Desk access to Eli/team for technical review | Monday EOD, Jan 26 |
 | **Eli Kiedrowski** | Validate technical feasibility with architect (Zoho API capabilities, integration requirements) | Tuesday, Jan 27 |
-| **Eli Kiedrowski** | Send mutual NDA document | ASAP |
-| **Lauren Kiedrowski** | Send mutual NDA document | Monday evening, Jan 26 |
 | **Eli Kiedrowski** | Review Katie's use cases and prepare effort/investment estimates | After receiving documentation |
 | **All Participants** | **Follow-up meeting** | **Friday, Jan 30 @ 12:30 PM Central** |
 
@@ -187,12 +185,11 @@ Lauren referenced a recent AI wizard they built for the roofing industry - a two
 ## Next Steps
 
 1. **Immediate (Mon-Wed):**
-   - Execute action items (access, NDA, documentation)
+   - Execute action items (access, documentation)
    - Eli to validate Zoho technical capabilities and limitations
    - Eli to meet with technical architect to assess feasibility - "I should have an answer in terms of the technicalities by tomorrow. I'm honestly not concerned though"
    - Katie to document use cases - "Don't bang your head on it, Katie. Just nice and simple. Send it my way when you're done. If I need more detail, I'll ask a question"
    - Chad to provide Zoho access for technical exploration
-   - Exchange mutual NDA
 
 2. **Friday Meeting:**
    - Review detailed use cases

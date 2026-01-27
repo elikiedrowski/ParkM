@@ -53,7 +53,7 @@ ParkM receives many inbound Spanish requests. They use Google Translate to under
 ### Proposed Solution Approach
 
 **Initial Phase (80/20 Rule):**
-- Eli Kiedrowski recommended starting with 80% human interaction, 20% AI assistance
+- Recommended starting with 80% human interaction, 20% AI assistance
 - Monitor and validate before scaling up - "once we get comfortable, we have some good time under our belt, then we can say, 'Okay, we feel comfortable, let's flip it now 20/80 or vice versa'"
 - Build confidence with quick wins - finding smaller, simpler use cases first
 - Katie Schaeffer confirmed preference for "baby step" approach with AI as assist or running in back end with human double-checking

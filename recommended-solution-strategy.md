@@ -5,13 +5,13 @@
 | Priority | Focus Area | Hours | Timeline | Dependencies |
 |----------|-----------|-------|----------|--------------|
 | **1** | Email Classification & Auto-Tagging | 80-100 | Week 1-3 | OpenAI API integration |
-| **2** | In-Workflow Guidance System | 100-140 | Week 2-4 | Priority 1 data |
-| **3** | Refund Automation + ParkM.app API | 120-160 | Week 3-5 | Priority 1 data |
-| **4** | Unified Agent Desktop | 140-180 | Week 4-6 | Priority 3 API |
-| **5** | Progressive Automation (3 phases) | 160-200 | Week 5-8 | Priorities 1-4 |
+| **2** | In-Workflow Guidance System | 100-140 | Week 2-5 | Priority 1 data |
+| **3** | Refund Automation + ParkM.app API | 120-160 | Week 3-6 | Priority 1 data |
+| **4** | Unified Agent Desktop | 140-180 | Week 5-8 | Priority 3 API |
+| **5** | Progressive Automation (3 phases) | 160-200 | Week 7-10 | Priorities 1-4 |
 
-**Total Estimated Effort:** 600-780 hours (8 weeks with aggressive parallel execution)  
-**Parallel Execution:** All priorities overlap - requires multiple team members working simultaneously
+**Total Estimated Effort:** 600-780 hours (10 weeks with parallel execution)  
+**Parallel Execution:** Multiple priorities overlap - requires coordinated team effort
 
 **Critical Path:** ParkM.app API integration (Priority 3) unlocks Priority 4  
 **Quick Wins:** Priority 1 delivers immediate value

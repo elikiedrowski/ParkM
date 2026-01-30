@@ -4,23 +4,23 @@
 
 | Priority | Focus Area | Hours | Timeline | Dependencies |
 |----------|-----------|-------|----------|--------------|
-| **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | None (85% complete) |
+| **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | None |
 | **2** | In-Workflow Guidance System | 100-140 | 3-4 weeks | Priority 1 data |
 | **3** | Refund Automation + ParkM.app API | 120-160 | 3-4 weeks | Priority 1 data |
-| **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 3 API (complete) |
+| **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 3 API |
 | **5** | Progressive Automation (3 phases) | 160-200 | 5-6 weeks | Priorities 1-4 |
 
 **Total Estimated Effort:** 600-780 hours (15-20 weeks)  
 **Parallel Execution Possible:** Priorities 1-2 can overlap; 3 can run parallel
 
 **Critical Path:** ParkM.app API integration (Priority 3) unlocks Priority 4  
-**Quick Wins:** Priority 1 delivers immediate value (currently 85% complete)
+**Quick Wins:** Priority 1 delivers immediate value
 
 ---
 
 ## Priority 1: Intelligent Email Triage & Classification System
 
-**Estimated Effort:** 80-100 hours | **Timeline:** 2-3 weeks | **Status:** 85% Complete
+**Estimated Effort:** 80-100 hours | **Timeline:** 2-3 weeks
 
 **Problem it solves:** New CSRs struggling to understand what customers are asking for; 3-month training time; process inconsistencies; refund/cancellation requests require specific eligibility checks
 
@@ -56,13 +56,13 @@
 **Solution:**
 - **Contextual guidance overlay** within Zoho Desk based on ticket classification:
   - **Refund requests:** Step-by-step checklist from refund-cancellation-process.pdf:
-    1. ✓ Search parkm.app by email
-    2. ✓ Review Vehicles and Permits tab
-    3. ✓ Check if permit already canceled
-    4. ✓ Verify last transaction date in Payments and Transactions
-    5. ✓ Validate move-out date within 30-day window
-    6. ✓ Cancel permit (Actions → Cancel → Cancel Now → Send Email)
-    7. ✓ Submit refund to accounting or send denial with T&C
+    1. Search parkm.app by email
+    2. Review Vehicles and Permits tab
+    3. Check if permit already canceled
+    4. Verify last transaction date in Payments and Transactions
+    5. Validate move-out date within 30-day window
+    6. Cancel permit (Actions → Cancel → Cancel Now → Send Email)
+    7. Submit refund to accounting or send denial with T&C
   - **Missing info requests:** Template for requesting license plate + bank statement screenshot
   - **Account updates:** Validation prompts before sending response
 - **Smart forms** (can be implemented with basic Zoho features initially, enhanced with API later)
@@ -297,21 +297,4 @@
 - Automation accuracy rates
 - Volume handled per CSR (capacity metric)
 
----
 
-## Status
-
-**Current Phase:** Priority 1 - Email Classification System ✅ IN PROGRESS  
-- Week 1 complete: AI classifier built and tested (95% confidence)
-- Extracts move-out dates, license plates, charge amounts
-- Detects refund eligibility signals
-- Routes to specialized queues (Accounting/Refunds, Quick Updates, Auto-Resolution, Escalations)
-
-**Next Steps:**
-- Week 2: Webhook integration for live ticket processing
-- Week 3: Queue routing and monitoring dashboard
-- Then proceed to Priority 2: In-Workflow Guidance System
-
-**Supporting Documentation:**
-- [refund-cancellation-process.pdf](refund-cancellation-process.pdf) - Official refund/cancellation workflow
-- [priority-1-implementation-plan.md](priority-1-implementation-plan.md) - Detailed 3-week execution plan

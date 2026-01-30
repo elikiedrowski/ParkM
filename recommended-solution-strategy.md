@@ -310,7 +310,3 @@
 
 **Total Anticipated Hours:** 155-205  
 **Total Anticipated Investment:** $34,875-$46,125
-
-**Critical Path:** ParkM.app API integration (Priority 3) unlocks Priority 4  
-**Quick Wins:** Priority 1 delivers immediate value
-

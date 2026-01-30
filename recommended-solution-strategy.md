@@ -174,7 +174,7 @@
 - **One-click actions** without leaving Zoho:
   - Cancel permit (executes: Actions → Cancel → Cancel Now → Send Email)
   - Submit refund to accounting (auto-generates email with resident email + amount + reason)
-  - Reverse charge (for accounting users)
+  - Reverse charges (for accounting users)
   - Update vehicle information
 - **Status automation:** Auto-update ticket status based on action (e.g., "Waiting on Accounting" after refund submission)
 
@@ -295,18 +295,3 @@
 - CSR confidence scores by ticket type
 - Automation accuracy rates
 - Volume handled per CSR (capacity metric)
-
----
-
-## Proposed Investment
-
-| Priority | Focus Area | Anticipated Hours | Anticipated Investment |
-|----------|-----------|-------------------|------------------------|
-| **1** | Email Classification & Auto-Tagging | 25-35 | $5,625-$7,875 |
-| **2** | In-Workflow Guidance System | 20-30 | $4,500-$6,750 |
-| **3** | Refund Automation + ParkM.app API | 40-50 | $9,000-$11,250 |
-| **4** | Unified Agent Desktop | 45-55 | $10,125-$12,375 |
-| **5** | Progressive Automation (2 phases) | 25-35 | $5,625-$7,875 |
-
-**Total Anticipated Hours:** 155-205  
-**Total Anticipated Investment:** $34,875-$46,125

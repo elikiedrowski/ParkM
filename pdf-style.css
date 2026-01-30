@@ -34,20 +34,20 @@ p {
 
 ul {
     margin: 8px 0;
-    padding-left: 40px;
+    padding-left: 25px;
     list-style-type: disc;
 }
 
 ul ul {
     list-style-type: circle;
-    padding-left: 40px;
+    padding-left: 25px;
     margin-top: 2px;
     margin-bottom: 2px;
 }
 
 ol {
     margin: 8px 0;
-    padding-left: 40px;
+    padding-left: 25px;
 }
 
 li {

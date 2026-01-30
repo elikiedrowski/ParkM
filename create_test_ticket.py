@@ -3,10 +3,20 @@
 Get departments from Zoho Desk and create test ticket
 """
 import os
+import sys
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Get subject and description from command line args
+if len(sys.argv) >= 3:
+    TICKET_SUBJECT = sys.argv[1]
+    TICKET_DESCRIPTION = sys.argv[2]
+else:
+    # Default test ticket
+    TICKET_SUBJECT = "Refund Request - Moved Out Last Month"
+    TICKET_DESCRIPTION = "Hi, I moved out on January 1st, 2026 but I got charged on January 15th for my parking permit. My license plate is ABC-1234. I need a refund for this charge as I already canceled my lease and moved to a different property. Please process this refund within 5 business days. Thank you!"
 
 def get_access_token():
     """Get access token using refresh token"""
@@ -75,16 +85,16 @@ print(f"\n4. Creating test ticket...")
 
 if contact_id:
     test_ticket = {
-        "subject": "Refund Request - Moved Out Last Month",
-        "description": "Hi, I moved out on January 1st, 2026 but I got charged on January 15th for my parking permit. My license plate is ABC-1234. I need a refund for this charge as I already canceled my lease and moved to a different property. Please process this refund within 5 business days. Thank you!",
+        "subject": TICKET_SUBJECT,
+        "description": TICKET_DESCRIPTION,
         "contactId": str(contact_id),
         "departmentId": str(department_id)
     }
 else:
     # Try creating with email, first name, last name
     test_ticket = {
-        "subject": "Refund Request - Moved Out Last Month",
-        "description": "Hi, I moved out on January 1st, 2026 but I got charged on January 15th for my parking permit. My license plate is ABC-1234. I need a refund for this charge as I already canceled my lease and moved to a different property. Please process this refund within 5 business days. Thank you!",
+        "subject": TICKET_SUBJECT,
+        "description": TICKET_DESCRIPTION,
         "contact": {
             "firstName": "John",
             "lastName": "TestCustomer",

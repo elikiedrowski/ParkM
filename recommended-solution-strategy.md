@@ -298,7 +298,7 @@
 
 ---
 
-## Proposed Project Timeline
+## Proposed Investment
 
 | Priority | Focus Area | Timeline | Dependencies | Anticipated Hours | Anticipated Investment |
 |----------|-----------|----------|--------------|-------------------|------------------------|

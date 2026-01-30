@@ -2,16 +2,17 @@
 
 ## Executive Summary: Development Timeline & Effort
 
-| Priority | Focus Area | Timeline | Dependencies | Anticipated Investment |
-|----------|-----------|----------|--------------|------------------------|
-| **1** | Email Classification & Auto-Tagging | Week 1-3 | OpenAI API integration | $6,750 |
-| **2** | In-Workflow Guidance System | Week 2-5 | Priority 1 data | $5,625 |
-| **3** | Refund Automation + ParkM.app API | Week 3-6 | Priority 1 data | $9,000 |
-| **4** | Unified Agent Desktop | Week 5-8 | Priority 3 API | $11,250 |
-| **5** | Progressive Automation (2 phases) | Week 7-10 | Priorities 1-4 | $6,750 |
+| Priority | Focus Area | Timeline | Dependencies | Anticipated Hours | Anticipated Investment |
+|----------|-----------|----------|--------------|-------------------|------------------------|
+| **1** | Email Classification & Auto-Tagging | Week 1-3 | OpenAI API integration | 25-35 | $5,625-$7,875 |
+| **2** | In-Workflow Guidance System | Week 2-5 | Priority 1 data | 20-30 | $4,500-$6,750 |
+| **3** | Refund Automation + ParkM.app API | Week 3-6 | Priority 1 data | 35-45 | $7,875-$10,125 |
+| **4** | Unified Agent Desktop | Week 5-8 | Priority 3 API | 45-55 | $10,125-$12,375 |
+| **5** | Progressive Automation (2 phases) | Week 7-10 | Priorities 1-4 | 25-35 | $5,625-$7,875 |
 
 **Total Timeline:** 10 weeks with parallel execution  
-**Total Anticipated Investment:** $39,375  
+**Total Anticipated Hours:** 150-200  
+**Total Anticipated Investment:** $33,750-$45,000  
 **Parallel Execution:** Multiple priorities overlap - requires coordinated team effort
 
 **Critical Path:** ParkM.app API integration (Priority 3) unlocks Priority 4  

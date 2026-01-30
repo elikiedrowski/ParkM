@@ -5,15 +5,15 @@
 | Priority | Focus Area | Hours | Timeline | Dependencies |
 |----------|-----------|-------|----------|--------------|
 | **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | None (85% complete) |
-| **2** | Refund Automation + ParkM.app API | 120-160 | 3-4 weeks | Priority 1 data |
-| **3** | In-Workflow Guidance System | 100-140 | 3-4 weeks | Priority 2 API |
-| **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 2 API (complete) |
+| **2** | In-Workflow Guidance System | 100-140 | 3-4 weeks | Priority 1 data |
+| **3** | Refund Automation + ParkM.app API | 120-160 | 3-4 weeks | Priority 1 data |
+| **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 3 API (complete) |
 | **5** | Progressive Automation (3 phases) | 160-200 | 5-6 weeks | Priorities 1-4 |
 
 **Total Estimated Effort:** 600-780 hours (15-20 weeks)  
-**Parallel Execution Possible:** Priorities 1-2 can overlap; 3-4 sequential
+**Parallel Execution Possible:** Priorities 1-2 can overlap; 3 can run parallel
 
-**Critical Path:** ParkM.app API integration (Priority 2) unlocks Priorities 3-4  
+**Critical Path:** ParkM.app API integration (Priority 3) unlocks Priority 4  
 **Quick Wins:** Priority 1 delivers immediate value (currently 85% complete)
 
 ---
@@ -47,7 +47,69 @@
 
 ---
 
-## Priority 2: Refund Process Automation & Validation
+## Priority 2: Dynamic In-Workflow Guidance System
+
+**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
+
+**Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
+
+**Solution:**
+- **Contextual guidance overlay** within Zoho Desk based on ticket classification:
+  - **Refund requests:** Step-by-step checklist from refund-cancellation-process.pdf:
+    1. ✓ Search parkm.app by email
+    2. ✓ Review Vehicles and Permits tab
+    3. ✓ Check if permit already canceled
+    4. ✓ Verify last transaction date in Payments and Transactions
+    5. ✓ Validate move-out date within 30-day window
+    6. ✓ Cancel permit (Actions → Cancel → Cancel Now → Send Email)
+    7. ✓ Submit refund to accounting or send denial with T&C
+  - **Missing info requests:** Template for requesting license plate + bank statement screenshot
+  - **Account updates:** Validation prompts before sending response
+- **Smart forms** (can be implemented with basic Zoho features initially, enhanced with API later)
+- **Real-time validation:**
+  - "Did you verify the move-out date is within 30 days?"
+  - "Did you cancel the permit in parkm.app before closing?"
+  - "Did you update the ticket status to 'Waiting on Accounting'?"
+- **Knowledge base snippets** appear inline based on ticket context
+
+**Technical Dependencies:**
+- Priority 1 classification data
+- Zoho Desk extension/widget development
+- Custom UI components in ticket view
+
+**Why second:**
+- Directly addresses Katie's acute pain point about missing steps
+- Can start with Zoho's built-in workflow features before API integration
+- Prevents errors before they happen vs. fixing them after
+- Reduces cognitive load on part-time workers
+- Standardizes application of refund eligibility rules
+- Creates process compliance data to identify automation candidates
+- Lower technical complexity than full API integration
+
+**Estimated impact:** 60-70% reduction in training time; 40% reduction in escalations; 25% faster ticket resolution; 90% reduction in missed process steps
+
+---
+
+## Priority 3: Dynamic In-Workflow Guidance System
+
+**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
+
+**Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
+
+**Solution:**
+- **Contextual guidance overlay** within Zoho Desk based on ticket classification:
+  - **Refund requests:** Step-by-step checklist from refund-cancellation-process.pdf:
+    1. ✓ Search parkm.app by email
+    2. ✓ Review Vehicles and Permits tab
+    3. ✓ Check if permit already canceled
+    4. ✓ Verify last transaction date in Payments and Transactions
+    5. ✓ Validate move-out date within 30-day window
+    6. ✓ Cancel permit (Actions → Cancel → Cancel Now → Send Email)
+    7. ✓ Submit refund to accounting or send denial with T&C
+  - **Missing info requests:** Template for requesting license plate + bank statement screenshot
+---
+
+## Priority 3: Refund Process Automation & Validation
 
 **Estimated Effort:** 120-160 hours | **Timeline:** 3-4 weeks
 
@@ -91,55 +153,16 @@
 - OAuth or API key authentication setup
 - Test environment for parkm.app integration
 
-**Why second:**
+**Why third:**
+- Requires significant external API integration work
 - Directly addresses 20% of all support volume (refund requests)
 - Eliminates manual date math and eligibility confusion
 - Reduces accounting back-and-forth delays
 - Leverages Priority 1 classification data (move-out dates, intents)
 - High ROI - impacts both CSR efficiency and customer satisfaction
+- Enables enhanced Priority 2 guidance with real parkm.app data
 
 **Estimated impact:** 60-80% time savings on refund request processing; 90% reduction in eligibility errors; 40% faster refund cycle time
-
----
-
-## Priority 3: Dynamic In-Workflow Guidance System
-
-**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
-
-**Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
-
-**Solution:**
-- **Contextual guidance overlay** within Zoho Desk based on ticket classification:
-  - **Refund requests:** Step-by-step checklist from refund-cancellation-process.pdf:
-    1. ✓ Search parkm.app by email
-    2. ✓ Review Vehicles and Permits tab
-    3. ✓ Check if permit already canceled
-    4. ✓ Verify last transaction date in Payments and Transactions
-    5. ✓ Validate move-out date within 30-day window
-    6. ✓ Cancel permit (Actions → Cancel → Cancel Now → Send Email)
-    7. ✓ Submit refund to accounting or send denial with T&C
-  - **Missing info requests:** Template for requesting license plate + bank statement screenshot
-  - **Account updates:** Validation prompts before sending response
-- **Smart forms** that pre-populate with data from parkm.app API (last charge, permit status, transaction history)
-- **Real-time validation:**
-  - "Did you verify the move-out date is within 30 days?"
-  - "Did you cancel the permit in parkm.app before closing?"
-  - "Did you update the ticket status to 'Waiting on Accounting'?"
-- **Knowledge base snippets** appear inline based on ticket context
-
-**Technical Dependencies:**
-- Priority 2 parkm.app API integration
-- Zoho Desk extension/widget development
-- Custom UI components in ticket view
-
-**Why third:**
-- Directly addresses Katie's acute pain point about missing steps
-- Prevents errors before they happen vs. fixing them after
-- Reduces cognitive load on part-time workers
-- Standardizes application of refund eligibility rules
-- Creates process compliance data to identify automation candidates
-
-**Estimated impact:** 60-70% reduction in training time; 40% reduction in escalations; 25% faster ticket resolution; 90% reduction in missed process steps
 
 ---
 
@@ -165,12 +188,12 @@
 - **Status automation:** Auto-update ticket status based on action (e.g., "Waiting on Accounting" after refund submission)
 
 **Technical Dependencies:**
-- Priority 2 parkm.app API integration (must be complete)
+- Priority 3 parkm.app API integration (must be complete)
 - Zoho Desk Extension SDK/Widget framework
 - parkm.app write API endpoints (permit cancellation, vehicle updates)
 
 **Why fourth:**
-- Technical dependency - requires parkm.app API integration work
+- Technical dependency - requires parkm.app API integration work (Priority 3)
 - Significant efficiency gains once implemented (eliminates app switching)
 - Enables faster execution of refund/cancellation workflow
 - Improves CSR satisfaction and retention
@@ -233,21 +256,23 @@
 - Reduces escalations and routing errors immediately
 - Extracts critical data (move-out dates, 30-day window validation)
 
-### Phase 2: Refund Process Automation
-**Priorities:** 2 (Refund Automation)
-
-- Addresses 20% of all support volume
-- Eliminates manual eligibility checking
-- Accelerates accounting handoff
-- High ROI and immediate time savings
-
-### Phase 3: Workflow Guidance & Process Compliance
-**Priorities:** 3 (Workflow Guidance)
+### Phase 2: Workflow Guidance & Process Compliance
+**Priorities:** 2 (Workflow Guidance)
 
 - Prevents missed steps in refund/cancellation process
 - Reduces training time for new CSRs
 - Standardizes application of business rules
 - Creates compliance data for automation candidates
+- Can start with Zoho native features before API work
+
+### Phase 3: Refund Process Automation
+**Priorities:** 3 (Refund Automation)
+
+- Addresses 20% of all support volume
+- Eliminates manual eligibility checking
+- Accelerates accounting handoff
+- High ROI and immediate time savings
+- Requires ParkM.app API integration
 
 ### Phase 4: Unified Agent Desktop
 **Priorities:** 4 (Unified Desktop)
@@ -304,7 +329,7 @@
 **Next Steps:**
 - Week 2: Webhook integration for live ticket processing
 - Week 3: Queue routing and monitoring dashboard
-- Then proceed to Priority 2: Refund Process Automation
+- Then proceed to Priority 2: In-Workflow Guidance System
 
 **Supporting Documentation:**
 - [refund-cancellation-process.pdf](refund-cancellation-process.pdf) - Official refund/cancellation workflow

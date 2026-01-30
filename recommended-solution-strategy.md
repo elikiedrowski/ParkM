@@ -8,7 +8,7 @@
 | **2** | In-Workflow Guidance System | Week 2-5 | Priority 1 data | $12,500-$17,500 |
 | **3** | Refund Automation + ParkM.app API | Week 3-6 | Priority 1 data | $15,000-$20,000 |
 | **4** | Unified Agent Desktop | Week 5-8 | Priority 3 API | $17,500-$22,500 |
-| **5** | Progressive Automation (3 phases) | Week 7-10 | Priorities 1-4 | $20,000-$25,000 |
+| **5** | Progressive Automation (2 phases) | Week 7-10 | Priorities 1-4 | $20,000-$25,000 |
 
 **Total Timeline:** 10 weeks with parallel execution  
 **Total Anticipated Investment:** $75,000-$97,500 (at $125/hour developer rate)  
@@ -72,18 +72,8 @@
   - "Did you cancel the permit in parkm.app before closing?"
   - "Did you update the ticket status to 'Waiting on Accounting'?"
 - **Knowledge base snippets** appear inline based on ticket context
-- **Automated refund validation** for straightforward cases:
-  - AI validates all eligibility criteria automatically via parkm.app API:
-    * Move-out date extracted and within 30 days of last charge
-    * Permit already canceled or customer confirms cancellation intent
-    * Single permit only (no multi-permit complexity)
-    * No dispute or legal language detected
-  - Auto-generates refund submission to accounting with all required details
-  - Notifies customer that refund is being processed (5-day timeline)
-  - Tracks status and follows up automatically when accounting completes
-  - **Human approval still required for financial transactions** (accounting reviews before processing)
 
-**Technical Dependencies:**
+**Technical Dependencies:****
 - Priority 1 classification data
 - Zoho Desk extension/widget development
 - Custom UI components in ticket view
@@ -138,6 +128,16 @@
   - Update ticket status to "Waiting on Accounting" automatically
   - Reopen ticket when accounting replies
   - Track refund processing time and volume
+- **Automated refund validation** for straightforward cases:
+  - AI validates all eligibility criteria automatically via parkm.app API:
+    * Move-out date extracted and within 30 days of last charge
+    * Permit already canceled or customer confirms cancellation intent
+    * Single permit only (no multi-permit complexity)
+    * No dispute or legal language detected
+  - Auto-generates refund submission to accounting with all required details
+  - Notifies customer that refund is being processed (5-day timeline)
+  - Tracks status and follows up automatically when accounting completes
+  - **Human approval still required for financial transactions** (accounting reviews before processing)
 
 **Technical Dependencies:**
 - Priority 1 classification data (move-out dates, refund intent detection)

@@ -295,3 +295,17 @@
 - CSR confidence scores by ticket type
 - Automation accuracy rates
 - Volume handled per CSR (capacity metric)
+
+---
+
+## Proposed Project Hours
+
+| Priority | Focus Area | Anticipated Hours |
+|----------|-----------|-------------------|
+| **1** | Email Classification & Auto-Tagging | 25-35 |
+| **2** | In-Workflow Guidance System | 20-30 |
+| **3** | Refund Automation + ParkM.app API | 40-50 |
+| **4** | Unified Agent Desktop | 45-55 |
+| **5** | Progressive Automation (2 phases) | 25-35 |
+
+**Total Anticipated Hours:** 155-205

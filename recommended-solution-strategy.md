@@ -4,7 +4,7 @@
 
 | Priority | Focus Area | Hours | Timeline | Dependencies |
 |----------|-----------|-------|----------|--------------|
-| **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | None |
+| **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | OpenAI API integration |
 | **2** | In-Workflow Guidance System | 100-140 | 3-4 weeks | Priority 1 data |
 | **3** | Refund Automation + ParkM.app API | 120-160 | 3-4 weeks | Priority 1 data |
 | **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 3 API |

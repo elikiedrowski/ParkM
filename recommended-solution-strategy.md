@@ -4,7 +4,6 @@
 
 | Priority | Focus Area | Timeline | Dependencies | Anticipated Investment |
 |----------|-----------|----------|--------------|------------------------|
-
 | **1** | Email Classification & Auto-Tagging | Week 1-3 | OpenAI API integration | $10,000-$12,500 |
 | **2** | In-Workflow Guidance System | Week 2-5 | Priority 1 data | $12,500-$17,500 |
 | **3** | Refund Automation + ParkM.app API | Week 3-6 | Priority 1 data | $15,000-$20,000 |

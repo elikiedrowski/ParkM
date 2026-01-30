@@ -2,15 +2,16 @@
 
 ## Executive Summary: Development Timeline & Effort
 
-| Priority | Focus Area | Hours | Timeline | Dependencies | Anticipated Investment |
-|----------|-----------|-------|----------|--------------|------------------------|
-| **1** | Email Classification & Auto-Tagging | 80-100 | Week 1-3 | OpenAI API integration | $10,000-$12,500 |
-| **2** | In-Workflow Guidance System | 100-140 | Week 2-5 | Priority 1 data | $12,500-$17,500 |
-| **3** | Refund Automation + ParkM.app API | 120-160 | Week 3-6 | Priority 1 data | $15,000-$20,000 |
-| **4** | Unified Agent Desktop | 140-180 | Week 5-8 | Priority 3 API | $17,500-$22,500 |
-| **5** | Progressive Automation (3 phases) | 160-200 | Week 7-10 | Priorities 1-4 | $20,000-$25,000 |
+| Priority | Focus Area | Timeline | Dependencies | Anticipated Investment |
+|----------|-----------|----------|--------------|------------------------|
 
-**Total Estimated Effort:** 600-780 hours (10 weeks with parallel execution)  
+| **1** | Email Classification & Auto-Tagging | Week 1-3 | OpenAI API integration | $10,000-$12,500 |
+| **2** | In-Workflow Guidance System | Week 2-5 | Priority 1 data | $12,500-$17,500 |
+| **3** | Refund Automation + ParkM.app API | Week 3-6 | Priority 1 data | $15,000-$20,000 |
+| **4** | Unified Agent Desktop | Week 5-8 | Priority 3 API | $17,500-$22,500 |
+| **5** | Progressive Automation (3 phases) | Week 7-10 | Priorities 1-4 | $20,000-$25,000 |
+
+**Total Timeline:** 10 weeks with parallel execution  
 **Total Anticipated Investment:** $75,000-$97,500 (at $125/hour developer rate)  
 **Parallel Execution:** Multiple priorities overlap - requires coordinated team effort
 
@@ -21,7 +22,7 @@
 
 ## Priority 1: Intelligent Email Triage & Classification System
 
-**Estimated Effort:** 80-100 hours | **Timeline:** 2-3 weeks
+**Timeline:** Week 1-3
 
 **Problem it solves:** New CSRs struggling to understand what customers are asking for; 3-month training time; process inconsistencies; refund/cancellation requests require specific eligibility checks
 
@@ -50,7 +51,7 @@
 
 ## Priority 2: Dynamic In-Workflow Guidance System
 
-**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
+**Timeline:** Week 2-5
 
 **Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
 
@@ -93,7 +94,7 @@
 
 ## Priority 3: Refund Process Automation & Validation
 
-**Estimated Effort:** 120-160 hours | **Timeline:** 3-4 weeks
+**Timeline:** Week 3-6
 
 **Problem it solves:** 20% of customers request refunds; manual eligibility checking; accounting handoff delays; CSR confusion on 30-day refund window; high-volume repetitive workflow
 
@@ -150,7 +151,7 @@
 
 ## Priority 4: Unified Agent Desktop
 
-**Estimated Effort:** 140-180 hours | **Timeline:** 4-5 weeks
+**Timeline:** Week 5-8
 
 **Problem it solves:** Context switching between Zoho Desk and parkm.app; inefficiency during refund/cancellation processing; data lookup delays; manual permit cancellation steps
 
@@ -187,26 +188,26 @@
 
 ## Priority 5: Progressive Automation for High-Volume Simple Cases
 
-**Estimated Effort:** 160-200 hours | **Timeline:** 5-6 weeks (phased rollout)
+**Timeline:** Week 7-10 (phased rollout)
 
 **Problem it solves:** Simple account updates and refund requests; scaling challenges; repetitive refund/cancellation workflow; CSR time spent on straightforward cases
 
 **Solution:**
 
-**Phase 1: Simple cancellation requests** (no refund, customer already moved out) - 60 hours | 2 weeks
+**Phase 1: Simple cancellation requests** (no refund, customer already moved out) - 2 weeks
 - AI detects "just cancel my permit" intents
 - Validates account found in parkm.app via API
 - Auto-cancels permit if already past move-out date and no refund mentioned
 - Sends confirmation email to customer
 - CSR reviews in batch daily for quality assurance
 
-**Phase 2: Vehicle updates** (vehicle changes where there's only one permit) - 50 hours | 1.5 weeks
+**Phase 2: Vehicle updates** (vehicle changes where there's only one permit) - 1.5 weeks
 - AI validates request clarity and completeness (license plate clearly stated)
 - Auto-updates permit in parkm.app via API if unambiguous
 - Sends confirmation email to customer
 - Human review for ambiguous cases
 
-**Phase 3: Straightforward refund requests** (single permit, within 30-day window, already canceled) - 50 hours | 1.5 weeks
+**Phase 3: Straightforward refund requests** (single permit, within 30-day window, already canceled) - 1.5 weeks
 - AI validates all eligibility criteria automatically via parkm.app API:
   - Move-out date extracted and within 30 days of last charge
   - Permit already canceled or customer confirms cancellation intent

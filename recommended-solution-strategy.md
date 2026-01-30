@@ -18,6 +18,11 @@
 
 **Estimated impact:** 30-40% reduction in training time; 50% reduction in escalations from misrouted tickets
 
+**Implementation time:** 2-3 weeks
+- Week 1: AI classifier development and testing
+- Week 2: Zoho webhook integration and auto-tagging
+- Week 3: Queue routing logic and monitoring dashboard
+
 ---
 
 ## Priority 2: Dynamic In-Workflow Guidance System
@@ -39,6 +44,12 @@
 
 **Estimated impact:** 60-70% reduction in training time; 40% reduction in escalations; 25% faster ticket resolution
 
+**Implementation time:** 3-4 weeks
+- Week 1: App platform API integration
+- Week 2: Contextual guidance UI components in Zoho
+- Week 3: Checklist system and validation logic
+- Week 4: Knowledge base integration and testing
+
 ---
 
 ## Priority 3: Intent-Based Auto-Response System
@@ -59,6 +70,11 @@
 
 **Estimated impact:** 15-20% time savings per CSR; handles growth without additional headcount
 
+**Implementation time:** 2-3 weeks
+- Week 1: Response generation AI development
+- Week 2: CSR review interface and one-click send
+- Week 3: Feedback loop and learning system
+
 ---
 
 ## Priority 4: Unified Agent Desktop
@@ -78,6 +94,12 @@
 - Improves CSR satisfaction and retention
 
 **Estimated impact:** 35-40% faster ticket resolution; improved CSR satisfaction; enables better automation
+
+**Implementation time:** 3-4 weeks
+- Week 1-2: Custom Zoho Desk extension development
+- Week 2-3: Bi-directional API integration with app platform
+- Week 3-4: Single-pane UI design and one-click actions
+- Week 4: Testing and deployment
 
 ---
 
@@ -108,26 +130,44 @@
 
 **Estimated impact:** 25-35% reduction in CSR workload on simple tasks; supports 2x growth with same team size
 
+**Implementation time:** 4-6 weeks (progressive rollout)
+- Week 1-2: Simple account update automation
+- Week 3-4: Refund validation and approval workflow
+- Week 5-6: Batch review system and monitoring
+- Ongoing: Iterative improvements based on feedback
+
 ---
 
 ## Implementation Phasing Recommendation
 
 ### Phase 1 (Weeks 1-4): Email Classification + Workflow Guidance
+**Duration:** 4 weeks  
+**Priorities:** 1 (Email Classification)
+
 - Quick wins with immediate measurable impact
 - Builds foundation for everything else
 - Reduces escalations immediately
 
 ### Phase 2 (Weeks 5-8): Auto-Response System + API Integration
+**Duration:** 4 weeks  
+**Priorities:** 2 (Workflow Guidance) + 3 (Auto-Response)
+
 - Leverage classification data
 - Start connecting systems
 - Begin time savings for CSRs
 
 ### Phase 3 (Weeks 9-12): Unified Agent Desktop
+**Duration:** 4 weeks  
+**Priorities:** 4 (Unified Desktop)
+
 - Streamline CSR workflow
 - Single-pane-of-glass experience
 - Gather data on which actions are most common
 
-### Phase 4 (Weeks 13+): Progressive Automation
+### Phase 4 (Weeks 13-18): Progressive Automation
+**Duration:** 6 weeks  
+**Priorities:** 5 (Progressive Automation)
+
 - Start with simple account updates
 - Expand to refunds with human approval
 - Continuously improve based on data and feedback
@@ -153,6 +193,21 @@
 - CSR confidence scores by ticket type
 - Automation accuracy rates
 - Volume handled per CSR (capacity metric)
+
+---
+
+## Total Timeline Summary
+
+**Complete Implementation:** 18-20 weeks (~4.5 months)
+
+- **Phase 1:** Weeks 1-4 (Email Classification)
+- **Phase 2:** Weeks 5-8 (Workflow Guidance + Auto-Response)
+- **Phase 3:** Weeks 9-12 (Unified Desktop)
+- **Phase 4:** Weeks 13-18 (Progressive Automation)
+
+**Quick Win Milestone:** Week 3-4 (Email classification live, immediate impact)  
+**Major Impact Milestone:** Week 8 (All CSR-facing tools operational)  
+**Full Automation:** Week 18+ (Ongoing optimization)
 
 ---
 

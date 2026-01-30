@@ -1,6 +1,6 @@
 # Recommended Solution Strategy for ParkM
 
-## Executive Summary: Development Timeline & Effort
+## Proposed Project Timeline
 
 | Priority | Focus Area | Timeline | Dependencies | Anticipated Hours | Anticipated Investment |
 |----------|-----------|----------|--------------|-------------------|------------------------|
@@ -300,7 +300,7 @@
 
 ---
 
-## Executive Summary: Development Timeline & Effort
+## Proposed Project Timeline
 
 | Priority | Focus Area | Timeline | Dependencies | Anticipated Hours | Anticipated Investment |
 |----------|-----------|----------|--------------|-------------------|------------------------|

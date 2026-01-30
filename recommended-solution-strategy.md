@@ -1,6 +1,26 @@
 # Recommended Solution Strategy for ParkM
 
+## Executive Summary: Development Timeline & Effort
+
+| Priority | Focus Area | Hours | Timeline | Dependencies |
+|----------|-----------|-------|----------|--------------|
+| **1** | Email Classification & Auto-Tagging | 80-100 | 2-3 weeks | None (85% complete) |
+| **2** | Refund Automation + ParkM.app API | 120-160 | 3-4 weeks | Priority 1 data |
+| **3** | In-Workflow Guidance System | 100-140 | 3-4 weeks | Priority 2 API |
+| **4** | Unified Agent Desktop | 140-180 | 4-5 weeks | Priority 2 API (complete) |
+| **5** | Progressive Automation (3 phases) | 160-200 | 5-6 weeks | Priorities 1-4 |
+
+**Total Estimated Effort:** 600-780 hours (15-20 weeks)  
+**Parallel Execution Possible:** Priorities 1-2 can overlap; 3-4 sequential
+
+**Critical Path:** ParkM.app API integration (Priority 2) unlocks Priorities 3-4  
+**Quick Wins:** Priority 1 delivers immediate value (currently 85% complete)
+
+---
+
 ## Priority 1: Intelligent Email Triage & Classification System
+
+**Estimated Effort:** 80-100 hours | **Timeline:** 2-3 weeks | **Status:** 85% Complete
 
 **Problem it solves:** New CSRs struggling to understand what customers are asking for; 3-month training time; process inconsistencies; refund/cancellation requests require specific eligibility checks
 
@@ -29,18 +49,33 @@
 
 ## Priority 2: Refund Process Automation & Validation
 
+**Estimated Effort:** 120-160 hours | **Timeline:** 3-4 weeks
+
 **Problem it solves:** 20% of customers request refunds; manual eligibility checking; accounting handoff delays; CSR confusion on 30-day refund window; high-volume repetitive workflow
 
 **Solution:**
+- **ParkM.app API Integration** (critical foundation):
+  - Build authenticated API client for parkm.app system
+  - Implement endpoints for:
+    * Customer account lookup by email
+    * Vehicles and Permits data retrieval
+    * Payments and Transactions history access
+    * Last charge date and amount extraction
+    * Permit status checking (active/canceled)
+    * Permit cancellation automation (Actions → Cancel → Cancel Now → Send Email)
+  - Handle authentication, rate limiting, and error cases
+  - Cache frequently accessed data to minimize API calls
 - **Automated eligibility validation** based on refund-cancellation-process.pdf workflow:
-  - Extract move-out date from email
-  - Check last charge date via parkm.app API
+  - Extract move-out date from email (via Priority 1 classifier)
+  - Query parkm.app API for last charge date
   - Calculate if within 30-day refund window
   - Flag permit cancellation status (already canceled vs. needs cancellation)
+  - Detect missing information (license plate not in system, no payment history)
 - **Auto-generated refund submission emails** to accounting@parkm.com with:
-  - Resident email (from ParkM account)
-  - Refund amount (from last transaction)
+  - Resident email (from parkm.app account data)
+  - Refund amount (from last transaction via API)
   - Reason for refund (move-out date + charge date)
+  - Permit details (license plate, community name)
 - **Smart templates** for common scenarios:
   - Refund approved (auto-populated with 5-day timeline)
   - Refund denied (with Terms & Conditions attachment)
@@ -49,6 +84,12 @@
   - Update ticket status to "Waiting on Accounting" automatically
   - Reopen ticket when accounting replies
   - Track refund processing time and volume
+
+**Technical Dependencies:**
+- Priority 1 classification data (move-out dates, refund intent detection)
+- ParkM.app API access and documentation
+- OAuth or API key authentication setup
+- Test environment for parkm.app integration
 
 **Why second:**
 - Directly addresses 20% of all support volume (refund requests)
@@ -62,6 +103,8 @@
 ---
 
 ## Priority 3: Dynamic In-Workflow Guidance System
+
+**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
 
 **Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
 
@@ -84,6 +127,11 @@
   - "Did you update the ticket status to 'Waiting on Accounting'?"
 - **Knowledge base snippets** appear inline based on ticket context
 
+**Technical Dependencies:**
+- Priority 2 parkm.app API integration
+- Zoho Desk extension/widget development
+- Custom UI components in ticket view
+
 **Why third:**
 - Directly addresses Katie's acute pain point about missing steps
 - Prevents errors before they happen vs. fixing them after
@@ -97,6 +145,8 @@
 
 ## Priority 4: Unified Agent Desktop
 
+**Estimated Effort:** 140-180 hours | **Timeline:** 4-5 weeks
+
 **Problem it solves:** Context switching between Zoho Desk and parkm.app; inefficiency during refund/cancellation processing; data lookup delays; manual permit cancellation steps
 
 **Solution:**
@@ -105,7 +155,7 @@
   - Vehicles and Permits tab (license plates, active/canceled status)
   - Payments and Transactions tab (last charge date, amount, refund history)
   - Move-out date and refund eligibility indicator (30-day window calculation)
-- **Bi-directional API integration** (read and write)
+- **Bi-directional API integration** with parkm.app (read and write operations)
 - **Single-screen workflow:** ticket on left, customer permit data on right
 - **One-click actions** without leaving Zoho:
   - Cancel permit (executes: Actions → Cancel → Cancel Now → Send Email)
@@ -113,6 +163,11 @@
   - Reverse charge (for accounting users)
   - Update vehicle information
 - **Status automation:** Auto-update ticket status based on action (e.g., "Waiting on Accounting" after refund submission)
+
+**Technical Dependencies:**
+- Priority 2 parkm.app API integration (must be complete)
+- Zoho Desk Extension SDK/Widget framework
+- parkm.app write API endpoints (permit cancellation, vehicle updates)
 
 **Why fourth:**
 - Technical dependency - requires parkm.app API integration work
@@ -127,25 +182,27 @@
 
 ## Priority 5: Progressive Automation for High-Volume Simple Cases
 
+**Estimated Effort:** 160-200 hours | **Timeline:** 5-6 weeks (phased rollout)
+
 **Problem it solves:** Simple account updates and refund requests; scaling challenges; repetitive refund/cancellation workflow; CSR time spent on straightforward cases
 
 **Solution:**
 
-**Phase 1: Simple cancellation requests** (no refund, customer already moved out)
+**Phase 1: Simple cancellation requests** (no refund, customer already moved out) - 60 hours | 2 weeks
 - AI detects "just cancel my permit" intents
-- Validates account found in parkm.app
+- Validates account found in parkm.app via API
 - Auto-cancels permit if already past move-out date and no refund mentioned
 - Sends confirmation email to customer
 - CSR reviews in batch daily for quality assurance
 
-**Phase 2: Vehicle updates** (vehicle changes where there's only one permit)
+**Phase 2: Vehicle updates** (vehicle changes where there's only one permit) - 50 hours | 1.5 weeks
 - AI validates request clarity and completeness (license plate clearly stated)
-- Auto-updates permit in parkm.app if unambiguous
+- Auto-updates permit in parkm.app via API if unambiguous
 - Sends confirmation email to customer
 - Human review for ambiguous cases
 
-**Phase 3: Straightforward refund requests** (single permit, within 30-day window, already canceled)
-- AI validates all eligibility criteria automatically:
+**Phase 3: Straightforward refund requests** (single permit, within 30-day window, already canceled) - 50 hours | 1.5 weeks
+- AI validates all eligibility criteria automatically via parkm.app API:
   - Move-out date extracted and within 30 days of last charge
   - Permit already canceled or customer confirms cancellation intent
   - Single permit only (no multi-permit complexity)

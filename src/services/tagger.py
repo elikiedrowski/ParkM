@@ -86,7 +86,10 @@ class TicketTagger:
                 custom_field_data[self.custom_fields["license_plate"]] = key_entities["license_plate"]
             
             if "move_out_date" in key_entities and key_entities["move_out_date"]:
-                custom_field_data[self.custom_fields["move_out_date"]] = key_entities["move_out_date"]
+                # Convert natural language date to YYYY-MM-DD format
+                move_out_date = self._parse_date(key_entities["move_out_date"])
+                if move_out_date:
+                    custom_field_data[self.custom_fields["move_out_date"]] = move_out_date
             
             # Add routing recommendation
             if "queue" in routing:
@@ -95,10 +98,9 @@ class TicketTagger:
             logger.info(f"[{ticket_id}] Custom fields to update: {len(custom_field_data)}")
             
             # Update ticket via Zoho API
-            # Note: This will fail if custom fields don't exist in Zoho yet
-            # We'll create them in the setup phase
-            result = self.zoho_client.update_ticket(ticket_id, {
-                "customFields": custom_field_data
+            # Zoho uses "cf" key for custom fields, not "customFields"
+            result = await self.zoho_client.update_ticket(ticket_id, {
+                "cf": custom_field_data
             })
             
             if result:
@@ -106,7 +108,7 @@ class TicketTagger:
                 
                 # Also add an internal comment with classification details
                 comment = self._build_classification_comment(classification, routing)
-                self.zoho_client.add_comment(
+                await self.zoho_client.add_comment(
                     ticket_id,
                     comment,
                     is_public=False  # Internal note only
@@ -149,8 +151,8 @@ class TicketTagger:
             f"Requires Refund: {'Yes' if classification.get('requires_refund') else 'No'}",
             f"Requires Human Review: {'Yes' if classification.get('requires_human_review') else 'No'}",
             "",
-            f"Recommended Queue: {routing.get('queue', 'unknown')}",
-            f"Routing Reason: {routing.get('reason', 'N/A')}",
+            f"Recommended Queue: {routing if isinstance(routing, str) else routing.get('queue', 'unknown')}",
+            f"Routing Reason: {routing.get('reason', 'N/A') if isinstance(routing, dict) else 'N/A'}",
         ]
         
         # Add extracted entities
@@ -173,6 +175,46 @@ class TicketTagger:
             comment_lines.append(f"Notes: {classification['notes']}")
         
         return "\n".join(comment_lines)
+    
+    def _parse_date(self, date_string: str) -> Optional[str]:
+        """
+        Convert natural language date to YYYY-MM-DD format
+        
+        Args:
+            date_string: Date in natural language (e.g., "January 1st, 2026")
+            
+        Returns:
+            Date in YYYY-MM-DD format or None if parsing fails
+        """
+        import re
+        from datetime import datetime
+        
+        try:
+            # Remove ordinal suffixes (st, nd, rd, th)
+            cleaned = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', date_string)
+            
+            # Try common date formats
+            formats = [
+                "%B %d, %Y",  # January 1, 2026
+                "%b %d, %Y",   # Jan 1, 2026
+                "%m/%d/%Y",    # 01/01/2026
+                "%Y-%m-%d",    # 2026-01-01 (already correct)
+                "%d-%m-%Y",    # 01-01-2026
+            ]
+            
+            for fmt in formats:
+                try:
+                    parsed_date = datetime.strptime(cleaned, fmt)
+                    return parsed_date.strftime("%Y-%m-%d")
+                except ValueError:
+                    continue
+            
+            logger.warning(f"Failed to parse date '{date_string}' with known formats")
+            return None
+            
+        except Exception as e:
+            logger.warning(f"Failed to parse date '{date_string}': {e}")
+            return None
     
     def create_custom_fields_in_zoho(self) -> Dict[str, Any]:
         """

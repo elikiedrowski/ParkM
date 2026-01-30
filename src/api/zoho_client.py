@@ -3,8 +3,11 @@ Zoho Desk API Client
 Handles all interactions with Zoho Desk API
 """
 import httpx
+import logging
 from typing import Dict, List, Any, Optional
 from src.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class ZohoDeskClient:
@@ -49,6 +52,8 @@ class ZohoDeskClient:
                 headers=self.headers,
                 json=data
             )
+            if response.status_code != 200:
+                logger.error(f"Failed to update ticket {ticket_id}: {response.status_code} - {response.text}")
             response.raise_for_status()
             return response.json()
     

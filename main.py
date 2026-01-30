@@ -189,6 +189,89 @@ async def get_statistics():
     }
 
 
+@app.post("/test-tagging/{ticket_id}")
+async def test_ticket_tagging(ticket_id: str):
+    """
+    Test endpoint to classify and tag an existing ticket
+    Useful for verifying custom fields are working
+    """
+    try:
+        logger.info(f"Testing classification and tagging for ticket {ticket_id}")
+        
+        # Fetch ticket
+        ticket_data = await zoho_client.get_ticket(ticket_id)
+        if not ticket_data:
+            raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
+        
+        # Extract email content
+        subject = ticket_data.get("subject", "")
+        description = ticket_data.get("description", "")
+        sender_email = ticket_data.get("email", "")
+        
+        logger.info(f"Ticket: {subject}")
+        
+        # Classify
+        classification = classifier.classify_email(subject, description, sender_email)
+        routing = classifier.get_routing_recommendation(classification)
+        
+        # Tag (import tagger here to avoid circular import)
+        from src.services.tagger import TicketTagger
+        tagger = TicketTagger()
+        
+        tag_result = await tagger.apply_classification_tags(
+            ticket_id=ticket_id,
+            classification=classification,
+            routing=routing
+        )
+        
+        return {
+            "ticket_id": ticket_id,
+            "subject": subject,
+            "classification": classification,
+            "routing": routing,
+            "tagging_success": tag_result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing tagging: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/tickets")
+async def list_tickets(limit: int = 5):
+    """
+    List recent tickets to get ticket IDs for testing
+    """
+    try:
+        from src.api.zoho_client import ZohoDeskClient
+        client = ZohoDeskClient()
+        
+        # Get recent tickets
+        tickets = await client.search_tickets("", limit=limit)
+        
+        return {
+            "count": len(tickets),
+            "tickets": [
+                {
+                    "id": t.get("id"),
+                    "ticketNumber": t.get("ticketNumber"),
+                    "subject": t.get("subject"),
+                    "status": t.get("status"),
+                    "email": t.get("email")
+                }
+                for t in tickets
+            ],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error listing tickets: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     import os

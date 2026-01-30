@@ -1,0 +1,34 @@
+# Core dependencies
+requests>=2.31.0
+python-dotenv>=1.0.0
+openai>=1.0.0
+pydantic-settings>=2.0.0
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+python-multipart>=0.0.6
+
+# HTTP Client
+httpx>=0.26.0
+
+# YAML support (for routing rules - Week 3)
+pyyaml>=6.0
+
+# PDF processing (for refund process document)
+PyPDF2>=3.0.0
+
+# Database (optional - for Week 3 analytics)
+# sqlalchemy==2.0.25
+# asyncpg==0.29.0
+
+# Utilities
+python-dotenv==1.0.0
+python-multipart==0.0.6
+
+# Development
+pytest==7.4.4
+pytest-asyncio==0.23.3
+black==24.1.1
+ruff==0.1.14

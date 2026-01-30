@@ -1,0 +1,206 @@
+"""
+ParkM Email Classification System - FastAPI Application
+Main entry point for webhook receiver and API endpoints
+"""
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
+import logging
+from datetime import datetime
+import hashlib
+import hmac
+from typing import Dict, Any
+
+from src.api.webhooks import process_ticket_webhook
+from src.services.classifier import EmailClassifier
+from src.api.zoho_client import ZohoDeskClient
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/webhook.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="ParkM Email Classification API",
+    description="AI-powered email classification and routing for Zoho Desk",
+    version="1.0.0"
+)
+
+# Initialize services
+classifier = EmailClassifier()
+zoho_client = ZohoDeskClient()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    logger.info("Starting ParkM Email Classification API")
+    logger.info("FastAPI server ready to receive webhooks")
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "service": "ParkM Email Classification API",
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """Detailed health check"""
+    try:
+        # Test Zoho connection
+        departments = await zoho_client.get_departments()
+        zoho_healthy = len(departments) > 0
+        
+        return {
+            "status": "healthy" if zoho_healthy else "degraded",
+            "zoho_api": "connected" if zoho_healthy else "disconnected",
+            "classifier": "ready",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+@app.post("/webhooks/zoho/ticket-created")
+async def zoho_ticket_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks
+):
+    """
+    Webhook endpoint for Zoho Desk ticket creation events
+    
+    This endpoint:
+    1. Receives webhook from Zoho when new ticket is created
+    2. Validates the webhook signature
+    3. Extracts ticket data
+    4. Queues classification task in background
+    5. Returns immediate response to Zoho
+    """
+    try:
+        # Get raw body for signature verification
+        body = await request.body()
+        headers = dict(request.headers)
+        
+        # Log webhook receipt
+        logger.info(f"Received webhook from Zoho at {datetime.now()}")
+        
+        # Parse JSON payload
+        try:
+            payload = await request.json()
+        except Exception as e:
+            logger.error(f"Failed to parse webhook JSON: {e}")
+            raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        
+        # Validate webhook signature (if Zoho provides one)
+        # Note: Zoho webhook signature verification depends on their implementation
+        # For now, we'll validate the payload structure
+        
+        if not payload.get("ticketId"):
+            logger.error("Webhook payload missing ticketId")
+            raise HTTPException(status_code=400, detail="Missing ticketId in payload")
+        
+        ticket_id = payload.get("ticketId")
+        logger.info(f"Processing ticket ID: {ticket_id}")
+        
+        # Process webhook in background (don't block response to Zoho)
+        background_tasks.add_task(
+            process_ticket_webhook,
+            ticket_id=ticket_id,
+            payload=payload
+        )
+        
+        # Return immediate success response to Zoho
+        return {
+            "status": "accepted",
+            "ticket_id": ticket_id,
+            "message": "Ticket queued for classification",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Webhook processing error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@app.post("/classify")
+async def classify_email_endpoint(request: Request):
+    """
+    Manual classification endpoint for testing
+    
+    Request body:
+    {
+        "subject": "Email subject",
+        "body": "Email body text",
+        "from": "customer@example.com"
+    }
+    """
+    try:
+        data = await request.json()
+        
+        subject = data.get("subject", "")
+        body = data.get("body", "")
+        sender = data.get("from", "")
+        
+        # Classify
+        classification = classifier.classify_email(subject, body, sender)
+        
+        # Get routing recommendation
+        routing = classifier.get_routing_recommendation(classification)
+        
+        return {
+            "classification": classification,
+            "routing": routing,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Classification error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
+
+
+@app.get("/stats")
+async def get_statistics():
+    """Get classification statistics (placeholder for Week 3 dashboard)"""
+    return {
+        "message": "Statistics endpoint - to be implemented in Week 3",
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    
+    # Create logs directory if it doesn't exist
+    os.makedirs("logs", exist_ok=True)
+    
+    # Run server
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,  # Auto-reload on code changes (disable in production)
+        log_level="info"
+    )

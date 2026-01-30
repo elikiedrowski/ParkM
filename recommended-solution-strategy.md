@@ -72,6 +72,16 @@
   - "Did you cancel the permit in parkm.app before closing?"
   - "Did you update the ticket status to 'Waiting on Accounting'?"
 - **Knowledge base snippets** appear inline based on ticket context
+- **Automated refund validation** for straightforward cases:
+  - AI validates all eligibility criteria automatically via parkm.app API:
+    * Move-out date extracted and within 30 days of last charge
+    * Permit already canceled or customer confirms cancellation intent
+    * Single permit only (no multi-permit complexity)
+    * No dispute or legal language detected
+  - Auto-generates refund submission to accounting with all required details
+  - Notifies customer that refund is being processed (5-day timeline)
+  - Tracks status and follows up automatically when accounting completes
+  - **Human approval still required for financial transactions** (accounting reviews before processing)
 
 **Technical Dependencies:**
 - Priority 1 classification data
@@ -206,25 +216,14 @@
 - Sends confirmation email to customer
 - Human review for ambiguous cases
 
-**Phase 3: Straightforward refund requests** (single permit, within 30-day window, already canceled) - 1.5 weeks
-- AI validates all eligibility criteria automatically via parkm.app API:
-  - Move-out date extracted and within 30 days of last charge
-  - Permit already canceled or customer confirms cancellation intent
-  - Single permit only (no multi-permit complexity)
-  - No dispute or legal language detected
-- Auto-generates refund submission to accounting with all required details
-- Notifies customer that refund is being processed (5-day timeline)
-- Tracks status and follows up automatically when accounting completes
-- **Human approval still required for financial transactions** (accounting reviews before processing)
-
-**Why this approach:**
+**Why this approach:****
 - Handles real volume reduction (refunds = 20% of all tickets)
 - Maintains quality and brand protection through human oversight
 - Starts with lower-risk cancellations before financial transactions
 - Uses data from earlier phases to identify best automation candidates
 - Follows proven refund-cancellation-process.pdf workflow
 
-**Estimated impact:** 25-35% reduction in CSR workload on simple tasks; 60-70% time savings on straightforward refund processing; supports 2x growth with same team size
+**Estimated impact:** 25-35% reduction in CSR workload on simple tasks; 60-70% time savings on vehicle updates; supports 2x growth with same team size
 
 ---
 

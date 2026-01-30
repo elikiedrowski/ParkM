@@ -90,25 +90,6 @@
 
 ---
 
-## Priority 3: Dynamic In-Workflow Guidance System
-
-**Estimated Effort:** 100-140 hours | **Timeline:** 3-4 weeks
-
-**Problem it solves:** CSRs missing steps in refund/cancellation process; "nothing in the flow that reminds them right now"; inconsistent application of 30-day refund window; forgetting to update ticket status
-
-**Solution:**
-- **Contextual guidance overlay** within Zoho Desk based on ticket classification:
-  - **Refund requests:** Step-by-step checklist from refund-cancellation-process.pdf:
-    1. ✓ Search parkm.app by email
-    2. ✓ Review Vehicles and Permits tab
-    3. ✓ Check if permit already canceled
-    4. ✓ Verify last transaction date in Payments and Transactions
-    5. ✓ Validate move-out date within 30-day window
-    6. ✓ Cancel permit (Actions → Cancel → Cancel Now → Send Email)
-    7. ✓ Submit refund to accounting or send denial with T&C
-  - **Missing info requests:** Template for requesting license plate + bank statement screenshot
----
-
 ## Priority 3: Refund Process Automation & Validation
 
 **Estimated Effort:** 120-160 hours | **Timeline:** 3-4 weeks

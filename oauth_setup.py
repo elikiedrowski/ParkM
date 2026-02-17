@@ -18,7 +18,7 @@ REDIRECT_URI = os.getenv("ZOHO_REDIRECT_URI")
 DATA_CENTER = os.getenv("ZOHO_DATA_CENTER", "com")
 
 # Scopes needed for Zoho Desk
-SCOPES = "Desk.tickets.ALL,Desk.contacts.READ,Desk.settings.READ"
+SCOPES = "Desk.tickets.ALL,Desk.contacts.READ,Desk.settings.ALL"
 
 auth_code = None
 

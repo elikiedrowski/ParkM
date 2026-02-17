@@ -9,6 +9,7 @@ from typing import Dict, Any
 from src.services.classifier import EmailClassifier
 from src.services.tagger import TicketTagger
 from src.api.zoho_client import ZohoDeskClient
+from src.services.correction_logger import log_correction
 
 logger = logging.getLogger(__name__)
 
@@ -93,3 +94,52 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         logger.error(f"[{ticket_id}] Error processing webhook: {e}", exc_info=True)
         # Don't raise - we don't want to return error to Zoho
         # Log the error and move on
+
+
+async def process_correction_webhook(ticket_id: str, payload: Dict[str, Any]):
+    """
+    Process a ticket-updated webhook when a CSR sets Agent Corrected Intent.
+
+    Workflow:
+    1. Extract the corrected intent from the webhook payload
+    2. Fetch the ticket to get the original AI intent and confidence
+    3. Log the correction for LLM training
+    4. Skip logging if no correction was made (field blank or set to "correct")
+
+    Args:
+        ticket_id: Zoho Desk ticket ID
+        payload: Webhook payload from Zoho (ticket updated event)
+    """
+    try:
+        logger.info(f"[{ticket_id}] Processing correction webhook")
+
+        # Pull corrected intent directly from payload if Zoho includes it
+        corrected_intent = (
+            payload.get("cf_agent_corrected_intent")
+            or payload.get("cf", {}).get("cf_agent_corrected_intent")
+        )
+
+        if not corrected_intent:
+            logger.info(f"[{ticket_id}] No corrected intent in payload — skipping")
+            return
+
+        # Fetch ticket to get original AI classification fields
+        ticket_data = zoho_client.get_ticket(ticket_id)
+        if not ticket_data:
+            logger.error(f"[{ticket_id}] Could not fetch ticket for correction logging")
+            return
+
+        cf = ticket_data.get("cf", {})
+        original_intent = cf.get("cf_ai_intent", "unknown")
+        confidence_raw = cf.get("cf_ai_confidence")
+        confidence = int(confidence_raw) if confidence_raw is not None else None
+
+        log_correction(
+            ticket_id=ticket_id,
+            original_intent=original_intent,
+            corrected_intent=corrected_intent,
+            confidence=confidence
+        )
+
+    except Exception as e:
+        logger.error(f"[{ticket_id}] Error processing correction webhook: {e}", exc_info=True)

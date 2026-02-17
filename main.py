@@ -10,9 +10,10 @@ import hashlib
 import hmac
 from typing import Dict, Any
 
-from src.api.webhooks import process_ticket_webhook
+from src.api.webhooks import process_ticket_webhook, process_correction_webhook
 from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
+from src.services.correction_logger import get_corrections_summary
 
 # Configure logging
 logging.basicConfig(
@@ -180,11 +181,46 @@ async def classify_email_endpoint(request: Request):
         raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
 
 
+@app.post("/webhooks/zoho/ticket-updated")
+async def zoho_ticket_updated_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks
+):
+    """
+    Webhook endpoint for Zoho Desk ticket update events.
+    Fires when a CSR sets Agent Corrected Intent on a ticket.
+    Logs the correction for LLM training.
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    ticket_id = payload.get("ticketId")
+    if not ticket_id:
+        raise HTTPException(status_code=400, detail="Missing ticketId in payload")
+
+    logger.info(f"Received ticket-updated webhook for ticket {ticket_id}")
+
+    background_tasks.add_task(
+        process_correction_webhook,
+        ticket_id=ticket_id,
+        payload=payload
+    )
+
+    return {
+        "status": "accepted",
+        "ticket_id": ticket_id,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 @app.get("/stats")
 async def get_statistics():
-    """Get classification statistics (placeholder for Week 3 dashboard)"""
+    """Classification accuracy and CSR correction summary"""
+    summary = get_corrections_summary()
     return {
-        "message": "Statistics endpoint - to be implemented in Week 3",
+        "corrections": summary,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -275,15 +311,18 @@ async def list_tickets(limit: int = 5):
 if __name__ == "__main__":
     import uvicorn
     import os
-    
+
     # Create logs directory if it doesn't exist
     os.makedirs("logs", exist_ok=True)
-    
-    # Run server
+
+    # Railway injects PORT; fall back to 8000 for local dev
+    port = int(os.getenv("PORT", 8000))
+    is_production = os.getenv("RAILWAY_ENVIRONMENT") is not None
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,  # Auto-reload on code changes (disable in production)
+        port=port,
+        reload=not is_production,
         log_level="info"
     )

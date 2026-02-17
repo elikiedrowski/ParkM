@@ -51,27 +51,30 @@
 
 ### Server & Infrastructure Setup
 **Owner:** Nagy
+**Platform:** Railway.app
 
 **Tasks:**
-- [ ] Provision production virtual server (AWS/DigitalOcean)
-  - Ubuntu 22.04 LTS
-  - 2GB RAM minimum
-  - Configure firewall rules (allow 443, 80, SSH)
-  - Set up SSH key authentication
-  - Estimated cost: $15-20/month
+- [ ] Create Railway account at railway.app (sign up with GitHub)
+- [ ] Create new project → Deploy from GitHub repo
+  - Connect GitHub, select the ParkM repo
+  - Railway auto-detects Python via `railway.toml` (already in repo)
+  - Railway assigns a public HTTPS URL automatically — no nginx/SSL setup needed
+  - Estimated cost: $5-20/month (usage-based)
 
-- [ ] Install production dependencies
-  - Python 3.11
-  - pip, virtualenv
-  - nginx (reverse proxy)
-  - certbot (SSL certificates)
-  - systemd service configuration
+- [ ] Set environment variables in Railway dashboard
+  - Settings → Variables → add all values from `.env`:
+    - `ZOHO_ORG_ID`
+    - `ZOHO_CLIENT_ID`
+    - `ZOHO_CLIENT_SECRET`
+    - `ZOHO_REFRESH_TOKEN`
+    - `ZOHO_DATA_CENTER`
+    - `OPENAI_API_KEY`
+  - Railway injects `PORT` automatically — no action needed
 
-- [ ] Configure production environment
-  - Create `.env` file with production credentials
-  - Set up log directory: `/var/log/parkm-classifier/`
-  - Configure log rotation
-  - Set up systemd service for auto-restart
+- [ ] Verify deployment
+  - Check deploy logs in Railway dashboard
+  - Hit `https://{app}.railway.app/health` → should return `{"status":"healthy"}`
+  - Save the public URL — needed for Zoho webhook configuration
 
 ### API Keys & Credentials
 **Owner:** Eli
@@ -97,7 +100,7 @@
   - Navigate: Zoho Desk → Setup → Users & Control
   - Need admin role temporarily
 
-- [ ] Create 10 custom fields in production
+- [ ] Create 11 custom fields in production
   - Use checklist: `zoho-custom-fields-setup.md`
   - Fields to create:
     1. AI Intent (dropdown: refund_request, permit_cancellation, account_update, payment_issue, permit_inquiry, move_out, technical_issue, general_question, unclear)
@@ -110,6 +113,7 @@
     8. License Plate (text, max 20 chars)
     9. Move Out Date (date, YYYY-MM-DD)
     10. Routing Queue (text, max 50 chars)
+    11. Agent Corrected Intent (dropdown: correct, refund_request, permit_cancellation, account_update, payment_issue, permit_inquiry, move_out, technical_issue, general_question, unclear)
 
 - [ ] Verify API names in production
   - Navigate: Setup → Developer Space → APIs → Fields
@@ -297,63 +301,9 @@
 
 ---
 
-## Phase 1.4: Queue Routing & Launch (Week 2 Day 4 - Week 3)
+## Phase 1.4: Monitoring, Documentation & Launch (Week 2 Day 4 - Week 3)
 
-### Queue Design & Configuration
-**Owner:** Eli + Katie (collaborative)
-
-**Tasks:**
-- [ ] Design queue structure with client
-  - **Queue 1: Accounting/Refunds**
-    - Tickets with `requires_refund = true`
-    - Move-out date within 30 days (if extracted)
-    - High priority for accounting team
-  - **Queue 2: Quick Updates**
-    - Simple cancellations (`intent = permit_cancellation`, `requires_refund = false`)
-    - Vehicle updates
-    - Missing info requests
-  - **Queue 3: Auto-Resolution** (future automation candidates)
-    - Status inquiries
-    - General questions with clear answers
-    - Low complexity tickets
-  - **Queue 4: Escalations**
-    - `requires_human_review = true`
-    - `urgency = high`
-    - Complex multi-issue tickets
-    - Angry customers
-
-- [ ] Create queues in Zoho Desk
-  - Navigate: Setup → Channels → Email → Departments
-  - For each queue:
-    * Create new view/queue
-    * Set filter criteria based on custom fields
-    * Assign CSRs to appropriate queues
-    * Set queue permissions
-
-### Routing Logic Implementation
-**Owner:** Nagy
-
-**Tasks:**
-- [ ] Update `src/services/tagger.py` with routing rules
-  ```python
-  def determine_routing_queue(classification_result):
-      if classification_result.requires_refund:
-          return "Accounting/Refunds"
-      elif classification_result.urgency == "high" or classification_result.requires_human_review:
-          return "Escalations"
-      elif classification_result.complexity == "simple":
-          return "Quick Updates"
-      else:
-          return "Auto-Resolution"
-  ```
-
-- [ ] Create Zoho workflow rules for auto-routing
-  - Navigate: Setup → Automation → Workflows
-  - Create rule: "Route to Refunds Queue"
-    * Trigger: When `cf_routing_queue` = "Accounting/Refunds"
-    * Action: Move ticket to Refunds queue
-  - Repeat for each queue
-  - Test each workflow
+> **Scope note (Feb 13, 2026):** Automatic ticket routing to queues has been **removed from scope** per client decision. The `cf_routing_queue` custom field still gets populated as metadata (useful for future reporting), but Zoho workflow rules to physically move tickets between queues will NOT be implemented. CSRs continue to work from the standard queue view.
 
 ### Monitoring & Documentation
 **Owner:** Nagy (monitoring) + Eli (docs)
@@ -392,9 +342,8 @@
 - [ ] Conduct CSR training session (1 hour)
   - Explain what's happening behind the scenes
   - Show custom fields (even if hidden from CSR view)
-  - Demonstrate queue routing
-  - Explain confidence scores and flags
-  - Walk through a few classified tickets
+  - Explain confidence scores and flags (requires_human_review, urgency)
+  - Walk through a few classified tickets live
   - Answer questions
 
 - [ ] Production launch plan
@@ -411,7 +360,7 @@
     * Adjust based on feedback
     * Document edge cases
 
-**Deliverable:** Fully automated classification system in production with queue routing
+**Deliverable:** Fully automated classification system in production — tickets auto-tagged with AI intent, complexity, urgency, language, and extracted entities on creation
 
 ---
 

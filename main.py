@@ -83,6 +83,13 @@ async def health_check():
         )
 
 
+@app.get("/webhooks/zoho/ticket-created")
+@app.get("/webhooks/zoho/ticket-updated")
+async def zoho_webhook_validation():
+    """Respond 200 OK to Zoho's GET validation request when saving a webhook."""
+    return {"status": "ok"}
+
+
 @app.post("/webhooks/zoho/ticket-created")
 async def zoho_ticket_webhook(
     request: Request,

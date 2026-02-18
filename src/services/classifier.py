@@ -63,14 +63,22 @@ Body: {body}
 Provide your classification in JSON format with these fields:
 
 1. "intent" - Primary intent (choose ONE):
-   - "refund_request" - Customer requesting a refund
-   - "account_update" - Update vehicle info, license plate, etc.
-   - "permit_inquiry" - Questions about permits, status, pricing
-   - "payment_issue" - Billing problems, charge disputes
-   - "technical_issue" - App/website problems
-   - "move_out" - Moving out notification
-   - "general_question" - Other questions
-   - "unclear" - Cannot determine intent
+   - "refund_request" - Customer wants money back (refund, reimbursement, credit). Use this whenever the customer explicitly asks for a refund, even if combined with a charge dispute or cancellation.
+   - "permit_cancellation" - Customer wants to CANCEL their parking permit but does NOT mention a refund or wanting money back.
+   - "account_update" - Update vehicle info, license plate, contact details, unit number, etc.
+   - "permit_inquiry" - Questions about permits, status, pricing, how permits work.
+   - "payment_issue" - Billing problems, charge disputes, failed payments, unauthorized charges where customer does NOT ask for a refund.
+   - "technical_issue" - App/website problems, login issues, error messages.
+   - "move_out" - Customer says they are moving out or have moved out, but does NOT explicitly request a refund or cancellation. They are notifying us.
+   - "general_question" - Other questions that don't fit above categories.
+   - "unclear" - Cannot determine intent at all (very short, gibberish, completely off-topic).
+
+   IMPORTANT distinctions:
+   - If customer mentions BOTH moving out AND wanting a refund → "refund_request" (refund is the actionable intent)
+   - If customer mentions BOTH moving out AND wanting to cancel permit (no refund) → "permit_cancellation"
+   - If customer just says "I'm moving out, what do I do?" with no specific request → "move_out"
+   - If customer disputes a charge AND asks for money back → "refund_request"
+   - If customer disputes a charge but does NOT ask for money back → "payment_issue"
 
 2. "complexity" - How difficult to resolve (choose ONE):
    - "simple" - Clear request, straightforward resolution, one permit/vehicle
@@ -88,13 +96,21 @@ Provide your classification in JSON format with these fields:
    - "medium" - Normal request timing
    - "low" - General inquiry, no rush
 
-5. "confidence" - Your confidence in this classification (0.0 to 1.0). Use these ranges:
-   - 0.90-1.00: Crystal clear intent, all entities present, unambiguous
-   - 0.75-0.89: Clear intent but missing some information (no plate, no date)
-   - 0.60-0.74: Ambiguous — could be multiple intents, vague language
-   - 0.40-0.59: Very unclear, rambling, or contradictory email
-   - Below 0.40: Cannot determine intent at all
-   Be CRITICAL. Most emails with missing info should be 0.75-0.85, not 0.95.
+5. "confidence" - Your confidence in this classification (0.0 to 1.0).
+   STRICT scoring rules — follow these exactly:
+   - 0.90-1.00: ONLY when intent is crystal clear AND all key entities are present (plate, date, amount where applicable). Very few emails deserve this.
+   - 0.75-0.89: Clear intent, but missing one or more entities (no plate, no date, no amount).
+   - 0.60-0.74: Ambiguous — could be multiple intents, vague language, or conflicting signals.
+   - 0.40-0.59: Very unclear, rambling, contradictory, or extremely short with no context.
+   - Below 0.40: Cannot determine intent at all (gibberish, off-topic, empty).
+
+   MANDATORY deductions — apply ALL that apply:
+   - Email body is empty or near-empty (subject only) → max 0.55
+   - Email is a forwarded/reply chain with noise → deduct 0.10
+   - Multiple possible intents with no clear winner → max 0.70
+   - Missing license plate when relevant → deduct 0.05
+   - Missing move-out date when relevant → deduct 0.05
+   - Third party writing on behalf of someone → deduct 0.05
 
 6. "key_entities" - Extract important information as an object:
    - "license_plate": null or the plate number if mentioned
@@ -112,6 +128,33 @@ Provide your classification in JSON format with these fields:
    - "manual" - Needs full human handling
 
 10. "notes" - Brief explanation of your classification (1 sentence)
+
+EXAMPLES for calibration:
+
+Example 1 — Clear refund with all entities:
+Subject: "Refund for parking"
+Body: "I moved out on Jan 1. Plate ABC-1234. Refund me the $45 charge."
+→ intent: "refund_request", confidence: 0.95
+
+Example 2 — Cancel permit, no refund:
+Subject: "Cancel parking permit"
+Body: "I'd like to cancel my parking permit effective immediately. Plate DEF-5678."
+→ intent: "permit_cancellation", confidence: 0.90
+
+Example 3 — Moving out notification (no action requested):
+Subject: "Moving out"
+Body: "I'm moving out next month. What do I need to do about parking?"
+→ intent: "move_out", confidence: 0.80 (no specific date, no plate)
+
+Example 4 — Vague/empty body:
+Subject: "Refund"
+Body: ""
+→ intent: "refund_request", confidence: 0.50 (subject-only, no details)
+
+Example 5 — Angry charge dispute wanting money back:
+Subject: "UNAUTHORIZED CHARGE"
+Body: "You charged me $45 without authorization after I moved out. Refund immediately or I'm calling my lawyer!"
+→ intent: "refund_request", confidence: 0.90 (explicit refund demand, has amount, urgency: high)
 
 Respond ONLY with valid JSON, no other text."""
     
@@ -133,6 +176,8 @@ Respond ONLY with valid JSON, no other text."""
             return "Auto-Resolution Queue"
         elif intent in ["refund_request", "payment_issue"]:
             return "Accounting/Refunds"
+        elif intent == "permit_cancellation" and complexity == "simple":
+            return "Quick Updates"
         elif intent == "account_update" and complexity == "simple":
             return "Quick Updates"
         elif complexity == "complex" or classification.get("urgency") == "high":

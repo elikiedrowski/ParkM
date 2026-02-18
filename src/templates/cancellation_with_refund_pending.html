@@ -1,0 +1,23 @@
+<!--
+Template: cancellation_with_refund_pending.html
+Use when: Permit canceled AND refund has been submitted to accounting
+Variables: {{customer_name}}, {{license_plate}}, {{amount}}, {{processing_time}}
+Default processing_time: 5-7 business days
+-->
+<p>Hi {{customer_name}},</p>
+
+<p>We've completed the cancellation of your parking permit and submitted your refund request to accounting.</p>
+
+<p><strong>Summary:</strong></p>
+<ul>
+  <li>License plate: {{license_plate}}</li>
+  <li>Permit status: Canceled</li>
+  <li>Refund amount: {{amount}}</li>
+  <li>Estimated processing time: {{processing_time}}</li>
+</ul>
+
+<p>The refund will be returned to your original payment method. If you do not see it within {{processing_time}}, please reply to this email and we'll follow up with accounting directly.</p>
+
+<p>Thank you for being a ParkM customer. We wish you the best in your new home!</p>
+
+<p>ParkM Support Team</p>

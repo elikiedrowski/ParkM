@@ -1,0 +1,528 @@
+{
+  "_comment": "Wizard step definitions for each AI intent type. Loaded by the CSR wizard widget.",
+  "_version": "1.0",
+  "_last_updated": "2026-02-17",
+
+  "refund_request": {
+    "label": "Refund Request",
+    "icon": "💰",
+    "color": "#e67e22",
+    "intro": "This ticket has been classified as a Refund Request. Follow the steps below to process it correctly.",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "substep": "Go to parkm.app → search the customer's email in the top search bar",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Open the Vehicles and Permits tab",
+        "substep": "Confirm the license plate and permit associated with their account",
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Check if permit is already canceled",
+        "substep": "If already canceled, note the cancellation date for eligibility calculation",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Open the Payments tab — find the last charge date and amount",
+        "substep": "Note: refund window is 30 days from the LAST charge date",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Verify move-out date is within the 30-day refund window",
+        "substep": "Move-out date extracted by AI: {{move_out_date}}. If not found, use template: Missing Move-Out Date",
+        "entity_field": "move_out_date",
+        "missing_action": {
+          "template": "missing_move_out_date.html",
+          "label": "Request Move-Out Date"
+        },
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "Confirm license plate matches account",
+        "substep": "License plate from email: {{license_plate}}. If not provided, use template: Missing License Plate",
+        "entity_field": "license_plate",
+        "missing_action": {
+          "template": "missing_license_plate.html",
+          "label": "Request License Plate"
+        },
+        "required": true
+      },
+      {
+        "id": 7,
+        "text": "Cancel permit in parkm.app (if not already canceled)",
+        "substep": "Navigate to permit → Actions → Cancel → Cancel Now → Send Email",
+        "required": true
+      },
+      {
+        "id": 8,
+        "text": "Eligible for refund? Submit to accounting OR send denial",
+        "substep": "✅ Eligible → Submit refund to accounting team\n❌ Outside window → Use template: Refund Denied (Outside Window)\n❌ TOS violation → Use template: Refund Denied (TOS)",
+        "decision_point": true,
+        "options": [
+          {
+            "label": "Submit Refund to Accounting",
+            "action": "submit_refund",
+            "next_template": "refund_approved.html"
+          },
+          {
+            "label": "Deny — Outside 30-Day Window",
+            "action": "deny_outside_window",
+            "next_template": "refund_denied_outside_window.html"
+          },
+          {
+            "label": "Deny — Terms of Service",
+            "action": "deny_tos",
+            "next_template": "refund_denied_tos.html"
+          }
+        ],
+        "required": true
+      },
+      {
+        "id": 9,
+        "text": "Send response email to customer using appropriate template",
+        "required": true
+      },
+      {
+        "id": 10,
+        "text": "Update ticket status to Closed",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you verify the move-out date is within 30 days of the last charge?",
+      "Did you cancel the permit in parkm.app?",
+      "Did you either submit the refund to accounting OR send a denial email to the customer?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "Missing Move-Out Date", "file": "missing_move_out_date.html"},
+      {"label": "Missing Bank Statement", "file": "missing_bank_statement.html"},
+      {"label": "Refund Approved", "file": "refund_approved.html"},
+      {"label": "Refund Denied — Outside Window", "file": "refund_denied_outside_window.html"},
+      {"label": "Refund Denied — TOS", "file": "refund_denied_tos.html"}
+    ]
+  },
+
+  "permit_cancellation": {
+    "label": "Permit Cancellation (No Refund)",
+    "icon": "🚫",
+    "color": "#8e44ad",
+    "intro": "This ticket has been classified as a Permit Cancellation without a refund request.",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Locate the permit on the Vehicles and Permits tab",
+        "substep": "License plate from email: {{license_plate}}",
+        "entity_field": "license_plate",
+        "missing_action": {
+          "template": "missing_license_plate.html",
+          "label": "Request License Plate"
+        },
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Confirm the customer does NOT want a refund",
+        "substep": "If they do want a refund, re-classify as Refund Request and follow that wizard",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Cancel permit: Actions → Cancel → Cancel Now → Send Email",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Send cancellation confirmation email to customer",
+        "template": "cancellation_confirmed.html",
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status to Closed",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you confirm the customer does NOT want a refund?",
+      "Did you cancel the permit in parkm.app?",
+      "Did you send the cancellation confirmation email?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "Cancellation Confirmed", "file": "cancellation_confirmed.html"},
+      {"label": "Cancellation + Refund Pending", "file": "cancellation_with_refund_pending.html"}
+    ]
+  },
+
+  "account_update": {
+    "label": "Account / Vehicle Update",
+    "icon": "✏️",
+    "color": "#2980b9",
+    "intro": "This ticket has been classified as an Account or Vehicle Update request.",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Identify what needs to be updated",
+        "substep": "Common updates: license plate change, email address, contact info. Extracted plate: {{license_plate}}",
+        "entity_field": "license_plate",
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Navigate to Vehicles and Permits tab",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Make the requested update in parkm.app",
+        "substep": "For plate changes: Edit vehicle → update plate number → Save",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Verify the change saved correctly",
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "Send confirmation email to customer",
+        "template": "vehicle_update_confirmed.html",
+        "required": true
+      },
+      {
+        "id": 7,
+        "text": "Update ticket status to Closed",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you verify the update saved correctly in parkm.app?",
+      "Did you send the confirmation email to the customer?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "Vehicle Update Confirmed", "file": "vehicle_update_confirmed.html"},
+      {"label": "Account Update Confirmed", "file": "account_update_confirmed.html"}
+    ]
+  },
+
+  "payment_issue": {
+    "label": "Payment Issue",
+    "icon": "💳",
+    "color": "#c0392b",
+    "intro": "This ticket has been classified as a Payment Issue (unexpected charge, duplicate charge, or failed payment).",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Open the Payments tab and locate the charge(s) in question",
+        "substep": "Look for: duplicate charges, unexpected amounts, failed payment attempts",
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Confirm the customer's license plate matches their account",
+        "substep": "Extracted plate: {{license_plate}}",
+        "entity_field": "license_plate",
+        "missing_action": {
+          "template": "missing_license_plate.html",
+          "label": "Request License Plate"
+        },
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Determine the issue type",
+        "substep": "Duplicate charge → escalate to accounting\nUnexpected charge → verify permit status, may be valid\nFailed payment → check payment method on file",
+        "decision_point": true,
+        "options": [
+          {"label": "Duplicate Charge — Escalate to Accounting", "action": "escalate_accounting"},
+          {"label": "Unexpected Charge — Explain to Customer", "action": "explain_charge"},
+          {"label": "Failed Payment — Help Resolve", "action": "resolve_failed_payment"}
+        ],
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Respond to customer with explanation or next steps",
+        "template": "payment_issue_follow_up.html",
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status appropriately (Closed or Waiting on Accounting)",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you investigate the charge(s) in the Payments tab?",
+      "Did you respond to the customer with a resolution or next steps?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "Payment Issue Follow-Up", "file": "payment_issue_follow_up.html"}
+    ]
+  },
+
+  "permit_inquiry": {
+    "label": "Permit Inquiry",
+    "icon": "❓",
+    "color": "#27ae60",
+    "intro": "This ticket has been classified as a general inquiry about a permit (status, rules, activation, etc.).",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Locate the permit on the Vehicles and Permits tab",
+        "substep": "Check permit status: Active, Pending, Canceled. Extracted plate: {{license_plate}}",
+        "entity_field": "license_plate",
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Review the customer's question and find the answer",
+        "substep": "Common inquiries: Is my permit active? Why was I charged? When does it renew?",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Respond to the customer with a clear, complete answer",
+        "template": "general_inquiry_response.html",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status to Closed",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you fully answer the customer's question?",
+      "Did you respond via email?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "General Inquiry Response", "file": "general_inquiry_response.html"}
+    ]
+  },
+
+  "move_out": {
+    "label": "Move-Out Notification",
+    "icon": "🏠",
+    "color": "#16a085",
+    "intro": "This ticket has been classified as a Move-Out notification. The customer is informing us they have moved and wants their permit handled.",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Search parkm.app by customer email address",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Confirm move-out date",
+        "substep": "Extracted date: {{move_out_date}}. If missing, ask the customer.",
+        "entity_field": "move_out_date",
+        "missing_action": {
+          "template": "missing_move_out_date.html",
+          "label": "Request Move-Out Date"
+        },
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Check the Payments tab — what was the last charge date?",
+        "substep": "Calculate: Is move-out within 30 days of last charge? If yes → refund eligible",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Determine refund eligibility",
+        "decision_point": true,
+        "options": [
+          {
+            "label": "Within 30 days — Process as Refund Request",
+            "action": "refund_eligible",
+            "redirect_wizard": "refund_request"
+          },
+          {
+            "label": "Outside 30 days — Cancel Only (No Refund)",
+            "action": "cancel_only",
+            "redirect_wizard": "permit_cancellation"
+          }
+        ],
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you check the 30-day refund window?",
+      "Did you cancel the permit in parkm.app?"
+    ],
+    "quick_templates": [
+      {"label": "Missing Move-Out Date", "file": "missing_move_out_date.html"},
+      {"label": "Cancellation Confirmed", "file": "cancellation_confirmed.html"},
+      {"label": "Cancellation + Refund Pending", "file": "cancellation_with_refund_pending.html"}
+    ]
+  },
+
+  "technical_issue": {
+    "label": "Technical Issue",
+    "icon": "🔧",
+    "color": "#7f8c8d",
+    "intro": "This ticket has been classified as a Technical Issue (app login, permit not showing, etc.).",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Identify the specific technical problem",
+        "substep": "Common issues: can't log in, permit not showing in app, app crashing, plate not accepted",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Search parkm.app by customer email — verify account exists",
+        "required": true
+      },
+      {
+        "id": 3,
+        "text": "Check permit and account status",
+        "substep": "Is permit active? Is the email on file correct? Any account flags?",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Attempt to resolve or escalate to technical team",
+        "substep": "If you can resolve directly → fix and confirm\nIf needs engineering → escalate with full details",
+        "decision_point": true,
+        "options": [
+          {"label": "Resolved Directly", "action": "resolved"},
+          {"label": "Escalate to Technical Team", "action": "escalate_tech"}
+        ],
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Respond to customer with resolution or expected timeline",
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status (Closed if resolved, Open/Escalated if pending)",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you verify the customer's account in parkm.app?",
+      "Did you respond to the customer with a resolution or update?"
+    ],
+    "quick_templates": [
+      {"label": "General Inquiry Response", "file": "general_inquiry_response.html"}
+    ]
+  },
+
+  "general_question": {
+    "label": "General Question",
+    "icon": "💬",
+    "color": "#2c3e50",
+    "intro": "This ticket has been classified as a General Question. Review the customer's email and respond appropriately.",
+    "steps": [
+      {
+        "id": 1,
+        "text": "Read the full email carefully",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "If account-specific: Search parkm.app by customer email",
+        "required": false
+      },
+      {
+        "id": 3,
+        "text": "Compose a clear, friendly response to the customer's question",
+        "template": "general_inquiry_response.html",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Update ticket status to Closed",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you fully answer the customer's question?"
+    ],
+    "quick_templates": [
+      {"label": "General Inquiry Response", "file": "general_inquiry_response.html"}
+    ]
+  },
+
+  "unclear": {
+    "label": "Unclear / Needs Review",
+    "icon": "⚠️",
+    "color": "#e74c3c",
+    "intro": "The AI was unable to classify this ticket with confidence. Human review is required.",
+    "human_review_required": true,
+    "steps": [
+      {
+        "id": 1,
+        "text": "Read the full email carefully — determine the customer's actual need",
+        "required": true
+      },
+      {
+        "id": 2,
+        "text": "Search parkm.app by customer email for context",
+        "required": false
+      },
+      {
+        "id": 3,
+        "text": "Classify manually: What does this customer actually need?",
+        "substep": "Refund? Cancellation? Vehicle update? Payment question? Other?",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Set the 'Agent Corrected Intent' field to the correct classification",
+        "substep": "This helps the AI learn from this case",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Follow the appropriate wizard for the correct intent type",
+        "required": true
+      }
+    ],
+    "validation_on_close": [
+      "Did you set the Agent Corrected Intent field?",
+      "Did you handle the underlying request?"
+    ],
+    "quick_templates": [
+      {"label": "Missing License Plate", "file": "missing_license_plate.html"},
+      {"label": "General Inquiry Response", "file": "general_inquiry_response.html"}
+    ]
+  }
+}

@@ -14,6 +14,7 @@ from src.api.webhooks import process_ticket_webhook, process_correction_webhook
 from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import get_corrections_summary
+from src.services.wizard import get_wizard_for_intent, get_template_html, list_templates, list_intents
 
 # Configure logging
 logging.basicConfig(
@@ -306,6 +307,62 @@ async def list_tickets(limit: int = 5):
     except Exception as e:
         logger.error(f"Error listing tickets: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wizard/{intent}")
+async def get_wizard_content(intent: str, ticket_id: str = None):
+    """
+    Return wizard steps for a given intent type.
+    Optionally fetches ticket data to fill entity placeholders.
+
+    Usage:
+      GET /wizard/refund_request
+      GET /wizard/refund_request?ticket_id=12345
+    """
+    try:
+        classification = None
+        if ticket_id:
+            ticket_data = await zoho_client.get_ticket(ticket_id)
+            if ticket_data:
+                subject = ticket_data.get("subject", "")
+                description = ticket_data.get("description", "")
+                sender = ticket_data.get("email", "")
+                classification = classifier.classify_email(subject, description, sender)
+
+        wizard = get_wizard_for_intent(intent, classification)
+        return {
+            "intent": intent,
+            "wizard": wizard,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Wizard content error for intent '{intent}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wizard-intents")
+async def get_supported_intents():
+    """List all supported intent types for the wizard."""
+    return {"intents": list_intents()}
+
+
+@app.get("/templates")
+async def get_template_list():
+    """List all available response templates."""
+    return {"templates": list_templates()}
+
+
+@app.get("/templates/{filename}")
+async def get_template(filename: str):
+    """
+    Return the HTML content of a response template.
+
+    Usage: GET /templates/refund_approved.html
+    """
+    html = get_template_html(filename)
+    if html is None:
+        raise HTTPException(status_code=404, detail=f"Template '{filename}' not found")
+    return {"filename": filename, "html": html}
 
 
 if __name__ == "__main__":

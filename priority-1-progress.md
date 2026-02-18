@@ -2,29 +2,29 @@
 
 **Started:** January 29, 2026
 **Target Completion:** February 12-19, 2026
-**Current Status:** 🟢 BUILD COMPLETE — Awaiting Railway Deployment
+**Current Status:** 🟢 DEPLOYED & TESTED — Phase 1.3 Round 1 Complete
 
-**Last Updated:** February 17, 2026
+**Last Updated:** February 18, 2026
 
 ---
 
 ## Summary
 
-All code for Priority 1 is written, tested, and committed to GitHub. The system is ready for production deployment on Railway.app. Next step: Nagy deploys to Railway, then webhooks are configured in Zoho Desk.
+Priority 1 is deployed, live, and tested end-to-end on Railway.app. Both webhooks are configured in the Zoho Desk sandbox. Phase 1.3 Round 1 prompt refinement is complete (75% → 100% accuracy). Round 2 pending production ticket export from Katie.
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| AI Classifier (GPT-4o) | ✅ Complete | 95% confidence, 10-point schema |
+| AI Classifier (GPT-4o) | ✅ Complete | 9 intents, 5 few-shot examples, calibrated confidence |
 | Custom Fields (11) | ✅ Complete | Created in Sandbox; needs prod |
-| FastAPI Webhook Server | ✅ Complete | ticket-created + ticket-updated |
+| FastAPI Webhook Server | ✅ Deployed | Railway: parkm-production.up.railway.app |
 | Auto-Tagging Service | ✅ Complete | All 11 fields write successfully |
 | CSR Correction Logger | ✅ Complete | logs/corrections.jsonl |
-| Railway Config | ✅ Complete | railway.toml pushed to GitHub |
-| GitHub Push | ✅ Complete | All changes committed |
-| Railway Deployment | ⏳ Pending | **Nagy's task** |
-| Zoho Webhooks (live) | ⏳ Pending | After Railway URL is available |
-| Prod Custom Fields | ⏳ Pending | Manual Zoho UI; after server ready |
-| Phase 1.3 Prompt Training | ⏳ Pending | Needs ticket export from Katie (ask Thu Feb 19) |
+| Railway Deployment | ✅ Live | Auto-deploys on git push |
+| Zoho Webhooks (sandbox) | ✅ Live | Both ticket-created and ticket-updated |
+| Phase 1.3 Round 1 | ✅ Complete | 75% → 100% accuracy (20 synthetic tests) |
+| Batch Test Suite | ✅ Complete | batch_test.py — 20 edge cases + Zoho pull |
+| Prod Custom Fields | ⏳ Pending | Manual Zoho UI; after Katie approves |
+| Phase 1.3 Round 2 | ⏳ Pending | Needs 100-200 production ticket export from Katie |
 
 ---
 
@@ -39,13 +39,13 @@ All code for Priority 1 is written, tested, and committed to GitHub. The system 
 
 ## Phase 1.1: Server Setup (Railway.app)
 
-**Status: ⏳ Pending (Nagy)**
+**Status: ✅ Complete (Feb 17, 2026)**
 
 - [x] `railway.toml` created and pushed to GitHub
-- [ ] Nagy creates Railway project linked to GitHub repo
-- [ ] Railway environment variables set (OPENAI_API_KEY, ZOHO_* creds)
-- [ ] Auto-deploy confirmed working
-- [ ] Production URL obtained (e.g. `https://parmm.up.railway.app`)
+- [x] Railway project linked to GitHub repo (project: astonishing-happiness)
+- [x] Railway environment variables set via `railway variable set`
+- [x] Auto-deploy confirmed working (deploys on git push)
+- [x] Production URL: `https://parkm-production.up.railway.app`
 
 **Railway Start Command:**
 ```
@@ -104,30 +104,42 @@ mkdir -p logs && uvicorn main:app --host 0.0.0.0 --port $PORT
 
 ---
 
-## Phase 1.3: Prompt Refinement (PENDING DATA)
+## Phase 1.3: Prompt Refinement (COMPLETE — Round 1)
 
-**Status: ⏳ Pending — needs real ticket export**
+**Status: ✅ Complete (Feb 18, 2026)**
 
+Round 1 prompt refinement done using 20 synthetic edge cases + 27 sandbox tickets:
+
+- [x] Built `batch_test.py` — pulls Zoho tickets + runs 20 synthetic edge cases
+- [x] Identified 5 classification errors and 7 confidence calibration issues
+- [x] Added `permit_cancellation` intent (was in wizard but missing from classifier — 9 intents now match)
+- [x] Added explicit intent distinction rules (refund vs cancel vs move_out vs payment_issue)
+- [x] Added 5 few-shot examples for calibration
+- [x] Added mandatory confidence deductions (empty body, noisy reply chains, missing entities)
+- [x] Accuracy: **75% → 100%** on synthetic edge cases
+- [x] Confidence spread: 0.30–0.95 (was stuck at 0.95 for everything)
+- [x] Deployed to Railway and verified `permit_cancellation` works end-to-end
+
+### Round 2 (Pending — needs production data)
 - [ ] Request 100-200 production ticket export from Katie/Stuart — **ask Thursday Feb 19**
-- [ ] Run tickets through classifier, review edge cases
-- [ ] Add few-shot examples for top confusion pairs
-- [ ] Update `src/services/classifier.py` prompt
-- [ ] Re-test and validate accuracy improvement
+- [ ] Run real tickets through classifier, find additional edge cases
+- [ ] Add few-shot examples for any new confusion pairs
+- [ ] Re-test and validate
 
 ---
 
 ## Key Files
 
-| File | Description | Lines |
-|------|-------------|-------|
-| `main.py` | FastAPI app, all endpoints | ~330 |
-| `src/services/classifier.py` | GPT-4o classification engine | — |
-| `src/services/tagger.py` | Auto-tagging Zoho custom fields | ~226 |
-| `src/services/correction_logger.py` | CSR correction JSONL logger | ~99 |
-| `src/api/webhooks.py` | Webhook handlers | — |
-| `src/api/zoho_client.py` | Zoho API wrapper (OAuth 2.0) | — |
-| `railway.toml` | Railway deployment config | 8 |
-| `requirements.txt` | Python dependencies | — |
+| File | Description |
+|------|-------------|
+| `main.py` | FastAPI app, all endpoints |
+| `src/services/classifier.py` | GPT-4o classification (9 intents, 5 few-shot examples) |
+| `src/services/tagger.py` | Auto-tagging Zoho custom fields |
+| `src/services/correction_logger.py` | CSR correction JSONL logger |
+| `src/api/webhooks.py` | Webhook handlers |
+| `src/api/zoho_client.py` | Zoho API wrapper (OAuth 2.0) |
+| `batch_test.py` | Phase 1.3 batch testing (20 synthetic + Zoho pull) |
+| `railway.toml` | Railway deployment config |
 
 ---
 
@@ -166,11 +178,14 @@ Once Railway URL is available, configure two webhooks in **both** Sandbox and Pr
 
 ## Next Actions (Ordered)
 
-1. **Nagy:** Deploy to Railway, share production URL
-2. **Eli:** Configure both webhooks in Zoho Desk (sandbox first, then production)
-3. **Eli:** Create 11 custom fields in Production Org (854251057) via Zoho UI
-4. **Thu Feb 19 call:** Demo classifier to Katie, request 100-200 ticket export for Phase 1.3
-5. **After ticket export:** Run Phase 1.3 prompt refinement
+1. ~~**Nagy:** Deploy to Railway, share production URL~~ ✅ Done
+2. ~~**Eli:** Configure both webhooks in Zoho Desk sandbox~~ ✅ Done
+3. ~~**Phase 1.3 Round 1:** Synthetic edge case testing + prompt refinement~~ ✅ Done
+4. **Thu Feb 19 call:** Demo classifier to Katie, review templates, request 100-200 ticket export
+5. **Eli:** Create 11 custom fields in Production Org (854251057) via Zoho UI
+6. **Eli:** Configure both webhooks in Production Zoho Desk
+7. **Nagy:** Switch `ZOHO_ORG_ID` from sandbox (856336669) → production (854251057)
+8. **After ticket export:** Run Phase 1.3 Round 2 with real production data
 
 ---
 
@@ -200,4 +215,4 @@ Once Railway URL is available, configure two webhooks in **both** Sandbox and Pr
 
 ---
 
-*Last Updated: February 17, 2026 — Build complete, awaiting server deployment*
+*Last Updated: February 18, 2026 — Deployed to Railway, Phase 1.3 Round 1 complete (100% accuracy on 20 synthetic edge cases)*

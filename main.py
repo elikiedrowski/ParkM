@@ -126,18 +126,22 @@ async def zoho_ticket_webhook(
                 raise HTTPException(status_code=400, detail="Empty payload array")
             payload = payload[0]
 
-        logger.info(f"Webhook payload keys: {list(payload.keys()) if isinstance(payload, dict) else type(payload)}")
+        # Zoho wraps ticket data inside a "payload" key:
+        # { "payload": { "id": "...", ... }, "eventType": "Ticket_Add", "orgId": "..." }
+        ticket_payload = payload.get("payload", payload)
+        event_type = payload.get("eventType", "unknown")
+        logger.info(f"Webhook event: {event_type}")
 
-        # Extract ticket ID — Zoho may use "ticketId", "id", or nested "ticket.id"
+        # Extract ticket ID from the nested payload
         ticket_id = (
-            payload.get("ticketId")
-            or payload.get("id")
-            or payload.get("ticket", {}).get("id")
+            ticket_payload.get("id")
+            or ticket_payload.get("ticketId")
+            or payload.get("ticketId")
         )
 
         if not ticket_id:
-            logger.error(f"Webhook payload missing ticketId. Full payload: {payload}")
-            raise HTTPException(status_code=400, detail="Missing ticketId in payload")
+            logger.error(f"Webhook payload missing ticket ID. Keys: {list(payload.keys())}")
+            raise HTTPException(status_code=400, detail="Missing ticket ID in payload")
         logger.info(f"Processing ticket ID: {ticket_id}")
         
         # Process webhook in background (don't block response to Zoho)
@@ -219,20 +223,22 @@ async def zoho_ticket_updated_webhook(
             raise HTTPException(status_code=400, detail="Empty payload array")
         payload = payload[0]
 
+    ticket_payload = payload.get("payload", payload)
+
     ticket_id = (
-        payload.get("ticketId")
-        or payload.get("id")
-        or payload.get("ticket", {}).get("id")
+        ticket_payload.get("id")
+        or ticket_payload.get("ticketId")
+        or payload.get("ticketId")
     )
     if not ticket_id:
-        raise HTTPException(status_code=400, detail="Missing ticketId in payload")
+        raise HTTPException(status_code=400, detail="Missing ticket ID in payload")
 
     logger.info(f"Received ticket-updated webhook for ticket {ticket_id}")
 
     background_tasks.add_task(
         process_correction_webhook,
         ticket_id=ticket_id,
-        payload=payload
+        payload=ticket_payload
     )
 
     return {

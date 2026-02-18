@@ -49,9 +49,10 @@ def get_wizard_for_intent(
     wizard = json.loads(json.dumps(data[intent]))  # deep copy
 
     # Extract entities for placeholder substitution
+    # Classifier returns field as "key_entities"
     entities: Dict[str, str] = {}
     if classification:
-        extracted = classification.get("extracted_entities") or {}
+        extracted = classification.get("key_entities") or classification.get("extracted_entities") or {}
         if extracted.get("license_plate"):
             entities["license_plate"] = extracted["license_plate"]
         if extracted.get("move_out_date"):

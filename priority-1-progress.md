@@ -22,9 +22,10 @@ Priority 1 is deployed, live, and tested end-to-end on Railway.app. Both webhook
 | Railway Deployment | ✅ Live | Auto-deploys on git push |
 | Zoho Webhooks (sandbox) | ✅ Live | Both ticket-created and ticket-updated |
 | Phase 1.3 Round 1 | ✅ Complete | 75% → 100% accuracy (20 synthetic tests) |
-| Batch Test Suite | ✅ Complete | batch_test.py — 20 edge cases + Zoho pull |
+| Phase 1.3 Round 2 | ✅ Complete | 100% accuracy (50 synthetic tests) |
+| Batch Test Suite | ✅ Complete | batch_test.py — 50 edge cases + Zoho pull |
 | Prod Custom Fields | ⏳ Pending | Manual Zoho UI; after Katie approves |
-| Phase 1.3 Round 2 | ⏳ Pending | Needs 100-200 production ticket export from Katie |
+| Phase 1.3 Round 3 | ⏳ Pending | Needs production ticket export from Katie |
 
 ---
 
@@ -104,27 +105,29 @@ mkdir -p logs && uvicorn main:app --host 0.0.0.0 --port $PORT
 
 ---
 
-## Phase 1.3: Prompt Refinement (COMPLETE — Round 1)
+## Phase 1.3: Prompt Refinement (COMPLETE — Round 1 + Round 2)
 
 **Status: ✅ Complete (Feb 18, 2026)**
 
-Round 1 prompt refinement done using 20 synthetic edge cases + 27 sandbox tickets:
-
-- [x] Built `batch_test.py` — pulls Zoho tickets + runs 20 synthetic edge cases
+### Round 1
+- [x] Built `batch_test.py` — 20 synthetic edge cases + Zoho ticket pull
 - [x] Identified 5 classification errors and 7 confidence calibration issues
-- [x] Added `permit_cancellation` intent (was in wizard but missing from classifier — 9 intents now match)
-- [x] Added explicit intent distinction rules (refund vs cancel vs move_out vs payment_issue)
-- [x] Added 5 few-shot examples for calibration
-- [x] Added mandatory confidence deductions (empty body, noisy reply chains, missing entities)
-- [x] Accuracy: **75% → 100%** on synthetic edge cases
-- [x] Confidence spread: 0.30–0.95 (was stuck at 0.95 for everything)
-- [x] Deployed to Railway and verified `permit_cancellation` works end-to-end
+- [x] Added `permit_cancellation` intent (9 intents now match wizard)
+- [x] Added explicit intent distinction rules + 5 few-shot examples
+- [x] Added mandatory confidence deductions
+- [x] Accuracy: **75% → 100%** on 20 synthetic edge cases
 
-### Round 2 (Pending — needs production data)
-- [ ] Request 100-200 production ticket export from Katie/Stuart — **ask Thursday Feb 19**
+### Round 2
+- [x] Expanded test suite to **50 synthetic emails** covering production-realistic scenarios
+- [x] New cases: typos/grammar, property managers, auto-replies, deceased residents, HTML bodies, long signatures, tow complaints, visitor parking, account security, misleading subjects, bulk updates
+- [x] Re-classified 28 sandbox tickets — confirmed `permit_cancellation` and confidence calibration working
+- [x] Accuracy: **100% (50/50)** on full synthetic suite
+- [x] Confidence distribution properly spans 0.30–0.95
+
+### Round 3 (Pending — production data)
+- [ ] Request 100-200 production ticket export from Katie — **ask Thursday Feb 19**
 - [ ] Run real tickets through classifier, find additional edge cases
 - [ ] Add few-shot examples for any new confusion pairs
-- [ ] Re-test and validate
 
 ---
 

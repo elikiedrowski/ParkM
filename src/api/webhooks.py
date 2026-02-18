@@ -65,9 +65,9 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         logger.info(f"  - Urgency: {classification.get('urgency')}")
         logger.info(f"  - Confidence: {classification.get('confidence')}")
         
-        # Get routing recommendation
+        # Get routing recommendation (returns a string)
         routing = classifier.get_routing_recommendation(classification)
-        logger.info(f"[{ticket_id}] Routing recommendation: {routing.get('queue')}")
+        logger.info(f"[{ticket_id}] Routing recommendation: {routing}")
         
         # Step 4: Apply classification tags to ticket
         logger.info(f"[{ticket_id}] Applying tags to ticket in Zoho")

@@ -40,7 +40,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         
         # Step 1: Fetch full ticket details from Zoho
         logger.info(f"[{ticket_id}] Fetching ticket details from Zoho API")
-        ticket_data = zoho_client.get_ticket(ticket_id)
+        ticket_data = await zoho_client.get_ticket(ticket_id)
         
         if not ticket_data:
             logger.error(f"[{ticket_id}] Failed to fetch ticket data")
@@ -124,7 +124,7 @@ async def process_correction_webhook(ticket_id: str, payload: Dict[str, Any]):
             return
 
         # Fetch ticket to get original AI classification fields
-        ticket_data = zoho_client.get_ticket(ticket_id)
+        ticket_data = await zoho_client.get_ticket(ticket_id)
         if not ticket_data:
             logger.error(f"[{ticket_id}] Could not fetch ticket for correction logging")
             return

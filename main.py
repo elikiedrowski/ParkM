@@ -120,15 +120,24 @@ async def zoho_ticket_webhook(
             logger.error(f"Failed to parse webhook JSON: {e}")
             raise HTTPException(status_code=400, detail="Invalid JSON payload")
         
-        # Validate webhook signature (if Zoho provides one)
-        # Note: Zoho webhook signature verification depends on their implementation
-        # For now, we'll validate the payload structure
-        
-        if not payload.get("ticketId"):
-            logger.error("Webhook payload missing ticketId")
+        # Zoho sends webhooks as a JSON array — unwrap first element
+        if isinstance(payload, list):
+            if not payload:
+                raise HTTPException(status_code=400, detail="Empty payload array")
+            payload = payload[0]
+
+        logger.info(f"Webhook payload keys: {list(payload.keys()) if isinstance(payload, dict) else type(payload)}")
+
+        # Extract ticket ID — Zoho may use "ticketId", "id", or nested "ticket.id"
+        ticket_id = (
+            payload.get("ticketId")
+            or payload.get("id")
+            or payload.get("ticket", {}).get("id")
+        )
+
+        if not ticket_id:
+            logger.error(f"Webhook payload missing ticketId. Full payload: {payload}")
             raise HTTPException(status_code=400, detail="Missing ticketId in payload")
-        
-        ticket_id = payload.get("ticketId")
         logger.info(f"Processing ticket ID: {ticket_id}")
         
         # Process webhook in background (don't block response to Zoho)
@@ -204,7 +213,17 @@ async def zoho_ticket_updated_webhook(
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
-    ticket_id = payload.get("ticketId")
+    # Zoho sends webhooks as a JSON array
+    if isinstance(payload, list):
+        if not payload:
+            raise HTTPException(status_code=400, detail="Empty payload array")
+        payload = payload[0]
+
+    ticket_id = (
+        payload.get("ticketId")
+        or payload.get("id")
+        or payload.get("ticket", {}).get("id")
+    )
     if not ticket_id:
         raise HTTPException(status_code=400, detail="Missing ticketId in payload")
 

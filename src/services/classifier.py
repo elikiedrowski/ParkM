@@ -88,7 +88,13 @@ Provide your classification in JSON format with these fields:
    - "medium" - Normal request timing
    - "low" - General inquiry, no rush
 
-5. "confidence" - Your confidence in this classification (0.0 to 1.0)
+5. "confidence" - Your confidence in this classification (0.0 to 1.0). Use these ranges:
+   - 0.90-1.00: Crystal clear intent, all entities present, unambiguous
+   - 0.75-0.89: Clear intent but missing some information (no plate, no date)
+   - 0.60-0.74: Ambiguous — could be multiple intents, vague language
+   - 0.40-0.59: Very unclear, rambling, or contradictory email
+   - Below 0.40: Cannot determine intent at all
+   Be CRITICAL. Most emails with missing info should be 0.75-0.85, not 0.95.
 
 6. "key_entities" - Extract important information as an object:
    - "license_plate": null or the plate number if mentioned

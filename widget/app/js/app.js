@@ -151,8 +151,15 @@ var ParkMApp = (function () {
       init();
     });
 
+    // Check SDK is available
+    if (typeof ZOHODESK === "undefined") {
+      showError("Zoho Desk SDK not loaded. Please refresh.");
+      return;
+    }
+
     // Initialize Zoho Desk SDK
     ZOHODESK.extension.onload().then(function (App) {
+      console.log("SDK loaded, fetching ticket data...");
       // Get ticket ID and custom fields in parallel
       return Promise.all([
         ZOHODESK.get("ticket.id"),
@@ -161,6 +168,9 @@ var ParkMApp = (function () {
     }).then(function (results) {
       var idResponse = results[0];
       var cfResponse = results[1];
+
+      console.log("ticket.id response:", JSON.stringify(idResponse));
+      console.log("ticket.cf response:", JSON.stringify(cfResponse));
 
       ticketId = idResponse["ticket.id"];
       customFields = cfResponse["ticket.cf"] || {};
@@ -217,7 +227,7 @@ var ParkMApp = (function () {
   };
 })();
 
-// Boot the app when the page loads
-window.addEventListener("DOMContentLoaded", function () {
+// Boot the app when the page fully loads (Zoho SDK requires window.onload)
+window.onload = function () {
   ParkMApp.init();
-});
+};

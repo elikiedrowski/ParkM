@@ -153,9 +153,9 @@ var Dashboard = (function () {
   /* ── Confidence by Intent ─────────────────────────────────────────── */
 
   function renderConfidenceByIntent(data) {
-    Charts.drawBarChart("chart-confidence", (data || []).map(function (d, i) {
+    Charts.drawHorizontalBarChart("chart-confidence", (data || []).map(function (d, i) {
       return { label: formatIntent(d.intent), value: Math.round(d.avg_confidence * 100), color: Charts.getColor(i) };
-    }));
+    }), { suffix: "%" });
   }
 
   /* ── Volume Over Time ─────────────────────────────────────────────── */
@@ -252,7 +252,7 @@ var Dashboard = (function () {
         color: Charts.getColor(i)
       };
     });
-    Charts.drawBarChart("chart-entities", data);
+    Charts.drawHorizontalBarChart("chart-entities", data, { suffix: "%" });
   }
 
   /* ── Performance Stats ────────────────────────────────────────────── */
@@ -323,8 +323,8 @@ var Dashboard = (function () {
       return { label: d.call_type.replace(/_/g, " "), value: d.count, color: Charts.getColor(i) };
     }));
 
-    // OpenAI token breakdown bar chart
-    Charts.drawBarChart("chart-api-tokens", [
+    // OpenAI token breakdown horizontal bar chart
+    Charts.drawHorizontalBarChart("chart-api-tokens", [
       { label: "Input Tokens", value: tb.prompt_tokens || 0, color: "#1976d2" },
       { label: "Output Tokens", value: tb.completion_tokens || 0, color: "#e67e22" }
     ]);

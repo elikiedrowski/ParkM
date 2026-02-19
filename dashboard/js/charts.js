@@ -23,13 +23,15 @@ var Charts = (function () {
       return;
     }
 
+    options = options || {};
     var ctx = canvas.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.parentElement.clientWidth - 32;
-    var barHeight = 24;
-    var gap = 6;
-    var labelWidth = 160;
-    var h = (barHeight + gap) * data.length + 30;
+    var barHeight = 26;
+    var gap = 8;
+    var labelWidth = 170;
+    var h = (barHeight + gap) * data.length + 20;
+    var suffix = options.suffix || "";
 
     canvas.width = w * dpr;
     canvas.height = h * dpr;
@@ -38,29 +40,38 @@ var Charts = (function () {
     ctx.scale(dpr, dpr);
 
     var maxVal = Math.max.apply(null, data.map(function (d) { return d.value; })) || 1;
-    var barAreaWidth = w - labelWidth - 50;
+    var barAreaWidth = w - labelWidth - 60;
 
     data.forEach(function (d, i) {
       var y = i * (barHeight + gap) + 5;
-      var barW = (d.value / maxVal) * barAreaWidth;
+      var barW = Math.max(2, (d.value / maxVal) * barAreaWidth);
 
       // Label
-      ctx.fillStyle = "#475569";
-      ctx.font = "12px -apple-system, sans-serif";
+      ctx.fillStyle = "#334155";
+      ctx.font = "13px -apple-system, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      var label = d.label.length > 24 ? d.label.substring(0, 22) + "..." : d.label;
-      ctx.fillText(label, labelWidth - 8, y + barHeight / 2);
+      var label = d.label.length > 22 ? d.label.substring(0, 20) + "..." : d.label;
+      ctx.fillText(label, labelWidth - 12, y + barHeight / 2);
 
-      // Bar
+      // Bar with rounded right end
       ctx.fillStyle = d.color || getColor(i);
-      ctx.fillRect(labelWidth, y, barW, barHeight);
+      var radius = 4;
+      ctx.beginPath();
+      ctx.moveTo(labelWidth, y);
+      ctx.lineTo(labelWidth + barW - radius, y);
+      ctx.arcTo(labelWidth + barW, y, labelWidth + barW, y + radius, radius);
+      ctx.lineTo(labelWidth + barW, y + barHeight - radius);
+      ctx.arcTo(labelWidth + barW, y + barHeight, labelWidth + barW - radius, y + barHeight, radius);
+      ctx.lineTo(labelWidth, y + barHeight);
+      ctx.closePath();
+      ctx.fill();
 
       // Value
-      ctx.fillStyle = "#333";
-      ctx.font = "bold 11px -apple-system, sans-serif";
+      ctx.fillStyle = "#1e293b";
+      ctx.font = "bold 12px -apple-system, sans-serif";
       ctx.textAlign = "left";
-      ctx.fillText(d.value, labelWidth + barW + 6, y + barHeight / 2);
+      ctx.fillText(d.value + suffix, labelWidth + barW + 8, y + barHeight / 2);
     });
   }
 

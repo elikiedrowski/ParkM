@@ -350,17 +350,10 @@ async def test_ticket_tagging(ticket_id: str):
 
 
 @app.get("/tickets")
-async def list_tickets(limit: int = 5):
-    """
-    List recent tickets to get ticket IDs for testing
-    """
+async def list_tickets(limit: int = 25):
+    """List recent tickets from Zoho Desk."""
     try:
-        from src.api.zoho_client import ZohoDeskClient
-        client = ZohoDeskClient()
-        
-        # Get recent tickets
-        tickets = await client.search_tickets("", limit=limit)
-        
+        tickets = await zoho_client.list_tickets(limit=limit)
         return {
             "count": len(tickets),
             "tickets": [
@@ -375,10 +368,80 @@ async def list_tickets(limit: int = 5):
             ],
             "timestamp": datetime.now().isoformat()
         }
-        
     except Exception as e:
         logger.error(f"Error listing tickets: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/batch-classify")
+async def batch_classify(limit: int = 25):
+    """
+    Classify multiple real Zoho tickets at once.
+    Lists recent tickets, classifies each, tags them, and logs analytics.
+    """
+    from src.services.tagger import TicketTagger
+    tagger = TicketTagger()
+    results = []
+    errors = []
+
+    try:
+        tickets = await zoho_client.list_tickets(limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list tickets: {e}")
+
+    for t in tickets:
+        ticket_id = t.get("id")
+        if not ticket_id:
+            continue
+        try:
+            start_time = datetime.now()
+            ticket_data = await zoho_client.get_ticket(ticket_id)
+            if not ticket_data:
+                continue
+
+            subject = ticket_data.get("subject", "")
+            description = ticket_data.get("description", "")
+            sender_email = ticket_data.get("email", "")
+
+            classification = classifier.classify_email(
+                subject, description, sender_email, ticket_id=ticket_id
+            )
+            routing = classifier.get_routing_recommendation(classification)
+
+            tag_result = await tagger.apply_classification_tags(
+                ticket_id=ticket_id,
+                classification=classification,
+                routing=routing,
+            )
+
+            end_time = datetime.now()
+            processing_time = (end_time - start_time).total_seconds()
+            log_classification_event(
+                ticket_id=ticket_id,
+                classification=classification,
+                routing=routing,
+                processing_time_seconds=processing_time,
+                tagging_success=bool(tag_result),
+            )
+
+            results.append({
+                "ticket_id": ticket_id,
+                "subject": subject,
+                "intent": classification.get("intent"),
+                "confidence": classification.get("confidence"),
+                "tagged": bool(tag_result),
+            })
+        except Exception as e:
+            logger.error(f"Batch classify error for {ticket_id}: {e}")
+            errors.append({"ticket_id": ticket_id, "error": str(e)})
+
+    return {
+        "classified": len(results),
+        "errors": len(errors),
+        "results": results,
+        "error_details": errors,
+        "timestamp": datetime.now().isoformat(),
+    }
 
 
 @app.get("/wizard/{intent}")
@@ -629,12 +692,28 @@ async def seed_test_data(count: int = 25):
             with open("logs/api_usage.jsonl", "a") as f:
                 f.write(_json.dumps(zoho_entry) + "\n")
 
+        # Corrections: ~30% of tickets get a CSR correction
+        if not has_error and random.random() < 0.30:
+            # Pick a different intent as the "correct" one
+            other_intents = [x for x in intents if x != intent]
+            corrected = random.choice(other_intents)
+            corr_entry = {
+                "timestamp": timestamp,
+                "ticket_id": ticket_id,
+                "original_intent": intent,
+                "corrected_intent": corrected,
+                "confidence": int(confidence * 100),
+                "is_misclassification": True,
+            }
+            with open("logs/corrections.jsonl", "a") as f:
+                f.write(_json.dumps(corr_entry) + "\n")
+
         created += 1
 
     return {
         "status": "ok",
         "created": created,
-        "message": f"Seeded {created} test events spread across 30 days",
+        "message": f"Seeded {created} test events with corrections spread across 30 days",
     }
 
 

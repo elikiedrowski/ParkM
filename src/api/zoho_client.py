@@ -144,6 +144,23 @@ class ZohoDeskClient:
         }
         return await self.update_ticket(ticket_id, data)
 
+    async def list_tickets(self, limit: int = 50, _from: int = 0) -> List[Dict[str, Any]]:
+        """List recent tickets (no search query required)"""
+        try:
+            headers = await self._build_headers()
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/tickets",
+                    headers=headers,
+                    params={"limit": limit, "from": _from, "sortBy": "createdTime"}
+                )
+                response.raise_for_status()
+                self._log_zoho_call("list_tickets")
+                return response.json().get("data", [])
+        except Exception as e:
+            self._log_zoho_call("list_tickets", success=False, error=str(e))
+            raise
+
     async def search_tickets(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search tickets"""
         try:

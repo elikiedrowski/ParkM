@@ -15,6 +15,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Sticky Nav Wrapper ─────────────────────────────────────────────── */
+
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
 /* ── Header ─────────────────────────────────────────────────────────── */
 
 .header {
@@ -24,9 +32,6 @@ body {
   padding: 22px 24px 16px;
   background: #003060;
   color: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .header-left {
@@ -103,9 +108,6 @@ body {
   background: #003060;
   padding: 0 24px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
-  position: sticky;
-  top: 78px;
-  z-index: 99;
 }
 
 .tab {
@@ -377,75 +379,102 @@ canvas {
 
 .confusion-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
 .confusion-table thead th {
   background: #003060;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 0 6px;
+  padding: 0;
   text-align: center;
-  letter-spacing: 0.2px;
-  border: 1px solid #024985;
-  height: 100px;
+  letter-spacing: 0.3px;
+  border-right: 1px solid #024985;
+  height: 120px;
   vertical-align: bottom;
   white-space: nowrap;
+  overflow: visible;
+  position: relative;
 }
 
 .confusion-table thead th .rotated-label {
-  display: block;
-  transform: rotate(-55deg);
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: rotate(-50deg);
   transform-origin: bottom left;
-  width: 20px;
-  margin: 0 auto;
   text-align: left;
-  padding-bottom: 4px;
+  white-space: nowrap;
+  font-size: 11px;
 }
 
 .confusion-table thead th:first-child {
   text-align: left;
   vertical-align: middle;
-  min-width: 140px;
-  padding: 10px 12px;
+  min-width: 160px;
+  padding: 10px 14px;
   background: #024985;
   color: #FFC107;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
 }
 
 .confusion-table thead th:first-child .rotated-label {
+  position: static;
   transform: none;
-  width: auto;
 }
 
 .confusion-table tbody td {
-  padding: 8px 6px;
+  padding: 10px 8px;
   text-align: center;
-  border: 1px solid #e8ecf1;
+  border-right: 1px solid #e8ecf1;
+  border-bottom: 1px solid #e8ecf1;
   font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  min-width: 48px;
 }
 
 .confusion-table tbody td:first-child {
   text-align: left;
   font-weight: 600;
   color: #003060;
-  padding: 8px 12px;
+  padding: 10px 14px;
   background: #F0F5FA;
   border-left: 3px solid #046bd2;
   white-space: nowrap;
   font-size: 12px;
 }
 
+.confusion-table tbody tr:nth-child(even) td {
+  background: #fafcfe;
+}
+
+.confusion-table tbody tr:nth-child(even) td:first-child {
+  background: #edf2f8;
+}
+
 .confusion-table tbody tr:hover td {
-  background: #F0F5FA;
+  background: #e8f0fe;
 }
 
 .confusion-table tbody tr:hover td:first-child {
-  background: #e0ecf8;
+  background: #d6e4f5;
+}
+
+.cm-cell--diagonal {
+  background: #f0f4f8 !important;
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 11px;
 }
 
 /* ── Lists ──────────────────────────────────────────────────────────── */

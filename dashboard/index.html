@@ -8,30 +8,30 @@
 </head>
 <body>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-left">
-      <img src="https://www.parkm.com/wp-content/uploads/2024/01/park_m_logo_white.png" class="header-logo" alt="ParkM">
-      <span class="header-divider"></span>
-      <h1 class="header-title">Analytics Dashboard</h1>
-      <span id="last-updated" class="header-subtitle"></span>
-    </div>
-    <div class="header-right">
-      <div class="range-buttons">
-        <button class="range-btn" data-days="7">7 days</button>
-        <button class="range-btn" data-days="30">30 days</button>
-        <button class="range-btn active" data-days="">All time</button>
+  <!-- Sticky Header + Tabs -->
+  <div class="sticky-nav">
+    <header class="header">
+      <div class="header-left">
+        <img src="https://www.parkm.com/wp-content/uploads/2024/01/park_m_logo_white.png" class="header-logo" alt="ParkM">
+        <span class="header-divider"></span>
+        <h1 class="header-title">Analytics Dashboard</h1>
+        <span id="last-updated" class="header-subtitle"></span>
       </div>
-    </div>
-  </header>
-
-  <!-- Tab Navigation -->
-  <nav class="tab-bar">
-    <button class="tab active" data-tab="overview">Overview</button>
-    <button class="tab" data-tab="classifications">Classifications</button>
-    <button class="tab" data-tab="corrections">Corrections</button>
-    <button class="tab" data-tab="api-costs">API &amp; Costs</button>
-  </nav>
+      <div class="header-right">
+        <div class="range-buttons">
+          <button class="range-btn" data-days="7">7 days</button>
+          <button class="range-btn" data-days="30">30 days</button>
+          <button class="range-btn active" data-days="">All time</button>
+        </div>
+      </div>
+    </header>
+    <nav class="tab-bar">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="classifications">Classifications</button>
+      <button class="tab" data-tab="corrections">Corrections</button>
+      <button class="tab" data-tab="api-costs">API &amp; Costs</button>
+    </nav>
+  </div>
 
   <!-- Loading -->
   <div id="loading" class="loading-overlay">

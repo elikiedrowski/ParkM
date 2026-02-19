@@ -201,10 +201,12 @@ var Dashboard = (function () {
       intentList.forEach(function (corr) {
         var val = (matrix[orig] && matrix[orig][corr]) || 0;
         var cls = "cm-cell";
-        if (val > 5) cls += " cm-cell--high";
+        if (orig === corr) cls += " cm-cell--diagonal";
+        else if (val > 5) cls += " cm-cell--high";
         else if (val > 2) cls += " cm-cell--med";
         else if (val > 0) cls += " cm-cell--low";
-        html += "<td class='" + cls + "'>" + (val || "") + "</td>";
+        var display = (orig === corr) ? "—" : (val || "");
+        html += "<td class='" + cls + "'>" + display + "</td>";
       });
       html += "</tr>";
     });

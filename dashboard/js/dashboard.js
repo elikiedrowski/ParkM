@@ -1,10 +1,11 @@
 /**
  * ParkM Analytics — Dashboard Orchestrator
- * Fetches data from API endpoints and renders all dashboard sections.
+ * Fetches data from API endpoints, manages tab navigation, renders all sections.
  */
 var Dashboard = (function () {
   var BASE_URL = window.location.origin;
   var currentDays = null; // null = all time
+  var chartsRendered = {};
 
   /* ── Fetch helpers ────────────────────────────────────────────────── */
 
@@ -14,11 +15,60 @@ var Dashboard = (function () {
     return fetch(url).then(function (r) { return r.json(); });
   }
 
+  /* ── Tab Navigation ─────────────────────────────────────────────── */
+
+  function initTabs() {
+    var tabs = document.querySelectorAll(".tab");
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var target = tab.getAttribute("data-tab");
+
+        // Update active tab
+        tabs.forEach(function (t) { t.classList.remove("active"); });
+        tab.classList.add("active");
+
+        // Show target panel
+        document.querySelectorAll(".tab-panel").forEach(function (p) {
+          p.classList.remove("active");
+        });
+        document.getElementById("panel-" + target).classList.add("active");
+
+        // Re-render charts in the newly visible tab (canvas needs visible parent)
+        if (!chartsRendered[target]) {
+          chartsRendered[target] = true;
+          redrawChartsForTab(target);
+        }
+      });
+    });
+  }
+
+  /* ── Stored data for re-rendering on tab switch ────────────────── */
+
+  var cachedData = {};
+
+  function redrawChartsForTab(tab) {
+    var d = cachedData;
+    if (!d.summary) return;
+
+    if (tab === "classifications") {
+      renderConfidenceByIntent(d.classifications.confidence_by_intent);
+      renderEntityRates(d.entities.extraction_rates);
+      renderTemplateUsage(d.templates.by_template);
+      renderErrorTable(d.performance.errors_by_type);
+    } else if (tab === "corrections") {
+      renderConfusionMatrix(d.corrections.confusion_matrix);
+      renderConfusionPairs(d.corrections.confusion_pairs);
+    } else if (tab === "api-costs") {
+      renderApiUsage(d.apiUsage);
+    }
+  }
+
   /* ── Load all data ────────────────────────────────────────────────── */
 
   function loadAll() {
     document.getElementById("loading").style.display = "flex";
     document.getElementById("dashboard").style.display = "none";
+    chartsRendered = { overview: true };
 
     Promise.all([
       fetchJSON("/analytics/summary"),
@@ -29,39 +79,47 @@ var Dashboard = (function () {
       fetchJSON("/analytics/entities"),
       fetchJSON("/analytics/api-usage")
     ]).then(function (results) {
-      var summary = results[0];
-      var classifications = results[1];
-      var corrections = results[2];
-      var templates = results[3];
-      var performance = results[4];
-      var entities = results[5];
-      var apiUsage = results[6];
+      cachedData = {
+        summary: results[0],
+        classifications: results[1],
+        corrections: results[2],
+        templates: results[3],
+        performance: results[4],
+        entities: results[5],
+        apiUsage: results[6]
+      };
 
       document.getElementById("loading").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
 
       // Check if there's any data
-      if (summary.total_classifications === 0 && summary.total_corrections === 0 && apiUsage.total_api_calls === 0) {
+      if (cachedData.summary.total_classifications === 0 &&
+          cachedData.summary.total_corrections === 0 &&
+          cachedData.apiUsage.total_api_calls === 0) {
         document.getElementById("no-data").style.display = "block";
         return;
       }
       document.getElementById("no-data").style.display = "none";
 
-      renderSummaryCards(summary);
-      renderApiUsage(apiUsage);
-      renderIntentDistribution(classifications.intent_distribution);
-      renderConfidenceByIntent(classifications.confidence_by_intent);
-      renderVolumeOverTime(classifications.volume_over_time);
-      renderAccuracyOverTime(corrections.accuracy_over_time);
-      renderConfusionMatrix(corrections.confusion_matrix);
-      renderConfusionPairs(corrections.confusion_pairs);
-      renderTemplateUsage(templates.by_template);
-      renderEntityRates(entities.extraction_rates);
-      renderPerformance(performance);
-      renderErrorTable(performance.errors_by_type);
+      // Render Overview tab (visible by default)
+      renderSummaryCards(cachedData.summary);
+      renderVolumeOverTime(cachedData.classifications.volume_over_time);
+      renderPerformance(cachedData.performance);
+      renderIntentDistribution(cachedData.classifications.intent_distribution);
+      renderAccuracyOverTime(cachedData.corrections.accuracy_over_time);
+
+      // Mark which tab is currently active and render its charts
+      var activeTab = document.querySelector(".tab.active");
+      if (activeTab) {
+        var tabName = activeTab.getAttribute("data-tab");
+        if (tabName !== "overview") {
+          chartsRendered[tabName] = true;
+          redrawChartsForTab(tabName);
+        }
+      }
 
       document.getElementById("last-updated").textContent =
-        "Updated " + new Date().toLocaleTimeString();
+        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
     }).catch(function (err) {
       document.getElementById("loading").style.display = "none";
@@ -76,7 +134,7 @@ var Dashboard = (function () {
   /* ── Summary Cards ────────────────────────────────────────────────── */
 
   function renderSummaryCards(s) {
-    setText("card-total", s.total_classifications || 0);
+    setText("card-total", formatNumber(s.total_classifications || 0));
     setText("card-accuracy", s.accuracy_rate !== null ? s.accuracy_rate + "%" : "N/A");
     setText("card-confidence", s.avg_confidence !== null ? Math.round(s.avg_confidence * 100) + "%" : "N/A");
     setText("card-time", s.avg_processing_time_seconds !== null ? s.avg_processing_time_seconds + "s" : "N/A");
@@ -125,7 +183,6 @@ var Dashboard = (function () {
       return;
     }
 
-    // Collect all intents involved
     var intents = new Set();
     Object.keys(matrix).forEach(function (orig) {
       intents.add(orig);
@@ -241,15 +298,16 @@ var Dashboard = (function () {
   /* ── API Usage & Costs ────────────────────────────────────────────── */
 
   function renderApiUsage(data) {
-    if (!data || data.total_api_calls === 0) return;
-
-    // Show hidden sections
-    document.getElementById("api-usage-cards").style.display = "";
-    document.getElementById("api-usage-row1").style.display = "";
-    document.getElementById("api-usage-row2").style.display = "";
+    if (!data || data.total_api_calls === 0) {
+      setText("card-api-total", "0");
+      setText("card-api-cost", "$0");
+      setText("card-api-avg-cost", "$0");
+      setText("card-api-tokens", "0");
+      return;
+    }
 
     // Summary cards
-    setText("card-api-total", data.total_api_calls);
+    setText("card-api-total", formatNumber(data.total_api_calls));
     setText("card-api-cost", "$" + data.total_cost_usd.toFixed(4));
     setText("card-api-avg-cost", "$" + data.avg_cost_per_ticket.toFixed(4));
     var tb = data.token_breakdown || {};
@@ -277,12 +335,6 @@ var Dashboard = (function () {
     }));
   }
 
-  function formatNumber(n) {
-    if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-    if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-    return String(n);
-  }
-
   /* ── Helpers ──────────────────────────────────────────────────────── */
 
   function setText(id, text) {
@@ -295,9 +347,17 @@ var Dashboard = (function () {
     return intent.replace(/_/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
 
+  function formatNumber(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+    return String(n);
+  }
+
   /* ── Init ─────────────────────────────────────────────────────────── */
 
   function init() {
+    initTabs();
+
     // Time range buttons
     var buttons = document.querySelectorAll(".range-btn");
     buttons.forEach(function (btn) {

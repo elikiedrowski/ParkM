@@ -23,6 +23,14 @@
     </div>
   </header>
 
+  <!-- Tab Navigation -->
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="classifications">Classifications</button>
+    <button class="tab" data-tab="corrections">Corrections</button>
+    <button class="tab" data-tab="api-costs">API &amp; Costs</button>
+  </nav>
+
   <!-- Loading -->
   <div id="loading" class="loading-overlay">
     <div class="spinner"></div>
@@ -32,140 +40,205 @@
   <!-- Dashboard Content -->
   <main id="dashboard" class="dashboard" style="display:none;">
 
-    <!-- Summary Cards -->
-    <section class="card-row">
-      <div class="card card--blue">
-        <div class="card-value" id="card-total">--</div>
-        <div class="card-label">Total Classified</div>
+    <!-- ═══════════════ TAB: Overview ═══════════════ -->
+    <section class="tab-panel active" id="panel-overview">
+
+      <!-- KPI Cards -->
+      <div class="card-row">
+        <div class="card">
+          <div class="card-icon card-icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-total">--</div>
+            <div class="card-label">Total Classified</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-accuracy">--</div>
+            <div class="card-label">Accuracy Rate</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-time">--</div>
+            <div class="card-label">Avg Processing</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-confidence">--</div>
+            <div class="card-label">Avg Confidence</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-errors">--</div>
+            <div class="card-label">Error Rate</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--teal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-templates">--</div>
+            <div class="card-label">Templates Used</div>
+          </div>
+        </div>
       </div>
-      <div class="card card--green">
-        <div class="card-value" id="card-accuracy">--</div>
-        <div class="card-label">Accuracy Rate</div>
+
+      <!-- Volume + Performance -->
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">Classification Volume</h3>
+          <canvas id="chart-volume" width="500" height="250"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Processing Time</h3>
+          <div id="perf-stats" class="stats-grid"></div>
+        </div>
       </div>
-      <div class="card card--orange">
-        <div class="card-value" id="card-confidence">--</div>
-        <div class="card-label">Avg Confidence</div>
-      </div>
-      <div class="card card--purple">
-        <div class="card-value" id="card-time">--</div>
-        <div class="card-label">Avg Processing</div>
-      </div>
-      <div class="card card--red">
-        <div class="card-value" id="card-errors">--</div>
-        <div class="card-label">Error Rate</div>
-      </div>
-      <div class="card card--teal">
-        <div class="card-value" id="card-templates">--</div>
-        <div class="card-label">Templates Used</div>
+
+      <!-- Intent Distribution + Accuracy -->
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">Intent Distribution</h3>
+          <canvas id="chart-intents" width="500" height="280"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Accuracy Over Time</h3>
+          <canvas id="chart-accuracy-time" width="500" height="250"></canvas>
+        </div>
       </div>
     </section>
 
-    <!-- API Usage Summary Cards -->
-    <section class="card-row" id="api-usage-cards" style="display:none;">
-      <div class="card card--blue">
-        <div class="card-value" id="card-api-total">--</div>
-        <div class="card-label">Total API Calls</div>
+    <!-- ═══════════════ TAB: Classifications ═══════════════ -->
+    <section class="tab-panel" id="panel-classifications">
+
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">Confidence by Intent</h3>
+          <canvas id="chart-confidence" width="500" height="280"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Entity Extraction Rates</h3>
+          <canvas id="chart-entities" width="500" height="280"></canvas>
+        </div>
       </div>
-      <div class="card card--green">
-        <div class="card-value" id="card-api-cost">--</div>
-        <div class="card-label">Total OpenAI Cost</div>
-      </div>
-      <div class="card card--orange">
-        <div class="card-value" id="card-api-avg-cost">--</div>
-        <div class="card-label">Avg Cost / Ticket</div>
-      </div>
-      <div class="card card--purple">
-        <div class="card-value" id="card-api-tokens">--</div>
-        <div class="card-label">Total Tokens</div>
+
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">Template Usage</h3>
+          <canvas id="chart-templates" width="500" height="280"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Errors by Type</h3>
+          <div id="error-table" class="table-container"></div>
+        </div>
       </div>
     </section>
 
-    <!-- Row: API Cost + Calls by Type -->
-    <section class="chart-row" id="api-usage-row1" style="display:none;">
-      <div class="chart-panel">
-        <h3 class="panel-title">OpenAI Cost Over Time</h3>
-        <canvas id="chart-api-cost-time" width="500" height="250"></canvas>
-      </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">API Calls by Function</h3>
-        <canvas id="chart-api-calls-type" width="500" height="280"></canvas>
+    <!-- ═══════════════ TAB: Corrections ═══════════════ -->
+    <section class="tab-panel" id="panel-corrections">
+
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">Confusion Matrix</h3>
+          <div id="confusion-matrix" class="table-container"></div>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Top Misclassification Pairs</h3>
+          <div id="confusion-pairs" class="list-container"></div>
+        </div>
       </div>
     </section>
 
-    <!-- Row: Tokens + Zoho Distribution -->
-    <section class="chart-row" id="api-usage-row2" style="display:none;">
-      <div class="chart-panel">
-        <h3 class="panel-title">OpenAI Token Usage</h3>
-        <canvas id="chart-api-tokens" width="500" height="250"></canvas>
-      </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Zoho API Call Distribution</h3>
-        <canvas id="chart-zoho-dist" width="500" height="280"></canvas>
-      </div>
-    </section>
+    <!-- ═══════════════ TAB: API & Costs ═══════════════ -->
+    <section class="tab-panel" id="panel-api-costs">
 
-    <!-- Row 1: Intent + Confidence -->
-    <section class="chart-row">
-      <div class="chart-panel">
-        <h3 class="panel-title">Intent Distribution</h3>
-        <canvas id="chart-intents" width="500" height="280"></canvas>
+      <!-- API KPI Cards -->
+      <div class="card-row" id="api-usage-cards">
+        <div class="card">
+          <div class="card-icon card-icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-api-total">--</div>
+            <div class="card-label">Total API Calls</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-api-cost">--</div>
+            <div class="card-label">Total OpenAI Cost</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-api-avg-cost">--</div>
+            <div class="card-label">Avg Cost / Ticket</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon card-icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="card-body">
+            <div class="card-value" id="card-api-tokens">--</div>
+            <div class="card-label">Total Tokens</div>
+          </div>
+        </div>
       </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Confidence by Intent</h3>
-        <canvas id="chart-confidence" width="500" height="280"></canvas>
-      </div>
-    </section>
 
-    <!-- Row 2: Volume + Accuracy Over Time -->
-    <section class="chart-row">
-      <div class="chart-panel">
-        <h3 class="panel-title">Volume Over Time</h3>
-        <canvas id="chart-volume" width="500" height="250"></canvas>
+      <!-- Charts -->
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">OpenAI Cost Over Time</h3>
+          <canvas id="chart-api-cost-time" width="500" height="250"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">API Calls by Function</h3>
+          <canvas id="chart-api-calls-type" width="500" height="280"></canvas>
+        </div>
       </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Accuracy Over Time</h3>
-        <canvas id="chart-accuracy-time" width="500" height="250"></canvas>
-      </div>
-    </section>
 
-    <!-- Row 3: Confusion Matrix + Pairs -->
-    <section class="chart-row">
-      <div class="chart-panel">
-        <h3 class="panel-title">Confusion Matrix</h3>
-        <div id="confusion-matrix" class="table-container"></div>
-      </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Top Misclassification Pairs</h3>
-        <div id="confusion-pairs" class="list-container"></div>
-      </div>
-    </section>
-
-    <!-- Row 4: Templates + Entities -->
-    <section class="chart-row">
-      <div class="chart-panel">
-        <h3 class="panel-title">Template Usage</h3>
-        <canvas id="chart-templates" width="500" height="280"></canvas>
-      </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Entity Extraction Rates</h3>
-        <canvas id="chart-entities" width="500" height="280"></canvas>
-      </div>
-    </section>
-
-    <!-- Row 5: Performance -->
-    <section class="chart-row">
-      <div class="chart-panel">
-        <h3 class="panel-title">Processing Time</h3>
-        <div id="perf-stats" class="stats-grid"></div>
-      </div>
-      <div class="chart-panel">
-        <h3 class="panel-title">Errors by Type</h3>
-        <div id="error-table" class="table-container"></div>
+      <div class="chart-row">
+        <div class="chart-panel">
+          <h3 class="panel-title">OpenAI Token Usage</h3>
+          <canvas id="chart-api-tokens" width="500" height="250"></canvas>
+        </div>
+        <div class="chart-panel">
+          <h3 class="panel-title">Zoho API Call Distribution</h3>
+          <canvas id="chart-zoho-dist" width="500" height="280"></canvas>
+        </div>
       </div>
     </section>
 
     <!-- No Data State -->
     <div id="no-data" class="no-data" style="display:none;">
+      <div class="no-data-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      </div>
       <p>No analytics data yet. Data will appear here as tickets are classified.</p>
     </div>
 

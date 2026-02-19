@@ -50,7 +50,7 @@ app.add_middleware(
         "http://localhost:5000",
     ],
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
 

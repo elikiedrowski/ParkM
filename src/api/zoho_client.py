@@ -4,6 +4,7 @@ Handles all interactions with Zoho Desk API
 """
 import httpx
 import logging
+import time
 from typing import Dict, List, Any, Optional
 from src.config import get_settings
 
@@ -19,6 +20,7 @@ class ZohoDeskClient:
         self.org_id = self.settings.zoho_org_id
         self.data_center = self.settings.zoho_data_center
         self.access_token = None
+        self.token_expires_at = 0  # epoch seconds
 
     def _log_zoho_call(self, call_type: str, ticket_id: str = None, success: bool = True, error: str = None):
         """Log a Zoho API call for analytics tracking."""
@@ -35,8 +37,8 @@ class ZohoDeskClient:
             pass  # Never let logging break API calls
 
     async def _get_access_token(self) -> str:
-        """Get fresh access token using refresh token"""
-        if self.access_token:
+        """Get fresh access token using refresh token (auto-refreshes on expiry)"""
+        if self.access_token and time.time() < self.token_expires_at:
             return self.access_token
 
         token_url = f"https://accounts.zoho.{self.data_center}/oauth/v2/token"
@@ -52,8 +54,12 @@ class ZohoDeskClient:
             async with httpx.AsyncClient() as client:
                 response = await client.post(token_url, data=data)
                 if response.status_code == 200:
-                    self.access_token = response.json()['access_token']
+                    resp_data = response.json()
+                    self.access_token = resp_data['access_token']
+                    # Zoho tokens expire in 3600s; refresh 5 min early
+                    self.token_expires_at = time.time() + resp_data.get('expires_in', 3600) - 300
                     self._log_zoho_call("oauth_token")
+                    logger.info("Zoho access token refreshed successfully")
                     return self.access_token
                 else:
                     self._log_zoho_call("oauth_token", success=False, error=f"HTTP {response.status_code}")
@@ -62,6 +68,11 @@ class ZohoDeskClient:
             if "Failed to get access token" not in str(e):
                 self._log_zoho_call("oauth_token", success=False, error=str(e))
             raise
+
+    def _invalidate_token(self):
+        """Clear cached token so next request fetches a fresh one."""
+        self.access_token = None
+        self.token_expires_at = 0
 
     async def _build_headers(self) -> Dict[str, str]:
         """Build authentication headers"""
@@ -74,7 +85,7 @@ class ZohoDeskClient:
         }
 
     async def get_ticket(self, ticket_id: str) -> Dict[str, Any]:
-        """Get ticket details by ID"""
+        """Get ticket details by ID (auto-retries on 401)"""
         try:
             headers = await self._build_headers()
             async with httpx.AsyncClient() as client:
@@ -82,6 +93,13 @@ class ZohoDeskClient:
                     f"{self.base_url}/tickets/{ticket_id}",
                     headers=headers
                 )
+                if response.status_code == 401:
+                    self._invalidate_token()
+                    headers = await self._build_headers()
+                    response = await client.get(
+                        f"{self.base_url}/tickets/{ticket_id}",
+                        headers=headers
+                    )
                 response.raise_for_status()
                 self._log_zoho_call("get_ticket", ticket_id=ticket_id)
                 return response.json()
@@ -90,7 +108,7 @@ class ZohoDeskClient:
             raise
 
     async def update_ticket(self, ticket_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Update ticket with new data"""
+        """Update ticket with new data (auto-retries on 401)"""
         try:
             headers = await self._build_headers()
             async with httpx.AsyncClient() as client:
@@ -99,6 +117,14 @@ class ZohoDeskClient:
                     headers=headers,
                     json=data
                 )
+                if response.status_code == 401:
+                    self._invalidate_token()
+                    headers = await self._build_headers()
+                    response = await client.patch(
+                        f"{self.base_url}/tickets/{ticket_id}",
+                        headers=headers,
+                        json=data
+                    )
                 if response.status_code != 200:
                     logger.error(f"Failed to update ticket {ticket_id}: {response.status_code} - {response.text}")
                 response.raise_for_status()
@@ -118,7 +144,7 @@ class ZohoDeskClient:
         return await self.update_ticket(ticket_id, data)
 
     async def add_comment(self, ticket_id: str, content: str, is_public: bool = False) -> Dict[str, Any]:
-        """Add a comment to a ticket"""
+        """Add a comment to a ticket (auto-retries on 401)"""
         try:
             headers = await self._build_headers()
             async with httpx.AsyncClient() as client:
@@ -130,6 +156,17 @@ class ZohoDeskClient:
                         "isPublic": is_public
                     }
                 )
+                if response.status_code == 401:
+                    self._invalidate_token()
+                    headers = await self._build_headers()
+                    response = await client.post(
+                        f"{self.base_url}/tickets/{ticket_id}/comments",
+                        headers=headers,
+                        json={
+                            "content": content,
+                            "isPublic": is_public
+                        }
+                    )
                 response.raise_for_status()
                 self._log_zoho_call("add_comment", ticket_id=ticket_id)
                 return response.json()

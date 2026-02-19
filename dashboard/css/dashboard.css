@@ -382,7 +382,6 @@ canvas {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 13px;
-  overflow: hidden;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
@@ -390,28 +389,21 @@ canvas {
 .confusion-table thead th {
   background: #003060;
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 0;
+  padding: 10px 4px;
   text-align: center;
   letter-spacing: 0.3px;
   border-right: 1px solid #024985;
-  height: 120px;
   vertical-align: bottom;
-  white-space: nowrap;
-  overflow: visible;
-  position: relative;
 }
 
 .confusion-table thead th .rotated-label {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: rotate(-50deg);
-  transform-origin: bottom left;
-  text-align: left;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
   white-space: nowrap;
-  font-size: 11px;
+  display: inline-block;
+  padding: 0 2px;
 }
 
 .confusion-table thead th:first-child {
@@ -424,12 +416,10 @@ canvas {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
 }
 
 .confusion-table thead th:first-child .rotated-label {
-  position: static;
+  writing-mode: horizontal-tb;
   transform: none;
 }
 
@@ -479,7 +469,7 @@ canvas {
 
 /* ── Lists ──────────────────────────────────────────────────────────── */
 
-.list-container { max-height: 320px; overflow-y: auto; }
+.list-container { max-height: 800px; overflow-y: auto; }
 
 .pair-item {
   display: flex;

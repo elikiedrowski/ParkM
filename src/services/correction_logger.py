@@ -18,7 +18,8 @@ def log_correction(
     ticket_id: str,
     original_intent: str,
     corrected_intent: str,
-    confidence: Optional[int] = None
+    confidence: Optional[int] = None,
+    department_id: Optional[str] = None
 ) -> bool:
     """
     Append a CSR correction to the corrections log.
@@ -38,6 +39,7 @@ def log_correction(
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "ticket_id": ticket_id,
+            "department_id": department_id,
             "original_intent": original_intent,
             "corrected_intent": corrected_intent,
             "confidence": confidence,

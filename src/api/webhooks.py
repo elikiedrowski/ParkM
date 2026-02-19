@@ -51,6 +51,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         subject = ticket_data.get("subject", "")
         description = ticket_data.get("description", "")
         sender_email = ticket_data.get("email", "")
+        department_id = ticket_data.get("departmentId", "")
         
         logger.info(f"[{ticket_id}] Ticket from: {sender_email}")
         logger.info(f"[{ticket_id}] Subject: {subject}")
@@ -96,6 +97,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
             routing=routing,
             processing_time_seconds=processing_time,
             tagging_success=bool(tag_result),
+            department_id=department_id,
         )
 
     except Exception as e:
@@ -147,12 +149,14 @@ async def process_correction_webhook(ticket_id: str, payload: Dict[str, Any]):
         original_intent = cf.get("cf_ai_intent", "unknown")
         confidence_raw = cf.get("cf_ai_confidence")
         confidence = int(confidence_raw) if confidence_raw is not None else None
+        department_id = ticket_data.get("departmentId", "")
 
         log_correction(
             ticket_id=ticket_id,
             original_intent=original_intent,
             corrected_intent=corrected_intent,
-            confidence=confidence
+            confidence=confidence,
+            department_id=department_id
         )
 
     except Exception as e:

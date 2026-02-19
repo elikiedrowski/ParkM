@@ -36,7 +36,8 @@ def log_classification_event(
     routing: Optional[str],
     processing_time_seconds: Optional[float],
     tagging_success: bool,
-    error: Optional[str] = None
+    error: Optional[str] = None,
+    department_id: Optional[str] = None
 ) -> bool:
     """
     Append a classification event to the classifications log.
@@ -60,6 +61,7 @@ def log_classification_event(
             entry = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "ticket_id": ticket_id,
+                "department_id": department_id,
                 "intent": classification.get("intent"),
                 "confidence": classification.get("confidence"),
                 "complexity": classification.get("complexity"),
@@ -82,6 +84,7 @@ def log_classification_event(
             entry = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "ticket_id": ticket_id,
+                "department_id": department_id,
                 "intent": None,
                 "confidence": None,
                 "complexity": None,

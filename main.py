@@ -325,12 +325,14 @@ async def test_ticket_tagging(ticket_id: str):
         # Log classification event for analytics dashboard
         end_time = datetime.now()
         processing_time = (end_time - start_time).total_seconds()
+        department_id = ticket_data.get("departmentId", "")
         log_classification_event(
             ticket_id=ticket_id,
             classification=classification,
             routing=routing,
             processing_time_seconds=processing_time,
             tagging_success=bool(tag_result),
+            department_id=department_id,
         )
 
         return {
@@ -416,12 +418,14 @@ async def batch_classify(limit: int = 25):
 
             end_time = datetime.now()
             processing_time = (end_time - start_time).total_seconds()
+            dept_id = ticket_data.get("departmentId", "")
             log_classification_event(
                 ticket_id=ticket_id,
                 classification=classification,
                 routing=routing,
                 processing_time_seconds=processing_time,
                 tagging_success=bool(tag_result),
+                department_id=dept_id,
             )
 
             results.append({
@@ -502,8 +506,11 @@ async def get_template(filename: str):
 
 # ── Analytics Dashboard ────────────────────────────────────────────────
 
-# Serve dashboard static files
+# Department filter for analytics — defaults to Testing department
 import os as _os
+ANALYTICS_DEPARTMENT_ID = _os.getenv("ANALYTICS_DEPARTMENT_ID", "1004699000001888029")
+
+# Serve dashboard static files
 if _os.path.isdir("dashboard"):
     app.mount("/dashboard/css", StaticFiles(directory="dashboard/css"), name="dashboard-css")
     app.mount("/dashboard/js", StaticFiles(directory="dashboard/js"), name="dashboard-js")
@@ -518,19 +525,19 @@ async def analytics_dashboard():
 @app.get("/analytics/summary")
 async def analytics_summary(days: int = None):
     """High-level KPI metrics for dashboard header cards."""
-    return get_summary(days)
+    return get_summary(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/classifications")
 async def analytics_classifications(days: int = None):
     """Intent distribution, confidence stats, volume over time."""
-    return get_classification_analytics(days)
+    return get_classification_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/corrections")
 async def analytics_corrections(days: int = None):
     """Confusion matrix, accuracy over time, top misclassification pairs."""
-    return get_correction_analytics(days)
+    return get_correction_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/templates")
@@ -542,13 +549,13 @@ async def analytics_templates(days: int = None):
 @app.get("/analytics/performance")
 async def analytics_performance(days: int = None):
     """Processing time percentiles, error rates."""
-    return get_performance_analytics(days)
+    return get_performance_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/entities")
 async def analytics_entities(days: int = None):
     """Entity extraction rates by type and by intent."""
-    return get_entity_analytics(days)
+    return get_entity_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/api-usage")
@@ -633,6 +640,7 @@ async def seed_test_data(count: int = 25):
         cls_entry = {
             "timestamp": timestamp,
             "ticket_id": ticket_id,
+            "department_id": ANALYTICS_DEPARTMENT_ID,
             "intent": intent if not has_error else None,
             "confidence": confidence if not has_error else None,
             "complexity": complexity if not has_error else None,
@@ -700,6 +708,7 @@ async def seed_test_data(count: int = 25):
             corr_entry = {
                 "timestamp": timestamp,
                 "ticket_id": ticket_id,
+                "department_id": ANALYTICS_DEPARTMENT_ID,
                 "original_intent": intent,
                 "corrected_intent": corrected,
                 "confidence": int(confidence * 100),

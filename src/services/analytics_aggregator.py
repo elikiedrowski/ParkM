@@ -17,8 +17,8 @@ TEMPLATE_USAGE_LOG = "logs/template_usage.jsonl"
 API_USAGE_LOG = "logs/api_usage.jsonl"
 
 
-def _read_jsonl(filepath: str, days: Optional[int] = None) -> List[Dict[str, Any]]:
-    """Read a JSONL file and optionally filter by time range."""
+def _read_jsonl(filepath: str, days: Optional[int] = None, department_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Read a JSONL file and optionally filter by time range and department."""
     if not os.path.exists(filepath):
         return []
 
@@ -36,16 +36,18 @@ def _read_jsonl(filepath: str, days: Optional[int] = None) -> List[Dict[str, Any
                 entry = json.loads(line)
                 if cutoff and entry.get("timestamp", "") < cutoff:
                     continue
+                if department_id and entry.get("department_id") and entry["department_id"] != department_id:
+                    continue
                 entries.append(entry)
             except json.JSONDecodeError:
                 continue
     return entries
 
 
-def get_summary(days: Optional[int] = None) -> dict:
+def get_summary(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """High-level metrics for dashboard header cards."""
-    classifications = _read_jsonl(CLASSIFICATIONS_LOG, days)
-    corrections = _read_jsonl(CORRECTIONS_LOG, days)
+    classifications = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
+    corrections = _read_jsonl(CORRECTIONS_LOG, days, department_id)
     templates = _read_jsonl(TEMPLATE_USAGE_LOG, days)
 
     total = len(classifications)
@@ -77,9 +79,9 @@ def get_summary(days: Optional[int] = None) -> dict:
     }
 
 
-def get_classification_analytics(days: Optional[int] = None) -> dict:
+def get_classification_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Intent distribution, confidence stats, volume over time."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days)
+    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
     successful = [e for e in entries if not e.get("error")]
 
     # Intent distribution
@@ -141,9 +143,9 @@ def get_classification_analytics(days: Optional[int] = None) -> dict:
     }
 
 
-def get_correction_analytics(days: Optional[int] = None) -> dict:
+def get_correction_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Confusion matrix, accuracy over time, top misclassification pairs."""
-    entries = _read_jsonl(CORRECTIONS_LOG, days)
+    entries = _read_jsonl(CORRECTIONS_LOG, days, department_id)
 
     misclassifications = [e for e in entries if e.get("is_misclassification")]
 
@@ -244,9 +246,9 @@ def get_template_analytics(days: Optional[int] = None) -> dict:
     }
 
 
-def get_performance_analytics(days: Optional[int] = None) -> dict:
+def get_performance_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Processing time percentiles, error rates, tagging success."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days)
+    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
 
     times = sorted([e["processing_time_seconds"] for e in entries if e.get("processing_time_seconds") is not None])
     total = len(entries)
@@ -290,9 +292,9 @@ def get_performance_analytics(days: Optional[int] = None) -> dict:
     }
 
 
-def get_entity_analytics(days: Optional[int] = None) -> dict:
+def get_entity_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Entity extraction rates by type and by intent."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days)
+    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
     successful = [e for e in entries if not e.get("error") and e.get("entities")]
 
     entity_fields = ["license_plate", "move_out_date", "property_name", "amount"]

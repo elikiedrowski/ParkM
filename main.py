@@ -510,6 +510,112 @@ async def analytics_template_used(request: Request):
         return {"status": "error", "message": str(e)}
 
 
+@app.post("/analytics/seed-test-data")
+async def seed_test_data(count: int = 25):
+    """Generate realistic test data in analytics logs to populate the dashboard."""
+    import random
+
+    intents = [
+        "permit_cancellation", "refund_request", "new_permit_request",
+        "payment_issue", "visitor_parking", "enforcement_complaint",
+        "account_update", "general_inquiry", "towing_complaint",
+        "accessibility_request",
+    ]
+    complexities = ["simple", "moderate", "complex"]
+    urgencies = ["low", "medium", "high"]
+    templates = [
+        "permit_cancellation.html", "refund_approved.html",
+        "new_permit_confirmation.html", "payment_receipt.html",
+        "visitor_pass.html", "enforcement_response.html",
+        "account_updated.html", "general_response.html",
+    ]
+    routing_queues = [
+        "permit_management", "billing_refunds", "enforcement",
+        "general_support", "accessibility",
+    ]
+    plates = [
+        "ABC-1234", "XYZ-9876", "DEF-5555", "GHI-7890",
+        "JKL-3210", "MNO-6543", "PQR-2468", "STU-1357",
+    ]
+
+    now = datetime.now()
+    created = 0
+
+    for i in range(count):
+        ticket_id = f"TEST-{1000 + i}"
+        intent = random.choice(intents)
+        confidence = round(random.uniform(0.65, 0.98), 2)
+        complexity = random.choice(complexities)
+        urgency = random.choice(urgencies)
+        processing_time = round(random.uniform(1.5, 8.0), 2)
+        tagging_ok = random.random() > 0.05
+        has_error = random.random() < 0.03
+
+        # Spread events over the past 30 days
+        days_ago = random.randint(0, 30)
+        hours_ago = random.randint(0, 23)
+
+        classification = {
+            "intent": intent,
+            "confidence": confidence,
+            "complexity": complexity,
+            "urgency": urgency,
+            "language": "english",
+            "requires_refund": intent in ("refund_request", "permit_cancellation"),
+            "requires_human_review": confidence < 0.7,
+            "key_entities": {
+                "license_plate": random.choice(plates) if random.random() > 0.3 else None,
+                "move_out_date": None,
+                "property_name": f"Property {random.randint(1, 20)}" if random.random() > 0.5 else None,
+                "amount": str(round(random.uniform(25, 300), 2)) if intent == "refund_request" else None,
+            },
+        }
+
+        routing = random.choice(routing_queues)
+
+        log_classification_event(
+            ticket_id=ticket_id,
+            classification=classification if not has_error else None,
+            routing=routing if not has_error else None,
+            processing_time_seconds=processing_time,
+            tagging_success=tagging_ok,
+            error="OpenAI timeout" if has_error else None,
+        )
+
+        # Log template usage for some tickets
+        if random.random() > 0.4:
+            log_template_usage(
+                template_file=random.choice(templates),
+                ticket_id=ticket_id,
+                intent=intent,
+            )
+
+        # Log API usage (OpenAI classify call)
+        prompt_tokens = random.randint(1200, 1800)
+        completion_tokens = random.randint(80, 200)
+        total_tokens = prompt_tokens + completion_tokens
+        from src.services.analytics_logger import log_api_usage, estimate_openai_cost
+        cost = estimate_openai_cost("gpt-4o-mini", prompt_tokens, completion_tokens)
+        log_api_usage(
+            provider="openai", call_type="classify_email", model="gpt-4o-mini",
+            prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+            total_tokens=total_tokens, estimated_cost_usd=cost,
+            ticket_id=ticket_id,
+        )
+
+        # Log Zoho API calls (get_ticket + update_ticket + add_comment)
+        for call_type in ["get_ticket", "update_ticket", "add_comment"]:
+            log_api_usage(provider="zoho", call_type=call_type, ticket_id=ticket_id)
+
+        created += 1
+
+    return {
+        "status": "ok",
+        "created": created,
+        "message": f"Seeded {created} test classification events with API usage data",
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     import os

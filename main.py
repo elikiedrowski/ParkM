@@ -17,7 +17,7 @@ from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import get_corrections_summary
 from src.services.wizard import get_wizard_for_intent, get_template_html, list_templates, list_intents
-from src.services.analytics_logger import log_template_usage
+from src.services.analytics_logger import log_template_usage, log_classification_event
 from src.services.analytics_aggregator import (
     get_summary, get_classification_analytics, get_correction_analytics,
     get_template_analytics, get_performance_analytics, get_entity_analytics,
@@ -293,8 +293,9 @@ async def test_ticket_tagging(ticket_id: str):
     Useful for verifying custom fields are working
     """
     try:
+        start_time = datetime.now()
         logger.info(f"Testing classification and tagging for ticket {ticket_id}")
-        
+
         # Fetch ticket
         ticket_data = await zoho_client.get_ticket(ticket_id)
         if not ticket_data:
@@ -320,7 +321,18 @@ async def test_ticket_tagging(ticket_id: str):
             classification=classification,
             routing=routing
         )
-        
+
+        # Log classification event for analytics dashboard
+        end_time = datetime.now()
+        processing_time = (end_time - start_time).total_seconds()
+        log_classification_event(
+            ticket_id=ticket_id,
+            classification=classification,
+            routing=routing,
+            processing_time_seconds=processing_time,
+            tagging_success=bool(tag_result),
+        )
+
         return {
             "ticket_id": ticket_id,
             "subject": subject,

@@ -14,13 +14,15 @@ logger = logging.getLogger(__name__)
 class ZohoDeskClient:
     """Client for Zoho Desk API operations"""
 
+    # Class-level token cache shared across all instances
+    _access_token: Optional[str] = None
+    _token_expires_at: float = 0
+
     def __init__(self):
         self.settings = get_settings()
         self.base_url = self.settings.zoho_base_url
         self.org_id = self.settings.zoho_org_id
         self.data_center = self.settings.zoho_data_center
-        self.access_token = None
-        self.token_expires_at = 0  # epoch seconds
 
     def _log_zoho_call(self, call_type: str, ticket_id: str = None, success: bool = True, error: str = None):
         """Log a Zoho API call for analytics tracking."""
@@ -38,8 +40,9 @@ class ZohoDeskClient:
 
     async def _get_access_token(self) -> str:
         """Get fresh access token using refresh token (auto-refreshes on expiry)"""
-        if self.access_token and time.time() < self.token_expires_at:
-            return self.access_token
+        cls = ZohoDeskClient
+        if cls._access_token and time.time() < cls._token_expires_at:
+            return cls._access_token
 
         token_url = f"https://accounts.zoho.{self.data_center}/oauth/v2/token"
 
@@ -55,12 +58,12 @@ class ZohoDeskClient:
                 response = await client.post(token_url, data=data)
                 if response.status_code == 200:
                     resp_data = response.json()
-                    self.access_token = resp_data['access_token']
+                    cls._access_token = resp_data['access_token']
                     # Zoho tokens expire in 3600s; refresh 5 min early
-                    self.token_expires_at = time.time() + resp_data.get('expires_in', 3600) - 300
+                    cls._token_expires_at = time.time() + resp_data.get('expires_in', 3600) - 300
                     self._log_zoho_call("oauth_token")
                     logger.info("Zoho access token refreshed successfully")
-                    return self.access_token
+                    return cls._access_token
                 else:
                     self._log_zoho_call("oauth_token", success=False, error=f"HTTP {response.status_code}")
                     raise Exception(f"Failed to get access token: {response.text}")
@@ -71,8 +74,8 @@ class ZohoDeskClient:
 
     def _invalidate_token(self):
         """Clear cached token so next request fetches a fresh one."""
-        self.access_token = None
-        self.token_expires_at = 0
+        ZohoDeskClient._access_token = None
+        ZohoDeskClient._token_expires_at = 0
 
     async def _build_headers(self) -> Dict[str, str]:
         """Build authentication headers"""

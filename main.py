@@ -3,6 +3,7 @@ ParkM Email Classification System - FastAPI Application
 Main entry point for webhook receiver and API endpoints
 """
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 from datetime import datetime
@@ -32,6 +33,25 @@ app = FastAPI(
     title="ParkM Email Classification API",
     description="AI-powered email classification and routing for Zoho Desk",
     version="1.0.0"
+)
+
+# CORS — allow Zoho Desk widget iframe to call our API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://desk.zoho.com",
+        "https://desk.zoho.eu",
+        "https://desk.zoho.in",
+        "https://desk.zoho.com.au",
+        "https://desk.zoho.com.cn",
+        "https://desk.zoho.jp",
+        "https://127.0.0.1:5000",
+        "http://127.0.0.1:5000",
+        "http://localhost:5000",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET"],
+    allow_headers=["*"],
 )
 
 # Initialize services

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkM CSR Wizard</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://js.zohostatic.com/support/developer_sdk/v1/js/ZohoDeskClientSDK.min.js"></script>
+</head>
+<body>
+
+  <!-- Loading State -->
+  <div id="loading-state" class="state-panel">
+    <div class="spinner"></div>
+    <p>Loading wizard...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="error-state" class="state-panel" style="display:none;">
+    <div class="state-icon state-icon--error">!</div>
+    <p id="error-message">Unable to load wizard data.</p>
+    <button id="retry-btn" class="btn btn-secondary">Retry</button>
+  </div>
+
+  <!-- No Classification State -->
+  <div id="no-classification-state" class="state-panel" style="display:none;">
+    <div class="state-icon state-icon--info">i</div>
+    <p>This ticket has not been classified by AI yet.</p>
+    <p class="hint">Classification happens automatically when the ticket is created. If this is an older ticket, it may not have been processed.</p>
+  </div>
+
+  <!-- Main Wizard Container -->
+  <div id="wizard-container" style="display:none;">
+
+    <!-- Header Panel -->
+    <div id="header-panel" class="panel">
+      <div class="intent-header">
+        <span id="intent-icon" class="intent-icon"></span>
+        <span id="intent-label" class="intent-label"></span>
+      </div>
+      <div class="header-badges">
+        <span id="confidence-badge" class="badge"></span>
+        <span id="urgency-badge" class="badge"></span>
+        <span id="complexity-badge" class="badge"></span>
+      </div>
+      <div id="human-review-banner" class="review-banner" style="display:none;">
+        Flagged for Human Review
+      </div>
+      <p id="wizard-intro" class="intro-text"></p>
+    </div>
+
+    <!-- Agent Corrected Intent -->
+    <div id="correction-panel" class="panel">
+      <label for="corrected-intent-select" class="correction-label">Override AI Classification:</label>
+      <select id="corrected-intent-select" class="correction-select">
+        <option value="">-- AI classification is correct --</option>
+      </select>
+    </div>
+
+    <!-- Entity Panel -->
+    <div id="entity-panel" class="panel" style="display:none;">
+      <h3 class="panel-title">Extracted Information</h3>
+      <div id="entity-list"></div>
+    </div>
+
+    <!-- Step Checklist -->
+    <div id="steps-panel" class="panel">
+      <h3 class="panel-title">Steps</h3>
+      <div id="steps-list"></div>
+    </div>
+
+    <!-- Quick Templates -->
+    <div id="templates-panel" class="panel">
+      <h3 class="panel-title">Response Templates</h3>
+      <div id="template-buttons"></div>
+    </div>
+
+  </div>
+
+  <!-- Template Preview Modal -->
+  <div id="template-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="template-modal-title"></h3>
+        <button id="template-modal-close" class="modal-close-btn">&times;</button>
+      </div>
+      <div id="template-modal-body" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="template-insert-btn" class="btn btn-primary">Insert into Reply</button>
+        <button id="template-cancel-btn" class="btn btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Validation Modal -->
+  <div id="validation-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Pre-Close Checklist</h3>
+        <button id="validation-modal-close" class="modal-close-btn">&times;</button>
+      </div>
+      <div id="validation-body" class="modal-body">
+        <div id="incomplete-steps-warning" class="warning-box" style="display:none;">
+          <strong>Warning:</strong> Some required steps are not checked off.
+        </div>
+        <div id="validation-checklist"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="validation-confirm-btn" class="btn btn-primary" disabled>Confirm &amp; Close</button>
+        <button id="validation-back-btn" class="btn btn-secondary">Go Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts (order matters) -->
+  <script src="js/config.js"></script>
+  <script src="js/wizard-renderer.js"></script>
+  <script src="js/template-panel.js"></script>
+  <script src="js/validation-modal.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

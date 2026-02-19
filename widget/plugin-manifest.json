@@ -1,0 +1,27 @@
+{
+  "locale": ["en"],
+  "service": "DESK",
+  "storage": false,
+  "whiteListedDomains": [
+    "https://parkm-production.up.railway.app"
+  ],
+  "cspDomains": {
+    "connect-src": [
+      "https://parkm-production.up.railway.app"
+    ]
+  },
+  "modules": {
+    "widgets": [
+      {
+        "location": "desk.ticket.detail.rightpanel",
+        "url": "/app/index.html",
+        "name": "parkm_csr_wizard",
+        "title": "ParkM CSR Wizard",
+        "logo": "/app/img/logo.png",
+        "icon": "/app/img/icon.png"
+      }
+    ]
+  },
+  "config": [],
+  "moduleSupport": false
+}

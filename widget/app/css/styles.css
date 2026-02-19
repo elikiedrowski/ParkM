@@ -1,0 +1,491 @@
+/* ParkM CSR Wizard — Widget Styles */
+/* Designed for Zoho Desk right sidebar (~350px width) */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  color: #333;
+  background: #fff;
+  line-height: 1.4;
+}
+
+/* ── State Panels (loading, error, no-classification) ──────────────── */
+
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.state-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.state-icon--error {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.state-icon--info {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 8px;
+}
+
+/* Spinner */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Panels ────────────────────────────────────────────────────────── */
+
+.panel {
+  padding: 12px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+/* ── Header Panel ──────────────────────────────────────────────────── */
+
+.intent-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.intent-icon {
+  font-size: 20px;
+}
+
+.intent-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+}
+
+.header-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.review-banner {
+  background: #fff3e0;
+  color: #e65100;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.intro-text {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* ── Correction Dropdown ───────────────────────────────────────────── */
+
+.correction-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.correction-select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+}
+
+/* ── Entity Panel ──────────────────────────────────────────────────── */
+
+.entity-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.entity-card:last-child {
+  border-bottom: none;
+}
+
+.entity-label {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.entity-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.entity-value--missing {
+  color: #e67e22;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.entity-action-btn {
+  font-size: 11px;
+  color: #1976d2;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: 8px;
+}
+
+.entity-action-btn:hover {
+  color: #0d47a1;
+}
+
+/* ── Steps Checklist ───────────────────────────────────────────────── */
+
+.step-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.step-row:last-child {
+  border-bottom: none;
+}
+
+.step-main {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.step-main input[type="checkbox"] {
+  margin-top: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.step-text {
+  flex: 1;
+  font-size: 13px;
+  color: #333;
+}
+
+.step-text.checked {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.step-required {
+  font-size: 9px;
+  color: #c0392b;
+  font-weight: 600;
+  margin-left: 4px;
+  vertical-align: super;
+}
+
+.step-substep {
+  display: none;
+  padding: 6px 0 4px 26px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.step-substep.expanded {
+  display: block;
+}
+
+.step-toggle {
+  font-size: 10px;
+  color: #1976d2;
+  cursor: pointer;
+  margin-left: 26px;
+  display: inline-block;
+  padding: 2px 0;
+}
+
+.step-toggle:hover {
+  text-decoration: underline;
+}
+
+/* Entity missing warning in step */
+.step-entity-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0 26px;
+  padding: 4px 8px;
+  background: #fff8e1;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #e65100;
+}
+
+/* Decision point buttons */
+.decision-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0 26px;
+}
+
+.decision-btn {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  color: #333;
+  transition: all 0.15s;
+}
+
+.decision-btn:hover {
+  background: #f5f5f5;
+  border-color: #bbb;
+}
+
+.decision-btn.selected {
+  border-color: #1976d2;
+  background: #e3f2fd;
+  color: #0d47a1;
+  font-weight: 600;
+}
+
+.decision-btn.dimmed {
+  opacity: 0.5;
+}
+
+/* ── Template Buttons ──────────────────────────────────────────────── */
+
+#template-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.template-btn {
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 11px;
+  color: #555;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.template-btn:hover {
+  background: #e3f2fd;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+/* ── Modal Overlay ─────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 340px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.modal-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body .template-preview {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.modal-body .template-preview p {
+  margin-bottom: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e8e8e8;
+  justify-content: flex-end;
+}
+
+/* ── Validation Modal ──────────────────────────────────────────────── */
+
+.warning-box {
+  background: #fff3e0;
+  color: #e65100;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.validation-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 6px 0;
+}
+
+.validation-item input[type="checkbox"] {
+  margin-top: 2px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.validation-item label {
+  font-size: 12px;
+  color: #333;
+  cursor: pointer;
+}

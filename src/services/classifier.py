@@ -79,6 +79,8 @@ Provide your classification in JSON format with these fields:
    - If customer just says "I'm moving out, what do I do?" with no specific request → "move_out"
    - If customer disputes a charge AND asks for money back → "refund_request"
    - If customer disputes a charge but does NOT ask for money back → "payment_issue"
+   - If BOTH subject AND body are empty/meaningless (e.g. "(No Subject)" with no body) → "unclear"
+   - "Renew", "Renewal", "Expiring Permit" without further context → "permit_inquiry", NOT "refund_request"
 
 2. "complexity" - How difficult to resolve (choose ONE):
    - "simple" - Clear request, straightforward resolution, one permit/vehicle
@@ -155,6 +157,16 @@ Example 5 — Angry charge dispute wanting money back:
 Subject: "UNAUTHORIZED CHARGE"
 Body: "You charged me $45 without authorization after I moved out. Refund immediately or I'm calling my lawyer!"
 → intent: "refund_request", confidence: 0.90 (explicit refund demand, has amount, urgency: high)
+
+Example 6 — No subject, no body (zero signal):
+Subject: "(No Subject)"
+Body: ""
+→ intent: "unclear", confidence: 0.35 (absolutely no information to classify)
+
+Example 7 — Renewal inquiry (NOT a refund):
+Subject: "Renew"
+Body: ""
+→ intent: "permit_inquiry", confidence: 0.50 (subject suggests renewal, no body)
 
 Respond ONLY with valid JSON, no other text."""
     

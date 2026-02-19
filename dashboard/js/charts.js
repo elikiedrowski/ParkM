@@ -26,9 +26,9 @@ var Charts = (function () {
     var ctx = canvas.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.parentElement.clientWidth - 32;
-    var barHeight = 22;
+    var barHeight = 24;
     var gap = 6;
-    var labelWidth = 140;
+    var labelWidth = 160;
     var h = (barHeight + gap) * data.length + 30;
 
     canvas.width = w * dpr;
@@ -45,11 +45,11 @@ var Charts = (function () {
       var barW = (d.value / maxVal) * barAreaWidth;
 
       // Label
-      ctx.fillStyle = "#555";
+      ctx.fillStyle = "#475569";
       ctx.font = "12px -apple-system, sans-serif";
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      var label = d.label.length > 20 ? d.label.substring(0, 18) + "..." : d.label;
+      var label = d.label.length > 24 ? d.label.substring(0, 22) + "..." : d.label;
       ctx.fillText(label, labelWidth - 8, y + barHeight / 2);
 
       // Bar
@@ -76,7 +76,7 @@ var Charts = (function () {
     var ctx = canvas.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.parentElement.clientWidth - 32;
-    var h = 250;
+    var h = 300;
 
     canvas.width = w * dpr;
     canvas.height = h * dpr;
@@ -84,7 +84,7 @@ var Charts = (function () {
     canvas.style.height = h + "px";
     ctx.scale(dpr, dpr);
 
-    var padding = { top: 10, right: 10, bottom: 50, left: 40 };
+    var padding = { top: 10, right: 10, bottom: 100, left: 40 };
     var chartW = w - padding.left - padding.right;
     var chartH = h - padding.top - padding.bottom;
     var barW = Math.min(40, (chartW / data.length) - 8);
@@ -117,15 +117,15 @@ var Charts = (function () {
       ctx.fillStyle = d.color || getColor(i);
       ctx.fillRect(x, y, barW, barH);
 
-      // X label
-      ctx.fillStyle = "#666";
-      ctx.font = "10px -apple-system, sans-serif";
-      ctx.textAlign = "center";
+      // X label — rotated 45 degrees, full text
+      ctx.fillStyle = "#555";
+      ctx.font = "11px -apple-system, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
       ctx.save();
-      ctx.translate(x + barW / 2, h - padding.bottom + 10);
-      ctx.rotate(-0.5);
-      var label = d.label.length > 12 ? d.label.substring(0, 10) + ".." : d.label;
-      ctx.fillText(label, 0, 0);
+      ctx.translate(x + barW / 2, h - padding.bottom + 12);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillText(d.label, 0, 0);
       ctx.restore();
     });
   }

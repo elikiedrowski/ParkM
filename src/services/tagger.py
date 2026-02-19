@@ -91,9 +91,9 @@ class TicketTagger:
                 if move_out_date:
                     custom_field_data[self.custom_fields["move_out_date"]] = move_out_date
             
-            # Add routing recommendation
-            if "queue" in routing:
-                custom_field_data[self.custom_fields["routing_queue"]] = routing["queue"]
+            # Add routing recommendation (routing is a string from get_routing_recommendation)
+            if routing:
+                custom_field_data[self.custom_fields["routing_queue"]] = routing if isinstance(routing, str) else routing.get("queue", "")
             
             logger.info(f"[{ticket_id}] Custom fields to update: {len(custom_field_data)}")
             

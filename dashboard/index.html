@@ -47,26 +47,32 @@
 
       <div class="card-row">
         <div class="card card--blue">
+          <span class="info-bubble">i<span class="info-tooltip">Total number of tickets processed by the AI classifier in the selected time range.</span></span>
           <div class="card-value" id="card-total">--</div>
           <div class="card-label">Total Classified</div>
         </div>
         <div class="card card--green">
+          <span class="info-bubble">i<span class="info-tooltip">Percentage of classifications confirmed correct by CSR corrections. Only reflects tickets that have been reviewed.</span></span>
           <div class="card-value" id="card-accuracy">--</div>
           <div class="card-label">Accuracy Rate</div>
         </div>
         <div class="card card--orange">
+          <span class="info-bubble">i<span class="info-tooltip">Average time from webhook receipt to classification completion, including Zoho API calls and GPT-4o processing.</span></span>
           <div class="card-value" id="card-time">--</div>
           <div class="card-label">Avg Processing</div>
         </div>
         <div class="card card--purple">
+          <span class="info-bubble">i<span class="info-tooltip">Average AI confidence score (0-100%) across all classifications. Higher confidence indicates clearer intent signals.</span></span>
           <div class="card-value" id="card-confidence">--</div>
           <div class="card-label">Avg Confidence</div>
         </div>
         <div class="card card--red">
+          <span class="info-bubble">i<span class="info-tooltip">Percentage of classification attempts that failed due to API errors, timeouts, or other issues.</span></span>
           <div class="card-value" id="card-errors">--</div>
           <div class="card-label">Error Rate</div>
         </div>
         <div class="card card--teal">
+          <span class="info-bubble">i<span class="info-tooltip">Number of response templates served to CSRs via the wizard. Tracks how often templated replies are used.</span></span>
           <div class="card-value" id="card-templates">--</div>
           <div class="card-label">Templates Used</div>
         </div>
@@ -171,18 +177,22 @@
 
       <div class="card-row">
         <div class="card card--blue">
+          <span class="info-bubble">i<span class="info-tooltip">Combined count of all OpenAI and Zoho Desk API calls made by the system.</span></span>
           <div class="card-value" id="card-api-total">--</div>
           <div class="card-label">Total API Calls</div>
         </div>
         <div class="card card--green">
+          <span class="info-bubble">i<span class="info-tooltip">Estimated OpenAI spend based on token usage and current GPT-4o pricing rates.</span></span>
           <div class="card-value" id="card-api-cost">--</div>
           <div class="card-label">Total OpenAI Cost</div>
         </div>
         <div class="card card--orange">
+          <span class="info-bubble">i<span class="info-tooltip">Average OpenAI cost per classified ticket. Total cost divided by number of unique tickets processed.</span></span>
           <div class="card-value" id="card-api-avg-cost">--</div>
           <div class="card-label">Avg Cost / Ticket</div>
         </div>
         <div class="card card--purple">
+          <span class="info-bubble">i<span class="info-tooltip">Total input + output tokens consumed across all OpenAI API calls.</span></span>
           <div class="card-value" id="card-api-tokens">--</div>
           <div class="card-label">Total Tokens</div>
         </div>

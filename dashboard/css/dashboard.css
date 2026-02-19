@@ -195,6 +195,7 @@ body {
 }
 
 .card {
+  position: relative;
   background: #fff;
   border-radius: 10px;
   padding: 18px 16px;
@@ -207,6 +208,24 @@ body {
 .card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.card .info-bubble {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.card .info-bubble .info-tooltip {
+  right: 0;
+  left: auto;
+  min-width: 180px;
+  text-align: left;
+}
+
+.card .info-bubble .info-tooltip::before {
+  left: auto;
+  right: 6px;
 }
 
 .card--blue   { border-left-color: #003060; }

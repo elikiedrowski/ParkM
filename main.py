@@ -513,7 +513,9 @@ async def analytics_template_used(request: Request):
 @app.post("/analytics/seed-test-data")
 async def seed_test_data(count: int = 25):
     """Generate realistic test data in analytics logs to populate the dashboard."""
+    import json as _json
     import random
+    from datetime import timedelta
 
     intents = [
         "permit_cancellation", "refund_request", "new_permit_request",
@@ -538,7 +540,8 @@ async def seed_test_data(count: int = 25):
         "JKL-3210", "MNO-6543", "PQR-2468", "STU-1357",
     ]
 
-    now = datetime.now()
+    _os.makedirs("logs", exist_ok=True)
+    now = datetime.utcnow()
     created = 0
 
     for i in range(count):
@@ -552,67 +555,86 @@ async def seed_test_data(count: int = 25):
         has_error = random.random() < 0.03
 
         # Spread events over the past 30 days
-        days_ago = random.randint(0, 30)
-        hours_ago = random.randint(0, 23)
+        ts = now - timedelta(days=random.randint(0, 30), hours=random.randint(0, 23))
+        timestamp = ts.isoformat() + "Z"
 
-        classification = {
-            "intent": intent,
-            "confidence": confidence,
-            "complexity": complexity,
-            "urgency": urgency,
+        routing = random.choice(routing_queues)
+        entities = {
+            "license_plate": random.choice(plates) if random.random() > 0.3 else None,
+            "move_out_date": None,
+            "property_name": f"Property {random.randint(1, 20)}" if random.random() > 0.5 else None,
+            "amount": str(round(random.uniform(25, 300), 2)) if intent == "refund_request" else None,
+        }
+
+        # Write classification entry with custom timestamp
+        cls_entry = {
+            "timestamp": timestamp,
+            "ticket_id": ticket_id,
+            "intent": intent if not has_error else None,
+            "confidence": confidence if not has_error else None,
+            "complexity": complexity if not has_error else None,
+            "urgency": urgency if not has_error else None,
             "language": "english",
             "requires_refund": intent in ("refund_request", "permit_cancellation"),
             "requires_human_review": confidence < 0.7,
-            "key_entities": {
-                "license_plate": random.choice(plates) if random.random() > 0.3 else None,
-                "move_out_date": None,
-                "property_name": f"Property {random.randint(1, 20)}" if random.random() > 0.5 else None,
-                "amount": str(round(random.uniform(25, 300), 2)) if intent == "refund_request" else None,
-            },
+            "routing_queue": routing if not has_error else None,
+            "entities": entities if not has_error else {},
+            "processing_time_seconds": processing_time,
+            "tagging_success": tagging_ok,
+            "error": "OpenAI timeout" if has_error else None,
         }
+        with open("logs/classifications.jsonl", "a") as f:
+            f.write(_json.dumps(cls_entry) + "\n")
 
-        routing = random.choice(routing_queues)
-
-        log_classification_event(
-            ticket_id=ticket_id,
-            classification=classification if not has_error else None,
-            routing=routing if not has_error else None,
-            processing_time_seconds=processing_time,
-            tagging_success=tagging_ok,
-            error="OpenAI timeout" if has_error else None,
-        )
-
-        # Log template usage for some tickets
+        # Template usage for some tickets
         if random.random() > 0.4:
-            log_template_usage(
-                template_file=random.choice(templates),
-                ticket_id=ticket_id,
-                intent=intent,
-            )
+            tpl_entry = {
+                "timestamp": timestamp,
+                "template_file": random.choice(templates),
+                "ticket_id": ticket_id,
+                "intent": intent,
+            }
+            with open("logs/template_usage.jsonl", "a") as f:
+                f.write(_json.dumps(tpl_entry) + "\n")
 
-        # Log API usage (OpenAI classify call)
+        # API usage: OpenAI classify call
         prompt_tokens = random.randint(1200, 1800)
         completion_tokens = random.randint(80, 200)
         total_tokens = prompt_tokens + completion_tokens
-        from src.services.analytics_logger import log_api_usage, estimate_openai_cost
+        from src.services.analytics_logger import estimate_openai_cost
         cost = estimate_openai_cost("gpt-4o-mini", prompt_tokens, completion_tokens)
-        log_api_usage(
-            provider="openai", call_type="classify_email", model="gpt-4o-mini",
-            prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
-            total_tokens=total_tokens, estimated_cost_usd=cost,
-            ticket_id=ticket_id,
-        )
+        api_entry = {
+            "timestamp": timestamp,
+            "provider": "openai", "call_type": "classify_email",
+            "model": "gpt-4o-mini",
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "estimated_cost_usd": round(cost, 6),
+            "ticket_id": ticket_id, "success": True, "error": None,
+        }
+        with open("logs/api_usage.jsonl", "a") as f:
+            f.write(_json.dumps(api_entry) + "\n")
 
-        # Log Zoho API calls (get_ticket + update_ticket + add_comment)
+        # Zoho API calls
         for call_type in ["get_ticket", "update_ticket", "add_comment"]:
-            log_api_usage(provider="zoho", call_type=call_type, ticket_id=ticket_id)
+            zoho_entry = {
+                "timestamp": timestamp,
+                "provider": "zoho", "call_type": call_type,
+                "model": None, "prompt_tokens": None,
+                "completion_tokens": None, "total_tokens": None,
+                "estimated_cost_usd": None,
+                "ticket_id": ticket_id, "success": True, "error": None,
+            }
+            with open("logs/api_usage.jsonl", "a") as f:
+                f.write(_json.dumps(zoho_entry) + "\n")
 
         created += 1
 
     return {
         "status": "ok",
         "created": created,
-        "message": f"Seeded {created} test classification events with API usage data",
+        "message": f"Seeded {created} test events spread across 30 days",
     }
 
 

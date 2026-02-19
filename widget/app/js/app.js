@@ -214,7 +214,9 @@ var ParkMApp = (function () {
     onRedirectWizard: onRedirectWizard,
     onValidationConfirmed: onValidationConfirmed,
 
-    /** Access current wizard data (for validation modal) */
+    /** Access current state (for template tracking and validation) */
+    getTicketId: function () { return ticketId; },
+    getCurrentIntent: function () { return currentIntent; },
     getWizard: function () { return currentWizard; },
     getSteps: function () { return currentWizard ? currentWizard.steps : []; },
 

@@ -10,6 +10,7 @@ from src.services.classifier import EmailClassifier
 from src.services.tagger import TicketTagger
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import log_correction
+from src.services.analytics_logger import log_classification_event
 
 logger = logging.getLogger(__name__)
 
@@ -87,13 +88,26 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         processing_time = (end_time - start_time).total_seconds()
         
         logger.info(f"[{ticket_id}] Processing complete in {processing_time:.2f} seconds")
-        
-        # TODO: Store metrics in database for dashboard (Week 3)
-        
+
+        # Log structured classification event for analytics dashboard
+        log_classification_event(
+            ticket_id=ticket_id,
+            classification=classification,
+            routing=routing,
+            processing_time_seconds=processing_time,
+            tagging_success=bool(tag_result),
+        )
+
     except Exception as e:
         logger.error(f"[{ticket_id}] Error processing webhook: {e}", exc_info=True)
-        # Don't raise - we don't want to return error to Zoho
-        # Log the error and move on
+        log_classification_event(
+            ticket_id=ticket_id,
+            classification=None,
+            routing=None,
+            processing_time_seconds=None,
+            tagging_success=False,
+            error=str(e),
+        )
 
 
 async def process_correction_webhook(ticket_id: str, payload: Dict[str, Any]):

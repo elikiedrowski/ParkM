@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkM Analytics Dashboard</title>
+  <link rel="stylesheet" href="/dashboard/css/dashboard.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <h1 class="header-title">ParkM Analytics</h1>
+      <span id="last-updated" class="header-subtitle"></span>
+    </div>
+    <div class="header-right">
+      <div class="range-buttons">
+        <button class="range-btn" data-days="7">7d</button>
+        <button class="range-btn" data-days="30">30d</button>
+        <button class="range-btn active" data-days="">All</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Loading -->
+  <div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <p>Loading analytics...</p>
+  </div>
+
+  <!-- Dashboard Content -->
+  <main id="dashboard" class="dashboard" style="display:none;">
+
+    <!-- Summary Cards -->
+    <section class="card-row">
+      <div class="card card--blue">
+        <div class="card-value" id="card-total">--</div>
+        <div class="card-label">Total Classified</div>
+      </div>
+      <div class="card card--green">
+        <div class="card-value" id="card-accuracy">--</div>
+        <div class="card-label">Accuracy Rate</div>
+      </div>
+      <div class="card card--orange">
+        <div class="card-value" id="card-confidence">--</div>
+        <div class="card-label">Avg Confidence</div>
+      </div>
+      <div class="card card--purple">
+        <div class="card-value" id="card-time">--</div>
+        <div class="card-label">Avg Processing</div>
+      </div>
+      <div class="card card--red">
+        <div class="card-value" id="card-errors">--</div>
+        <div class="card-label">Error Rate</div>
+      </div>
+      <div class="card card--teal">
+        <div class="card-value" id="card-templates">--</div>
+        <div class="card-label">Templates Used</div>
+      </div>
+    </section>
+
+    <!-- Row 1: Intent + Confidence -->
+    <section class="chart-row">
+      <div class="chart-panel">
+        <h3 class="panel-title">Intent Distribution</h3>
+        <canvas id="chart-intents" width="500" height="280"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Confidence by Intent</h3>
+        <canvas id="chart-confidence" width="500" height="280"></canvas>
+      </div>
+    </section>
+
+    <!-- Row 2: Volume + Accuracy Over Time -->
+    <section class="chart-row">
+      <div class="chart-panel">
+        <h3 class="panel-title">Volume Over Time</h3>
+        <canvas id="chart-volume" width="500" height="250"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Accuracy Over Time</h3>
+        <canvas id="chart-accuracy-time" width="500" height="250"></canvas>
+      </div>
+    </section>
+
+    <!-- Row 3: Confusion Matrix + Pairs -->
+    <section class="chart-row">
+      <div class="chart-panel">
+        <h3 class="panel-title">Confusion Matrix</h3>
+        <div id="confusion-matrix" class="table-container"></div>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Top Misclassification Pairs</h3>
+        <div id="confusion-pairs" class="list-container"></div>
+      </div>
+    </section>
+
+    <!-- Row 4: Templates + Entities -->
+    <section class="chart-row">
+      <div class="chart-panel">
+        <h3 class="panel-title">Template Usage</h3>
+        <canvas id="chart-templates" width="500" height="280"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Entity Extraction Rates</h3>
+        <canvas id="chart-entities" width="500" height="280"></canvas>
+      </div>
+    </section>
+
+    <!-- Row 5: Performance -->
+    <section class="chart-row">
+      <div class="chart-panel">
+        <h3 class="panel-title">Processing Time</h3>
+        <div id="perf-stats" class="stats-grid"></div>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Errors by Type</h3>
+        <div id="error-table" class="table-container"></div>
+      </div>
+    </section>
+
+    <!-- No Data State -->
+    <div id="no-data" class="no-data" style="display:none;">
+      <p>No analytics data yet. Data will appear here as tickets are classified.</p>
+    </div>
+
+  </main>
+
+  <script src="/dashboard/js/charts.js"></script>
+  <script src="/dashboard/js/dashboard.js"></script>
+</body>
+</html>

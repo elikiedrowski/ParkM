@@ -78,6 +78,19 @@ var TemplatePanel = (function () {
       }
     }
 
+    // Report template usage for analytics (fire and forget)
+    try {
+      fetch(ParkMConfig.API_BASE_URL + "/analytics/template-used", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_file: currentTemplateFile,
+          ticket_id: typeof ParkMApp !== "undefined" && ParkMApp.getTicketId ? ParkMApp.getTicketId() : null,
+          intent: typeof ParkMApp !== "undefined" && ParkMApp.getCurrentIntent ? ParkMApp.getCurrentIntent() : null
+        })
+      }).catch(function () { /* analytics failure is non-critical */ });
+    } catch (e) { /* swallow */ }
+
     closeModal();
   }
 

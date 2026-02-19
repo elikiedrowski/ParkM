@@ -4,7 +4,8 @@ Main entry point for webhook receiver and API endpoints
 """
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import logging
 from datetime import datetime
 import hashlib
@@ -16,6 +17,11 @@ from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import get_corrections_summary
 from src.services.wizard import get_wizard_for_intent, get_template_html, list_templates, list_intents
+from src.services.analytics_logger import log_template_usage
+from src.services.analytics_aggregator import (
+    get_summary, get_classification_analytics, get_correction_analytics,
+    get_template_analytics, get_performance_analytics, get_entity_analytics
+)
 
 # Configure logging
 logging.basicConfig(
@@ -51,7 +57,7 @@ app.add_middleware(
     ],
     allow_origin_regex=r"https://.*\.zappsusercontent\.com",
     allow_credentials=True,
-    allow_methods=["GET", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -416,6 +422,73 @@ async def get_template(filename: str):
     if html is None:
         raise HTTPException(status_code=404, detail=f"Template '{filename}' not found")
     return {"filename": filename, "html": html}
+
+
+# ── Analytics Dashboard ────────────────────────────────────────────────
+
+# Serve dashboard static files
+import os as _os
+if _os.path.isdir("dashboard"):
+    app.mount("/dashboard/css", StaticFiles(directory="dashboard/css"), name="dashboard-css")
+    app.mount("/dashboard/js", StaticFiles(directory="dashboard/js"), name="dashboard-js")
+
+
+@app.get("/analytics/dashboard")
+async def analytics_dashboard():
+    """Serve the analytics dashboard HTML page."""
+    return FileResponse("dashboard/index.html", media_type="text/html")
+
+
+@app.get("/analytics/summary")
+async def analytics_summary(days: int = None):
+    """High-level KPI metrics for dashboard header cards."""
+    return get_summary(days)
+
+
+@app.get("/analytics/classifications")
+async def analytics_classifications(days: int = None):
+    """Intent distribution, confidence stats, volume over time."""
+    return get_classification_analytics(days)
+
+
+@app.get("/analytics/corrections")
+async def analytics_corrections(days: int = None):
+    """Confusion matrix, accuracy over time, top misclassification pairs."""
+    return get_correction_analytics(days)
+
+
+@app.get("/analytics/templates")
+async def analytics_templates(days: int = None):
+    """Template usage stats by template and by intent."""
+    return get_template_analytics(days)
+
+
+@app.get("/analytics/performance")
+async def analytics_performance(days: int = None):
+    """Processing time percentiles, error rates."""
+    return get_performance_analytics(days)
+
+
+@app.get("/analytics/entities")
+async def analytics_entities(days: int = None):
+    """Entity extraction rates by type and by intent."""
+    return get_entity_analytics(days)
+
+
+@app.post("/analytics/template-used")
+async def analytics_template_used(request: Request):
+    """Record a template usage event from the CSR wizard widget."""
+    try:
+        data = await request.json()
+        log_template_usage(
+            template_file=data.get("template_file", "unknown"),
+            ticket_id=data.get("ticket_id"),
+            intent=data.get("intent"),
+        )
+        return {"status": "logged"}
+    except Exception as e:
+        logger.error(f"Failed to log template usage: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

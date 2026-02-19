@@ -26,7 +26,8 @@ var Dashboard = (function () {
       fetchJSON("/analytics/corrections"),
       fetchJSON("/analytics/templates"),
       fetchJSON("/analytics/performance"),
-      fetchJSON("/analytics/entities")
+      fetchJSON("/analytics/entities"),
+      fetchJSON("/analytics/api-usage")
     ]).then(function (results) {
       var summary = results[0];
       var classifications = results[1];
@@ -34,18 +35,20 @@ var Dashboard = (function () {
       var templates = results[3];
       var performance = results[4];
       var entities = results[5];
+      var apiUsage = results[6];
 
       document.getElementById("loading").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
 
       // Check if there's any data
-      if (summary.total_classifications === 0 && summary.total_corrections === 0) {
+      if (summary.total_classifications === 0 && summary.total_corrections === 0 && apiUsage.total_api_calls === 0) {
         document.getElementById("no-data").style.display = "block";
         return;
       }
       document.getElementById("no-data").style.display = "none";
 
       renderSummaryCards(summary);
+      renderApiUsage(apiUsage);
       renderIntentDistribution(classifications.intent_distribution);
       renderConfidenceByIntent(classifications.confidence_by_intent);
       renderVolumeOverTime(classifications.volume_over_time);
@@ -233,6 +236,51 @@ var Dashboard = (function () {
     });
     html += "</tbody></table>";
     container.innerHTML = html;
+  }
+
+  /* ── API Usage & Costs ────────────────────────────────────────────── */
+
+  function renderApiUsage(data) {
+    if (!data || data.total_api_calls === 0) return;
+
+    // Show hidden sections
+    document.getElementById("api-usage-cards").style.display = "";
+    document.getElementById("api-usage-row1").style.display = "";
+    document.getElementById("api-usage-row2").style.display = "";
+
+    // Summary cards
+    setText("card-api-total", data.total_api_calls);
+    setText("card-api-cost", "$" + data.total_cost_usd.toFixed(4));
+    setText("card-api-avg-cost", "$" + data.avg_cost_per_ticket.toFixed(4));
+    var tb = data.token_breakdown || {};
+    setText("card-api-tokens", formatNumber(tb.total_tokens || 0));
+
+    // Cost over time line chart
+    Charts.drawLineChart("chart-api-cost-time", (data.cost_over_time || []).map(function (d) {
+      return { label: d.date, value: d.cost };
+    }), { color: "#27ae60", formatValue: function (v) { return "$" + v.toFixed(4); } });
+
+    // API calls by type horizontal bar chart
+    Charts.drawHorizontalBarChart("chart-api-calls-type", (data.calls_by_type || []).map(function (d, i) {
+      return { label: d.call_type.replace(/_/g, " "), value: d.count, color: Charts.getColor(i) };
+    }));
+
+    // OpenAI token breakdown bar chart
+    Charts.drawBarChart("chart-api-tokens", [
+      { label: "Input Tokens", value: tb.prompt_tokens || 0, color: "#1976d2" },
+      { label: "Output Tokens", value: tb.completion_tokens || 0, color: "#e67e22" }
+    ]);
+
+    // Zoho API call distribution
+    Charts.drawHorizontalBarChart("chart-zoho-dist", (data.zoho_distribution || []).map(function (d, i) {
+      return { label: d.call_type.replace(/_/g, " "), value: d.count, color: Charts.getColor(i) };
+    }));
+  }
+
+  function formatNumber(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+    if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+    return String(n);
   }
 
   /* ── Helpers ──────────────────────────────────────────────────────── */

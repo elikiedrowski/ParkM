@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 CLASSIFICATIONS_LOG = "logs/classifications.jsonl"
 CORRECTIONS_LOG = "logs/corrections.jsonl"
 TEMPLATE_USAGE_LOG = "logs/template_usage.jsonl"
+API_USAGE_LOG = "logs/api_usage.jsonl"
 
 
 def _read_jsonl(filepath: str, days: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -329,4 +330,80 @@ def get_entity_analytics(days: Optional[int] = None) -> dict:
     return {
         "extraction_rates": overall,
         "by_intent": by_intent_result,
+    }
+
+
+def get_api_usage_analytics(days: Optional[int] = None) -> dict:
+    """API usage stats: call counts, token usage, cost tracking."""
+    entries = _read_jsonl(API_USAGE_LOG, days)
+
+    openai_entries = [e for e in entries if e.get("provider") == "openai"]
+    zoho_entries = [e for e in entries if e.get("provider") == "zoho"]
+
+    total_calls = len(entries)
+    total_openai_calls = len(openai_entries)
+    total_zoho_calls = len(zoho_entries)
+
+    total_prompt_tokens = sum(e.get("prompt_tokens", 0) or 0 for e in openai_entries)
+    total_completion_tokens = sum(e.get("completion_tokens", 0) or 0 for e in openai_entries)
+    total_tokens = sum(e.get("total_tokens", 0) or 0 for e in openai_entries)
+    total_cost = sum(e.get("estimated_cost_usd", 0) or 0 for e in openai_entries)
+
+    tickets_with_openai = set(e.get("ticket_id") for e in openai_entries if e.get("ticket_id"))
+    avg_cost_per_ticket = round(total_cost / len(tickets_with_openai), 6) if tickets_with_openai else 0
+
+    # Cost over time (daily)
+    daily_cost = defaultdict(float)
+    daily_calls = defaultdict(int)
+    for e in openai_entries:
+        date = e.get("timestamp", "")[:10]
+        if date:
+            daily_cost[date] += e.get("estimated_cost_usd", 0) or 0
+            daily_calls[date] += 1
+
+    cost_over_time = [
+        {"date": d, "cost": round(c, 6), "calls": daily_calls[d]}
+        for d, c in sorted(daily_cost.items())
+    ]
+
+    # API calls by type (prefixed with provider)
+    call_type_counts = defaultdict(int)
+    for e in entries:
+        label = e.get("provider", "unknown") + ":" + e.get("call_type", "unknown")
+        call_type_counts[label] += 1
+
+    calls_by_type = sorted(
+        [{"call_type": k, "count": v} for k, v in call_type_counts.items()],
+        key=lambda x: x["count"], reverse=True
+    )
+
+    # Zoho call distribution
+    zoho_type_counts = defaultdict(int)
+    for e in zoho_entries:
+        zoho_type_counts[e.get("call_type", "unknown")] += 1
+
+    zoho_distribution = sorted(
+        [{"call_type": k, "count": v} for k, v in zoho_type_counts.items()],
+        key=lambda x: x["count"], reverse=True
+    )
+
+    # Error rate
+    failed = sum(1 for e in entries if not e.get("success", True))
+
+    return {
+        "total_api_calls": total_calls,
+        "total_openai_calls": total_openai_calls,
+        "total_zoho_calls": total_zoho_calls,
+        "total_cost_usd": round(total_cost, 4),
+        "avg_cost_per_ticket": round(avg_cost_per_ticket, 6),
+        "token_breakdown": {
+            "prompt_tokens": total_prompt_tokens,
+            "completion_tokens": total_completion_tokens,
+            "total_tokens": total_tokens,
+        },
+        "cost_over_time": cost_over_time,
+        "calls_by_type": calls_by_type,
+        "zoho_distribution": zoho_distribution,
+        "failed_calls": failed,
+        "error_rate": round(failed / total_calls * 100, 1) if total_calls else 0,
     }

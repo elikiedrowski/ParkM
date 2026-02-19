@@ -20,7 +20,8 @@ from src.services.wizard import get_wizard_for_intent, get_template_html, list_t
 from src.services.analytics_logger import log_template_usage
 from src.services.analytics_aggregator import (
     get_summary, get_classification_analytics, get_correction_analytics,
-    get_template_analytics, get_performance_analytics, get_entity_analytics
+    get_template_analytics, get_performance_analytics, get_entity_analytics,
+    get_api_usage_analytics
 )
 
 # Configure logging
@@ -307,9 +308,9 @@ async def test_ticket_tagging(ticket_id: str):
         logger.info(f"Ticket: {subject}")
         
         # Classify
-        classification = classifier.classify_email(subject, description, sender_email)
+        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id)
         routing = classifier.get_routing_recommendation(classification)
-        
+
         # Tag (import tagger here to avoid circular import)
         from src.services.tagger import TicketTagger
         tagger = TicketTagger()
@@ -386,7 +387,7 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
                 subject = ticket_data.get("subject", "")
                 description = ticket_data.get("description", "")
                 sender = ticket_data.get("email", "")
-                classification = classifier.classify_email(subject, description, sender)
+                classification = classifier.classify_email(subject, description, sender, ticket_id=ticket_id)
 
         wizard = get_wizard_for_intent(intent, classification)
         return {
@@ -473,6 +474,12 @@ async def analytics_performance(days: int = None):
 async def analytics_entities(days: int = None):
     """Entity extraction rates by type and by intent."""
     return get_entity_analytics(days)
+
+
+@app.get("/analytics/api-usage")
+async def analytics_api_usage(days: int = None):
+    """API usage tracking: call volumes, token usage, cost estimates."""
+    return get_api_usage_analytics(days)
 
 
 @app.post("/analytics/template-used")

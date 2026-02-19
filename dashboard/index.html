@@ -60,6 +60,50 @@
       </div>
     </section>
 
+    <!-- API Usage Summary Cards -->
+    <section class="card-row" id="api-usage-cards" style="display:none;">
+      <div class="card card--blue">
+        <div class="card-value" id="card-api-total">--</div>
+        <div class="card-label">Total API Calls</div>
+      </div>
+      <div class="card card--green">
+        <div class="card-value" id="card-api-cost">--</div>
+        <div class="card-label">Total OpenAI Cost</div>
+      </div>
+      <div class="card card--orange">
+        <div class="card-value" id="card-api-avg-cost">--</div>
+        <div class="card-label">Avg Cost / Ticket</div>
+      </div>
+      <div class="card card--purple">
+        <div class="card-value" id="card-api-tokens">--</div>
+        <div class="card-label">Total Tokens</div>
+      </div>
+    </section>
+
+    <!-- Row: API Cost + Calls by Type -->
+    <section class="chart-row" id="api-usage-row1" style="display:none;">
+      <div class="chart-panel">
+        <h3 class="panel-title">OpenAI Cost Over Time</h3>
+        <canvas id="chart-api-cost-time" width="500" height="250"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">API Calls by Function</h3>
+        <canvas id="chart-api-calls-type" width="500" height="280"></canvas>
+      </div>
+    </section>
+
+    <!-- Row: Tokens + Zoho Distribution -->
+    <section class="chart-row" id="api-usage-row2" style="display:none;">
+      <div class="chart-panel">
+        <h3 class="panel-title">OpenAI Token Usage</h3>
+        <canvas id="chart-api-tokens" width="500" height="250"></canvas>
+      </div>
+      <div class="chart-panel">
+        <h3 class="panel-title">Zoho API Call Distribution</h3>
+        <canvas id="chart-zoho-dist" width="500" height="280"></canvas>
+      </div>
+    </section>
+
     <!-- Row 1: Intent + Confidence -->
     <section class="chart-row">
       <div class="chart-panel">

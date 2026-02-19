@@ -16,28 +16,29 @@ class EmailClassifier:
         self.client = OpenAI(api_key=self.settings.openai_api_key)
         self.model = self.settings.ai_model
     
-    def classify_email(self, subject: str, body: str, from_email: str = "") -> Dict[str, Any]:
+    def classify_email(self, subject: str, body: str, from_email: str = "", ticket_id: str = "") -> Dict[str, Any]:
         """
         Classify an email and return structured classification data
-        
+
         Args:
             subject: Email subject line
             body: Email body content
             from_email: Sender email address
-        
+            ticket_id: Optional ticket ID for analytics tracking
+
         Returns:
             Dictionary with classification results
         """
-        
+
         prompt = self._build_classification_prompt(subject, body)
-        
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {
                     "role": "system",
-                    "content": """You are an expert customer support email classifier for ParkM, 
-                    a virtual parking permit provider. Analyze support emails and classify them 
+                    "content": """You are an expert customer support email classifier for ParkM,
+                    a virtual parking permit provider. Analyze support emails and classify them
                     accurately to help route them to the right team and set expectations."""
                 },
                 {
@@ -48,7 +49,26 @@ class EmailClassifier:
             response_format={"type": "json_object"},
             temperature=0.3
         )
-        
+
+        # Log OpenAI token usage and estimated cost
+        usage = response.usage
+        if usage:
+            try:
+                from src.services.analytics_logger import log_api_usage, estimate_openai_cost
+                cost = estimate_openai_cost(self.model, usage.prompt_tokens, usage.completion_tokens)
+                log_api_usage(
+                    provider="openai",
+                    call_type="classify_email",
+                    model=self.model,
+                    prompt_tokens=usage.prompt_tokens,
+                    completion_tokens=usage.completion_tokens,
+                    total_tokens=usage.total_tokens,
+                    estimated_cost_usd=cost,
+                    ticket_id=ticket_id or None,
+                )
+            except Exception:
+                pass  # Never let logging break classification
+
         import json
         return json.loads(response.choices[0].message.content)
     

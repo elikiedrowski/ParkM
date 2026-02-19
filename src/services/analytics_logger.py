@@ -13,6 +13,21 @@ logger = logging.getLogger(__name__)
 
 CLASSIFICATIONS_LOG = "logs/classifications.jsonl"
 TEMPLATE_USAGE_LOG = "logs/template_usage.jsonl"
+API_USAGE_LOG = "logs/api_usage.jsonl"
+
+# Pricing per 1M tokens (update when model changes)
+MODEL_PRICING = {
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "gpt-4o": {"input": 2.50, "output": 10.00},
+}
+
+
+def estimate_openai_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
+    """Calculate estimated cost in USD based on model pricing."""
+    pricing = MODEL_PRICING.get(model, MODEL_PRICING["gpt-4o-mini"])
+    input_cost = (prompt_tokens / 1_000_000) * pricing["input"]
+    output_cost = (completion_tokens / 1_000_000) * pricing["output"]
+    return input_cost + output_cost
 
 
 def log_classification_event(
@@ -126,4 +141,61 @@ def log_template_usage(
 
     except Exception as e:
         logger.error(f"Failed to log template usage: {e}")
+        return False
+
+
+def log_api_usage(
+    provider: str,
+    call_type: str,
+    model: Optional[str] = None,
+    prompt_tokens: Optional[int] = None,
+    completion_tokens: Optional[int] = None,
+    total_tokens: Optional[int] = None,
+    estimated_cost_usd: Optional[float] = None,
+    ticket_id: Optional[str] = None,
+    success: bool = True,
+    error: Optional[str] = None,
+) -> bool:
+    """
+    Append an API usage event to the api_usage log.
+
+    Args:
+        provider: "openai" or "zoho"
+        call_type: Function name (e.g. "classify_email", "get_ticket")
+        model: Model name for OpenAI calls
+        prompt_tokens: Input tokens (OpenAI only)
+        completion_tokens: Output tokens (OpenAI only)
+        total_tokens: Total tokens (OpenAI only)
+        estimated_cost_usd: Estimated cost in USD (OpenAI only)
+        ticket_id: Associated ticket ID if applicable
+        success: Whether the API call succeeded
+        error: Error message if call failed
+
+    Returns:
+        True if logged successfully
+    """
+    try:
+        os.makedirs("logs", exist_ok=True)
+
+        entry = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "provider": provider,
+            "call_type": call_type,
+            "model": model,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "estimated_cost_usd": round(estimated_cost_usd, 6) if estimated_cost_usd else None,
+            "ticket_id": ticket_id,
+            "success": success,
+            "error": error,
+        }
+
+        with open(API_USAGE_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to log API usage: {e}")
         return False

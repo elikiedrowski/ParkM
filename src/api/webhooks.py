@@ -57,7 +57,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         
         # Step 3: Classify email
         logger.info(f"[{ticket_id}] Classifying email with AI")
-        classification = classifier.classify_email(subject, description, sender_email)
+        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id)
         
         logger.info(f"[{ticket_id}] Classification result:")
         logger.info(f"  - Intent: {classification.get('intent')}")

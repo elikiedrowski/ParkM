@@ -21,8 +21,8 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 24px 14px;
-  background: #0f172a;
+  padding: 22px 24px 16px;
+  background: #003060;
   color: #fff;
   position: sticky;
   top: 0;
@@ -31,20 +31,32 @@ body {
 
 .header-left {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.header-logo {
+  height: 36px;
+  width: auto;
+}
+
+.header-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.2);
 }
 
 .header-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.3px;
 }
 
 .header-subtitle {
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.5;
+  margin-left: 4px;
 }
 
 .header-right {
@@ -60,12 +72,12 @@ body {
 }
 
 .range-btn {
-  padding: 5px 16px;
+  padding: 6px 18px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: rgba(255,255,255,0.6);
-  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
@@ -77,9 +89,9 @@ body {
 }
 
 .range-btn.active {
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
+  background: #FFC107;
+  color: #003060;
+  font-weight: 700;
 }
 
 /* ── Tab Bar ──────────────────────────────────────────────────────── */
@@ -88,20 +100,20 @@ body {
   display: flex;
   justify-content: center;
   gap: 4px;
-  background: #0f172a;
-  padding: 0 24px 0;
-  border-bottom: 1px solid #1e293b;
+  background: #003060;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   position: sticky;
-  top: 68px;
+  top: 78px;
   z-index: 99;
 }
 
 .tab {
-  padding: 10px 22px 12px;
+  padding: 11px 24px 13px;
   border: none;
   background: none;
   color: rgba(255,255,255,0.5);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   position: relative;
@@ -113,7 +125,7 @@ body {
 }
 
 .tab.active {
-  color: #fff;
+  color: #FFC107;
   font-weight: 600;
 }
 
@@ -123,9 +135,9 @@ body {
   bottom: 0;
   left: 10px;
   right: 10px;
-  height: 2px;
-  background: #3b82f6;
-  border-radius: 1px 1px 0 0;
+  height: 3px;
+  background: #FFC107;
+  border-radius: 2px 2px 0 0;
 }
 
 /* ── Tab Panels ──────────────────────────────────────────────────── */
@@ -195,12 +207,12 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.card--blue   { border-left-color: #2563eb; }
+.card--blue   { border-left-color: #003060; }
 .card--green  { border-left-color: #16a34a; }
-.card--orange { border-left-color: #ea580c; }
-.card--purple { border-left-color: #9333ea; }
+.card--orange { border-left-color: #FFC107; }
+.card--purple { border-left-color: #024985; }
 .card--red    { border-left-color: #dc2626; }
-.card--teal   { border-left-color: #0d9488; }
+.card--teal   { border-left-color: #0B59A6; }
 
 .card-value {
   font-size: 28px;

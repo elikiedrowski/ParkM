@@ -163,7 +163,7 @@ var Dashboard = (function () {
   function renderVolumeOverTime(data) {
     Charts.drawLineChart("chart-volume", (data || []).map(function (d) {
       return { label: d.date, value: d.count };
-    }), { color: "#1976d2" });
+    }), { color: "#046bd2" });
   }
 
   /* ── Accuracy Over Time ───────────────────────────────────────────── */
@@ -171,7 +171,7 @@ var Dashboard = (function () {
   function renderAccuracyOverTime(data) {
     Charts.drawLineChart("chart-accuracy-time", (data || []).map(function (d) {
       return { label: d.week, value: d.accuracy };
-    }), { color: "#27ae60", maxValue: 100, minValue: 0, formatValue: function (v) { return Math.round(v) + "%"; } });
+    }), { color: "#003060", maxValue: 100, minValue: 0, formatValue: function (v) { return Math.round(v) + "%"; } });
   }
 
   /* ── Confusion Matrix ─────────────────────────────────────────────── */
@@ -190,14 +190,14 @@ var Dashboard = (function () {
     });
     var intentList = Array.from(intents).sort();
 
-    var html = "<table><thead><tr><th>AI Said \\ Should Be</th>";
+    var html = "<table class='confusion-table'><thead><tr><th><span class='rotated-label'>AI Said \\ Corrected To</span></th>";
     intentList.forEach(function (i) {
-      html += "<th>" + formatIntent(i).substring(0, 8) + "</th>";
+      html += "<th><span class='rotated-label'>" + formatIntent(i) + "</span></th>";
     });
     html += "</tr></thead><tbody>";
 
     intentList.forEach(function (orig) {
-      html += "<tr><td><strong>" + formatIntent(orig) + "</strong></td>";
+      html += "<tr><td>" + formatIntent(orig) + "</td>";
       intentList.forEach(function (corr) {
         var val = (matrix[orig] && matrix[orig][corr]) || 0;
         var cls = "cm-cell";
@@ -316,7 +316,7 @@ var Dashboard = (function () {
     // Cost over time line chart
     Charts.drawLineChart("chart-api-cost-time", (data.cost_over_time || []).map(function (d) {
       return { label: d.date, value: d.cost };
-    }), { color: "#27ae60", formatValue: function (v) { return "$" + v.toFixed(4); } });
+    }), { color: "#046bd2", formatValue: function (v) { return "$" + v.toFixed(4); } });
 
     // API calls by type horizontal bar chart
     Charts.drawHorizontalBarChart("chart-api-calls-type", (data.calls_by_type || []).map(function (d, i) {
@@ -325,8 +325,8 @@ var Dashboard = (function () {
 
     // OpenAI token breakdown horizontal bar chart
     Charts.drawHorizontalBarChart("chart-api-tokens", [
-      { label: "Input Tokens", value: tb.prompt_tokens || 0, color: "#1976d2" },
-      { label: "Output Tokens", value: tb.completion_tokens || 0, color: "#e67e22" }
+      { label: "Input Tokens", value: tb.prompt_tokens || 0, color: "#003060" },
+      { label: "Output Tokens", value: tb.completion_tokens || 0, color: "#FFC107" }
     ]);
 
     // Zoho API call distribution

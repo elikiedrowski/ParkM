@@ -4,10 +4,10 @@
  */
 var Charts = (function () {
 
-  // Color palette matching the widget design system
+  // Color palette — ParkM brand (navy, blue, gold + complements)
   var COLORS = [
-    "#1976d2", "#27ae60", "#e67e22", "#c0392b", "#8e44ad",
-    "#16a085", "#2c3e50", "#d35400", "#7f8c8d", "#2980b9"
+    "#003060", "#046bd2", "#FFC107", "#024985", "#0B59A6",
+    "#045cb4", "#1e293b", "#3b82f6", "#f59e0b", "#334155"
   ];
 
   function getColor(i) {

@@ -72,22 +72,34 @@
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">Classification Volume</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Classification Volume</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Number of tickets classified per day. Shows classification activity trends over the selected time range.</span></span>
+          </div>
           <canvas id="chart-volume" width="500" height="250"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Processing Time</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Processing Time</h3>
+            <span class="info-bubble">i<span class="info-tooltip">How long it takes to classify and tag a ticket. Includes average, median (P50), and tail latency (P95, P99) percentiles.</span></span>
+          </div>
           <div id="perf-stats" class="stats-grid"></div>
         </div>
       </div>
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">Intent Distribution</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Intent Distribution</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Breakdown of classified tickets by intent type. Shows which categories of requests are most common.</span></span>
+          </div>
           <canvas id="chart-intents" width="500" height="280"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Accuracy Over Time</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Accuracy Over Time</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Weekly accuracy rate based on CSR corrections. A correction means the AI classification was wrong.</span></span>
+          </div>
           <canvas id="chart-accuracy-time" width="500" height="250"></canvas>
         </div>
       </div>
@@ -98,22 +110,34 @@
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">Confidence by Intent</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Confidence by Intent</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Average AI confidence score (0-100%) for each intent type. Lower confidence may indicate ambiguous ticket language.</span></span>
+          </div>
           <canvas id="chart-confidence" width="500" height="280"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Entity Extraction Rates</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Entity Extraction Rates</h3>
+            <span class="info-bubble">i<span class="info-tooltip">How often each entity field (license plate, property, etc.) is successfully extracted from ticket text.</span></span>
+          </div>
           <canvas id="chart-entities" width="500" height="280"></canvas>
         </div>
       </div>
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">Template Usage</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Template Usage</h3>
+            <span class="info-bubble">i<span class="info-tooltip">How many times each response template was used by CSRs through the wizard widget.</span></span>
+          </div>
           <canvas id="chart-templates" width="500" height="280"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Errors by Type</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Errors by Type</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Classification failures grouped by error type. Common errors include API timeouts and malformed responses.</span></span>
+          </div>
           <div id="error-table" class="table-container"></div>
         </div>
       </div>
@@ -124,11 +148,17 @@
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">Confusion Matrix</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Confusion Matrix</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Shows how often the AI predicted one intent but the CSR corrected it to another. Higher numbers indicate systematic misclassifications.</span></span>
+          </div>
           <div id="confusion-matrix" class="table-container"></div>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Top Misclassification Pairs</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Top Misclassification Pairs</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Most frequent AI mistakes ranked by count. Each pair shows the AI's prediction and what the CSR corrected it to.</span></span>
+          </div>
           <div id="confusion-pairs" class="list-container"></div>
         </div>
       </div>
@@ -158,22 +188,34 @@
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">OpenAI Cost Over Time</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">OpenAI Cost Over Time</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Daily estimated OpenAI spend based on token usage. Cost = (input tokens x input price) + (output tokens x output price).</span></span>
+          </div>
           <canvas id="chart-api-cost-time" width="500" height="250"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">API Calls by Function</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">API Calls by Function</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Total API calls broken down by function type. Includes both OpenAI (classification) and Zoho Desk (ticket operations) calls.</span></span>
+          </div>
           <canvas id="chart-api-calls-type" width="500" height="280"></canvas>
         </div>
       </div>
 
       <div class="chart-row">
         <div class="chart-panel">
-          <h3 class="panel-title">OpenAI Token Usage</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">OpenAI Token Usage</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Total input (prompt) vs output (completion) tokens consumed. Input tokens are the ticket text sent; output tokens are the AI's classification response.</span></span>
+          </div>
           <canvas id="chart-api-tokens" width="500" height="250"></canvas>
         </div>
         <div class="chart-panel">
-          <h3 class="panel-title">Zoho API Call Distribution</h3>
+          <div class="panel-header">
+            <h3 class="panel-title">Zoho API Call Distribution</h3>
+            <span class="info-bubble">i<span class="info-tooltip">Breakdown of Zoho Desk API calls by operation: fetching tickets, updating fields, adding comments, and OAuth token refreshes.</span></span>
+          </div>
           <canvas id="chart-zoho-dist" width="500" height="280"></canvas>
         </div>
       </div>

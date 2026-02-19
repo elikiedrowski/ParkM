@@ -234,15 +234,84 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
 .panel-title {
   font-size: 12px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  margin-bottom: 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ── Info Bubble ──────────────────────────────────────────────────── */
+
+.info-bubble {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 18px;
+  text-align: center;
+  cursor: default;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.info-bubble:hover {
+  background: #1e40af;
+  color: #fff;
+}
+
+.info-bubble .info-tooltip {
+  display: none;
+  position: absolute;
+  top: 28px;
+  right: 0;
+  width: 220px;
+  padding: 10px 12px;
+  background: #1e293b;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+  z-index: 50;
+}
+
+.info-bubble .info-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  background: #1e293b;
+  transform: rotate(45deg);
+  border-radius: 2px 0 0 0;
+}
+
+.info-bubble:hover .info-tooltip {
+  display: block;
 }
 
 canvas {

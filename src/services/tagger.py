@@ -105,15 +105,6 @@ class TicketTagger:
             
             if result:
                 logger.info(f"[{ticket_id}] Custom fields updated successfully")
-                
-                # Also add an internal comment with classification details
-                comment = self._build_classification_comment(classification, routing)
-                await self.zoho_client.add_comment(
-                    ticket_id,
-                    comment,
-                    is_public=False  # Internal note only
-                )
-                
                 return True
             else:
                 logger.error(f"[{ticket_id}] Failed to update custom fields")

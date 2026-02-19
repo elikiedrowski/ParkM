@@ -49,6 +49,7 @@ app.add_middleware(
         "http://127.0.0.1:5000",
         "http://localhost:5000",
     ],
+    allow_origin_regex=r"https://.*\.zappsusercontent\.com",
     allow_credentials=True,
     allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],

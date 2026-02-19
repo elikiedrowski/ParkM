@@ -88,7 +88,9 @@ Provide your classification in JSON format with these fields:
    - "account_update" - Update vehicle info, license plate, contact details, unit number, etc.
    - "permit_inquiry" - Questions about permits, status, pricing, how permits work.
    - "payment_issue" - Billing problems, charge disputes, failed payments, unauthorized charges where customer does NOT ask for a refund.
-   - "technical_issue" - App/website problems, login issues, error messages.
+   - "technical_issue" - App/website problems, login issues, error messages (NOT password resets — use "password_reset" for those).
+   - "tow_issue" - Customer is reporting a tow, requesting a tow, disputing a tow, or reporting a boot on their vehicle. Includes booting and towing situations.
+   - "password_reset" - Customer needs help resetting their password, can't log in due to forgotten password, or locked out of their account.
    - "move_out" - Customer says they are moving out or have moved out, but does NOT explicitly request a refund or cancellation. They are notifying us.
    - "general_question" - Other questions that don't fit above categories.
    - "unclear" - Cannot determine intent at all (very short, gibberish, completely off-topic).
@@ -101,6 +103,10 @@ Provide your classification in JSON format with these fields:
    - If customer disputes a charge but does NOT ask for money back → "payment_issue"
    - If BOTH subject AND body are empty/meaningless (e.g. "(No Subject)" with no body) → "unclear"
    - "Renew", "Renewal", "Expiring Permit" without further context → "permit_inquiry", NOT "refund_request"
+   - If customer mentions towing, booting, or vehicle impound → "tow_issue"
+   - If customer says they were towed AND wants a refund → "tow_issue" (tow is the primary issue)
+   - If customer can't log in due to forgotten/reset password → "password_reset", NOT "technical_issue"
+   - If customer has an app bug or error (NOT password-related) → "technical_issue"
 
 2. "complexity" - How difficult to resolve (choose ONE):
    - "simple" - Clear request, straightforward resolution, one permit/vehicle
@@ -188,6 +194,21 @@ Subject: "Renew"
 Body: ""
 → intent: "permit_inquiry", confidence: 0.50 (subject suggests renewal, no body)
 
+Example 8 — Tow/boot issue:
+Subject: "My car was towed!"
+Body: "I have a valid permit but my car was towed from lot B. Plate XYZ-1234. Please help."
+→ intent: "tow_issue", confidence: 0.90 (clear tow issue, has plate)
+
+Example 9 — Booting issue:
+Subject: "Boot on my vehicle"
+Body: "There is a boot on my car in the garage. I pay for parking here. Please remove it."
+→ intent: "tow_issue", confidence: 0.85 (booting falls under tow_issue)
+
+Example 10 — Password reset:
+Subject: "Can't log in"
+Body: "I forgot my password and can't get into my account to manage my permit."
+→ intent: "password_reset", confidence: 0.90 (clear password/login issue)
+
 Respond ONLY with valid JSON, no other text."""
     
     def get_routing_recommendation(self, classification: Dict[str, Any]) -> str:
@@ -211,6 +232,10 @@ Respond ONLY with valid JSON, no other text."""
         elif intent == "permit_cancellation" and complexity == "simple":
             return "Quick Updates"
         elif intent == "account_update" and complexity == "simple":
+            return "Quick Updates"
+        elif intent == "tow_issue":
+            return "Escalations"
+        elif intent == "password_reset":
             return "Quick Updates"
         elif complexity == "complex" or classification.get("urgency") == "high":
             return "Escalations"

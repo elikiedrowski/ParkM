@@ -12,7 +12,14 @@ var Dashboard = (function () {
   function fetchJSON(path) {
     var url = BASE_URL + path;
     if (currentDays) url += (url.includes("?") ? "&" : "?") + "days=" + currentDays;
-    return fetch(url).then(function (r) { return r.json(); });
+    return fetch(url, { credentials: "same-origin" }).then(function (r) {
+      if (r.status === 401 || r.status === 307) {
+        window.location.href = "/analytics/login";
+        return Promise.reject(new Error("Session expired"));
+      }
+      if (!r.ok) return Promise.reject(new Error("HTTP " + r.status));
+      return r.json();
+    });
   }
 
   /* ── Tab Navigation ─────────────────────────────────────────────── */

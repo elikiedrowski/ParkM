@@ -23,6 +23,9 @@ PyPDF2>=3.0.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 
+# Session middleware signing (transitive via Starlette, pinned explicitly for Railway)
+itsdangerous>=2.1.2
+
 # Utilities
 python-multipart==0.0.6
 

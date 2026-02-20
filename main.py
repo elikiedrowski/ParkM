@@ -2,11 +2,13 @@
 ParkM Email Classification System - FastAPI Application
 Main entry point for webhook receiver and API endpoints
 """
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 import logging
+import os
 from datetime import datetime
 import hashlib
 import hmac
@@ -62,6 +64,36 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Session middleware — powers the analytics dashboard login
+# https_only=False works on Railway because TLS is terminated at the edge proxy;
+# the signed cookie (itsdangerous) is still tamper-proof.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "change-me-before-deploying"),
+    session_cookie="parkm_session",
+    max_age=86400,       # 24-hour sessions
+    same_site="lax",
+    https_only=False,    # Railway terminates TLS at edge; app sees plain HTTP internally
+)
+
+# ── Dashboard auth ────────────────────────────────────────────────────────
+
+_DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "admin")
+_DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
+
+
+async def require_auth(request: Request):
+    """FastAPI dependency — raises 401/307 if the dashboard session is missing."""
+    if not request.session.get("authenticated"):
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept:
+            raise HTTPException(
+                status_code=307,
+                headers={"Location": "/analytics/login"},
+                detail="Login required"
+            )
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
 # Initialize services
 classifier = EmailClassifier()
@@ -525,56 +557,90 @@ if _os.path.isdir("dashboard"):
     app.mount("/dashboard/img", StaticFiles(directory="dashboard/img"), name="dashboard-img")
 
 
+# ── Auth routes (public — no require_auth dependency) ────────────────────
+
+@app.get("/analytics/login")
+async def analytics_login_page():
+    """Serve the login form."""
+    return FileResponse("dashboard/login.html", media_type="text/html")
+
+
+@app.post("/analytics/login")
+async def analytics_login_post(request: Request):
+    """Process login form submission."""
+    form = await request.form()
+    username = (form.get("username") or "").strip()
+    password = (form.get("password") or "").strip()
+
+    if not _DASHBOARD_PASSWORD:
+        # No password configured — block access with a clear message
+        return FileResponse("dashboard/login.html", status_code=503)
+
+    if username == _DASHBOARD_USERNAME and password == _DASHBOARD_PASSWORD:
+        request.session["authenticated"] = True
+        return RedirectResponse(url="/analytics/dashboard", status_code=303)
+    return RedirectResponse(url="/analytics/login?error=1", status_code=303)
+
+
+@app.get("/analytics/logout")
+async def analytics_logout(request: Request):
+    """Clear session and redirect to login."""
+    request.session.clear()
+    return RedirectResponse(url="/analytics/login", status_code=303)
+
+
+# ── Protected analytics routes ────────────────────────────────────────────
+
 @app.get("/analytics/dashboard")
-async def analytics_dashboard():
+async def analytics_dashboard(_: None = Depends(require_auth)):
     """Serve the analytics dashboard HTML page."""
     return FileResponse("dashboard/index.html", media_type="text/html")
 
 
 @app.get("/analytics/summary")
-async def analytics_summary(days: int = None):
+async def analytics_summary(days: int = None, _: None = Depends(require_auth)):
     """High-level KPI metrics for dashboard header cards."""
     return get_summary(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/classifications")
-async def analytics_classifications(days: int = None):
+async def analytics_classifications(days: int = None, _: None = Depends(require_auth)):
     """Intent distribution, confidence stats, volume over time."""
     return get_classification_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/corrections")
-async def analytics_corrections(days: int = None):
+async def analytics_corrections(days: int = None, _: None = Depends(require_auth)):
     """Confusion matrix, accuracy over time, top misclassification pairs."""
     return get_correction_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/templates")
-async def analytics_templates(days: int = None):
+async def analytics_templates(days: int = None, _: None = Depends(require_auth)):
     """Template usage stats by template and by intent."""
     return get_template_analytics(days)
 
 
 @app.get("/analytics/performance")
-async def analytics_performance(days: int = None):
+async def analytics_performance(days: int = None, _: None = Depends(require_auth)):
     """Processing time percentiles, error rates."""
     return get_performance_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/entities")
-async def analytics_entities(days: int = None):
+async def analytics_entities(days: int = None, _: None = Depends(require_auth)):
     """Entity extraction rates by type and by intent."""
     return get_entity_analytics(days, department_id=ANALYTICS_DEPARTMENT_ID)
 
 
 @app.get("/analytics/api-usage")
-async def analytics_api_usage(days: int = None):
+async def analytics_api_usage(days: int = None, _: None = Depends(require_auth)):
     """API usage tracking: call volumes, token usage, cost estimates."""
     return get_api_usage_analytics(days)
 
 
 @app.get("/analytics/errors")
-async def analytics_errors(days: int = 7, level: str = None, limit: int = 200):
+async def analytics_errors(days: int = 7, level: str = None, limit: int = 200, _: None = Depends(require_auth)):
     """Recent application error logs from DB or JSONL."""
     return get_error_logs(days=days, level=level, limit=limit)
 

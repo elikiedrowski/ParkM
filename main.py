@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -98,6 +99,9 @@ async def require_auth(request: Request):
 # Initialize services
 classifier = EmailClassifier()
 zoho_client = ZohoDeskClient()
+
+# Concurrency limiter — prevents webhook flood from overwhelming OpenAI/Zoho APIs
+_webhook_semaphore = asyncio.Semaphore(3)
 
 
 @app.on_event("startup")
@@ -212,12 +216,12 @@ async def zoho_ticket_webhook(
             raise HTTPException(status_code=400, detail="Missing ticket ID in payload")
         logger.info(f"Processing ticket ID: {ticket_id}")
         
-        # Process webhook in background (don't block response to Zoho)
-        background_tasks.add_task(
-            process_ticket_webhook,
-            ticket_id=ticket_id,
-            payload=payload
-        )
+        # Process webhook in background with concurrency limit
+        async def _throttled_process(tid, pl):
+            async with _webhook_semaphore:
+                await process_ticket_webhook(ticket_id=tid, payload=pl)
+
+        background_tasks.add_task(_throttled_process, ticket_id, payload)
         
         # Return immediate success response to Zoho
         return {
@@ -303,11 +307,11 @@ async def zoho_ticket_updated_webhook(
 
     logger.info(f"Received ticket-updated webhook for ticket {ticket_id}")
 
-    background_tasks.add_task(
-        process_correction_webhook,
-        ticket_id=ticket_id,
-        payload=ticket_payload
-    )
+    async def _throttled_correction(tid, pl):
+        async with _webhook_semaphore:
+            await process_correction_webhook(ticket_id=tid, payload=pl)
+
+    background_tasks.add_task(_throttled_correction, ticket_id, ticket_payload)
 
     return {
         "status": "accepted",
@@ -482,6 +486,119 @@ async def batch_classify(limit: int = 25):
     return {
         "classified": len(results),
         "errors": len(errors),
+        "results": results,
+        "error_details": errors,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+@app.post("/batch-reclassify")
+async def batch_reclassify(
+    limit: int = 100,
+    delay: float = 2.0,
+    background_tasks: BackgroundTasks = None,
+):
+    """
+    Rate-limited reclassification of all tickets.
+    Fetches tickets in pages, classifies each with a delay between calls
+    to avoid OpenAI 429 rate limits and Zoho connection timeouts.
+
+    Query params:
+        limit: Max tickets to process (default 100, max 500)
+        delay: Seconds between each classification call (default 2.0)
+    """
+    from src.services.tagger import TicketTagger
+
+    limit = min(limit, 500)
+    tagger = TicketTagger()
+    results = []
+    errors = []
+
+    # Paginate through all tickets (Zoho max 50 per page)
+    all_tickets = []
+    page_size = 50
+    offset = 0
+    while len(all_tickets) < limit:
+        try:
+            batch = await zoho_client.list_tickets(
+                limit=min(page_size, limit - len(all_tickets)),
+                _from=offset,
+            )
+            if not batch:
+                break
+            all_tickets.extend(batch)
+            offset += len(batch)
+            if len(batch) < page_size:
+                break
+        except Exception as e:
+            logger.error(f"Failed to fetch tickets at offset {offset}: {e}")
+            break
+
+    logger.info(f"Batch reclassify: {len(all_tickets)} tickets to process (delay={delay}s)")
+
+    for i, t in enumerate(all_tickets):
+        ticket_id = t.get("id")
+        if not ticket_id:
+            continue
+
+        try:
+            start_time = datetime.now()
+            ticket_data = await zoho_client.get_ticket(ticket_id)
+            if not ticket_data:
+                continue
+
+            subject = ticket_data.get("subject", "")
+            description = ticket_data.get("description", "")
+            sender_email = ticket_data.get("email", "")
+
+            classification = classifier.classify_email(
+                subject, description, sender_email, ticket_id=ticket_id
+            )
+            routing = classifier.get_routing_recommendation(classification)
+
+            tag_result = await tagger.apply_classification_tags(
+                ticket_id=ticket_id,
+                classification=classification,
+                routing=routing,
+            )
+
+            end_time = datetime.now()
+            processing_time = (end_time - start_time).total_seconds()
+            dept_id = ticket_data.get("departmentId", "")
+            log_classification_event(
+                ticket_id=ticket_id,
+                classification=classification,
+                routing=routing,
+                processing_time_seconds=processing_time,
+                tagging_success=bool(tag_result),
+                department_id=dept_id,
+            )
+
+            results.append({
+                "ticket_id": ticket_id,
+                "subject": subject,
+                "intent": classification.get("intent"),
+                "confidence": classification.get("confidence"),
+                "tagged": bool(tag_result),
+            })
+            logger.info(
+                f"[{i+1}/{len(all_tickets)}] {ticket_id} → "
+                f"{classification.get('intent')} ({classification.get('confidence')})"
+            )
+
+        except Exception as e:
+            logger.error(f"Batch reclassify error for {ticket_id}: {e}")
+            errors.append({"ticket_id": ticket_id, "error": str(e)})
+
+        # Rate-limit delay between tickets (skip after the last one)
+        if i < len(all_tickets) - 1:
+            await asyncio.sleep(delay)
+
+    return {
+        "classified": len(results),
+        "errors": len(errors),
+        "total_tickets": len(all_tickets),
+        "delay_seconds": delay,
         "results": results,
         "error_details": errors,
         "timestamp": datetime.now().isoformat(),

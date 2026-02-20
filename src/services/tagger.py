@@ -235,6 +235,8 @@ class TicketTagger:
                     "permit_inquiry",
                     "move_out",
                     "technical_issue",
+                    "tow_issue",
+                    "password_reset",
                     "general_question",
                     "unclear"
                 ]

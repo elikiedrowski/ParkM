@@ -34,7 +34,7 @@ def get_wizard_for_intent(
     filled in from the classification data where available.
 
     Args:
-        intent: One of the 9 intent values (e.g. 'refund_request')
+        intent: One of the 11 intent values (e.g. 'refund_request', 'tow_issue', 'password_reset')
         classification: Full classification dict from EmailClassifier (optional)
 
     Returns:

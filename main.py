@@ -514,6 +514,7 @@ ANALYTICS_DEPARTMENT_ID = _os.getenv("ANALYTICS_DEPARTMENT_ID", "100469900000188
 if _os.path.isdir("dashboard"):
     app.mount("/dashboard/css", StaticFiles(directory="dashboard/css"), name="dashboard-css")
     app.mount("/dashboard/js", StaticFiles(directory="dashboard/js"), name="dashboard-js")
+    app.mount("/dashboard/img", StaticFiles(directory="dashboard/img"), name="dashboard-img")
 
 
 @app.get("/analytics/dashboard")

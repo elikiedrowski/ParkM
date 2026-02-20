@@ -21,8 +21,9 @@ from src.services.analytics_logger import log_template_usage, log_classification
 from src.services.analytics_aggregator import (
     get_summary, get_classification_analytics, get_correction_analytics,
     get_template_analytics, get_performance_analytics, get_entity_analytics,
-    get_api_usage_analytics
+    get_api_usage_analytics, get_error_logs
 )
+from src.services.analytics_logger import log_error
 
 # Configure logging
 logging.basicConfig(
@@ -71,6 +72,13 @@ zoho_client = ZohoDeskClient()
 async def startup_event():
     """Initialize services on startup"""
     logger.info("Starting ParkM Email Classification API")
+    # Initialize database (creates tables if DATABASE_URL is set)
+    from src.db.database import init_db
+    db_ready = init_db()
+    if db_ready:
+        logger.info("Persistent database storage active")
+    else:
+        logger.info("No DATABASE_URL — analytics stored in JSONL files (ephemeral)")
     logger.info("FastAPI server ready to receive webhooks")
 
 
@@ -563,6 +571,12 @@ async def analytics_entities(days: int = None):
 async def analytics_api_usage(days: int = None):
     """API usage tracking: call volumes, token usage, cost estimates."""
     return get_api_usage_analytics(days)
+
+
+@app.get("/analytics/errors")
+async def analytics_errors(days: int = 7, level: str = None, limit: int = 200):
+    """Recent application error logs from DB or JSONL."""
+    return get_error_logs(days=days, level=level, limit=limit)
 
 
 @app.post("/analytics/template-used")

@@ -6,6 +6,18 @@ var TemplatePanel = (function () {
   var currentTemplateHtml = "";
   var currentTemplateFile = "";
 
+  /* ── HTML sanitizer ────────────────────────────────────────────────── */
+
+  function _sanitize(html) {
+    // Strip <script> blocks
+    html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+    // Strip inline event handlers (onclick, onerror, onload, etc.)
+    html = html.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
+    // Strip javascript: URLs
+    html = html.replace(/(href|src|action)\s*=\s*(['"]?)\s*javascript:/gi, '$1=$2#');
+    return html;
+  }
+
   /* ── Render template pill buttons ─────────────────────────────────── */
 
   function renderButtons(quickTemplates) {
@@ -52,7 +64,7 @@ var TemplatePanel = (function () {
         return res.json();
       })
       .then(function (data) {
-        currentTemplateHtml = data.html || "";
+        currentTemplateHtml = _sanitize(data.html || "");
         body.innerHTML = "<div class='template-preview'>" + currentTemplateHtml + "</div>";
       })
       .catch(function (err) {

@@ -3,6 +3,7 @@ Configuration management for ParkM Zoho integration
 """
 import os
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from functools import lru_cache
 
 
@@ -35,10 +36,8 @@ class Settings(BaseSettings):
     # Database (optional for analytics)
     database_url: str | None = None
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-    
+    model_config = ConfigDict(env_file=".env", case_sensitive=False)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Auto-construct base URL if not provided

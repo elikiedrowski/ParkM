@@ -7,6 +7,38 @@ var WizardRenderer = (function () {
   var checkedSteps = {};
   var decisionSelections = {};
 
+  /* ── localStorage persistence ─────────────────────────────────────── */
+
+  function _storageKey() {
+    var ticketId = (typeof ParkMApp !== "undefined" && ParkMApp.getTicketId)
+      ? ParkMApp.getTicketId() : null;
+    return ticketId ? "parkm_wizard_" + ticketId : null;
+  }
+
+  function _saveState() {
+    var key = _storageKey();
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        checkedSteps: checkedSteps,
+        decisionSelections: decisionSelections
+      }));
+    } catch (e) { /* quota exceeded or unavailable */ }
+  }
+
+  function _loadState() {
+    var key = _storageKey();
+    if (!key) return;
+    try {
+      var saved = localStorage.getItem(key);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        checkedSteps = parsed.checkedSteps || {};
+        decisionSelections = parsed.decisionSelections || {};
+      }
+    } catch (e) { /* parse error */ }
+  }
+
   /* ── Header Panel ─────────────────────────────────────────────────── */
 
   function renderHeader(wizard, customFields) {
@@ -128,6 +160,7 @@ var WizardRenderer = (function () {
     container.innerHTML = "";
     checkedSteps = {};
     decisionSelections = {};
+    _loadState();  // restore saved progress for this ticket
 
     (steps || []).forEach(function (step) {
       var row = document.createElement("div");
@@ -153,11 +186,18 @@ var WizardRenderer = (function () {
     checkbox.addEventListener("change", function () {
       checkedSteps[step.id] = this.checked;
       textSpan.className = this.checked ? "step-text checked" : "step-text";
+      _saveState();
     });
 
     var textSpan = document.createElement("span");
     textSpan.className = "step-text";
     textSpan.textContent = step.text;
+
+    // Restore saved state
+    if (checkedSteps[step.id]) {
+      checkbox.checked = true;
+      textSpan.className = "step-text checked";
+    }
 
     main.appendChild(checkbox);
     main.appendChild(textSpan);
@@ -260,6 +300,8 @@ var WizardRenderer = (function () {
         btn.classList.add("selected");
         btn.classList.remove("dimmed");
 
+        _saveState();
+
         // If option has a next_template, preview it
         if (option.next_template && typeof TemplatePanel !== "undefined") {
           TemplatePanel.loadAndPreview(option.next_template);
@@ -273,6 +315,19 @@ var WizardRenderer = (function () {
 
       btnGroup.appendChild(btn);
     });
+
+    // Restore saved decision selection
+    var savedAction = decisionSelections[step.id];
+    if (savedAction) {
+      var allBtns = btnGroup.querySelectorAll(".decision-btn");
+      for (var j = 0; j < allBtns.length; j++) {
+        if (allBtns[j].getAttribute("data-action") === savedAction) {
+          allBtns[j].classList.add("selected");
+        } else {
+          allBtns[j].classList.add("dimmed");
+        }
+      }
+    }
 
     row.appendChild(btnGroup);
   }

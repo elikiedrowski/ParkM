@@ -19,9 +19,9 @@ pyyaml>=6.0
 # PDF processing (for refund process document)
 PyPDF2>=3.0.0
 
-# Database (optional - for Week 3 analytics)
-# sqlalchemy==2.0.25
-# asyncpg==0.29.0
+# Database — persistent analytics storage (PostgreSQL on Railway, JSONL fallback locally)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
 
 # Utilities
 python-multipart==0.0.6

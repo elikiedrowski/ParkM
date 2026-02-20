@@ -4,7 +4,6 @@ Applies AI classification results to Zoho Desk tickets via custom fields
 """
 import logging
 from typing import Dict, Any, Optional
-from datetime import datetime
 
 from src.api.zoho_client import ZohoDeskClient
 
@@ -113,59 +112,6 @@ class TicketTagger:
         except Exception as e:
             logger.error(f"[{ticket_id}] Error applying tags: {e}", exc_info=True)
             return False
-    
-    def _build_classification_comment(
-        self,
-        classification: Dict[str, Any],
-        routing: Dict[str, Any]
-    ) -> str:
-        """
-        Build an internal comment with classification details
-        
-        Args:
-            classification: Classification result
-            routing: Routing recommendation
-            
-        Returns:
-            str: Formatted comment text
-        """
-        comment_lines = [
-            "🤖 AI Classification Results",
-            f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            "",
-            f"Intent: {classification.get('intent', 'unknown')}",
-            f"Complexity: {classification.get('complexity', 'unknown')}",
-            f"Language: {classification.get('language', 'unknown')}",
-            f"Urgency: {classification.get('urgency', 'unknown')}",
-            f"Confidence: {int(classification.get('confidence', 0) * 100)}%",
-            "",
-            f"Requires Refund: {'Yes' if classification.get('requires_refund') else 'No'}",
-            f"Requires Human Review: {'Yes' if classification.get('requires_human_review') else 'No'}",
-            "",
-            f"Recommended Queue: {routing if isinstance(routing, str) else routing.get('queue', 'unknown')}",
-            f"Routing Reason: {routing.get('reason', 'N/A') if isinstance(routing, dict) else 'N/A'}",
-        ]
-        
-        # Add extracted entities
-        key_entities = classification.get("key_entities", {})
-        if key_entities:
-            comment_lines.append("")
-            comment_lines.append("Extracted Information:")
-            if key_entities.get("license_plate"):
-                comment_lines.append(f"  • License Plate: {key_entities['license_plate']}")
-            if key_entities.get("move_out_date"):
-                comment_lines.append(f"  • Move-Out Date: {key_entities['move_out_date']}")
-            if key_entities.get("property_name"):
-                comment_lines.append(f"  • Property: {key_entities['property_name']}")
-            if key_entities.get("amount"):
-                comment_lines.append(f"  • Amount: ${key_entities['amount']}")
-        
-        # Add notes
-        if classification.get("notes"):
-            comment_lines.append("")
-            comment_lines.append(f"Notes: {classification['notes']}")
-        
-        return "\n".join(comment_lines)
     
     def _parse_date(self, date_string: str) -> Optional[str]:
         """

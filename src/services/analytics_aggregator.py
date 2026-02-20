@@ -1,21 +1,43 @@
 """
 Analytics Aggregator Service
-Reads JSONL log files and computes dashboard-ready aggregates.
+Reads from DB (when available) or JSONL log files and computes dashboard-ready aggregates.
+Results are cached in-process with a 60-second TTL to avoid repeated DB/file reads.
 """
 import json
 import logging
 import os
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+# JSONL fallback paths
 CLASSIFICATIONS_LOG = "logs/classifications.jsonl"
 CORRECTIONS_LOG = "logs/corrections.jsonl"
 TEMPLATE_USAGE_LOG = "logs/template_usage.jsonl"
 API_USAGE_LOG = "logs/api_usage.jsonl"
+ERRORS_LOG = "logs/errors.jsonl"
 
+# ── TTL cache ─────────────────────────────────────────────────────────────
+
+_cache: Dict[str, Any] = {}
+_CACHE_TTL = 60  # seconds
+
+
+def _cache_get(key: str) -> Optional[Any]:
+    entry = _cache.get(key)
+    if entry and (time.time() - entry["ts"]) < _CACHE_TTL:
+        return entry["data"]
+    return None
+
+
+def _cache_set(key: str, data: Any) -> None:
+    _cache[key] = {"ts": time.time(), "data": data}
+
+
+# ── Data access layer ─────────────────────────────────────────────────────
 
 def _read_jsonl(filepath: str, days: Optional[int] = None, department_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Read a JSONL file and optionally filter by time range and department."""
@@ -44,11 +66,66 @@ def _read_jsonl(filepath: str, days: Optional[int] = None, department_id: Option
     return entries
 
 
+def _get_classifications(days: Optional[int] = None, department_id: Optional[str] = None) -> List[Dict]:
+    """Read classifications from DB when available, otherwise JSONL."""
+    try:
+        from src.db.database import get_engine, read_classifications
+        engine = get_engine()
+        if engine:
+            return read_classifications(engine, days, department_id)
+    except Exception as e:
+        logger.warning(f"DB read failed for classifications ({e}), using JSONL")
+    return _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
+
+
+def _get_corrections(days: Optional[int] = None, department_id: Optional[str] = None) -> List[Dict]:
+    """Read corrections from DB when available, otherwise JSONL."""
+    try:
+        from src.db.database import get_engine, read_corrections
+        engine = get_engine()
+        if engine:
+            return read_corrections(engine, days, department_id)
+    except Exception as e:
+        logger.warning(f"DB read failed for corrections ({e}), using JSONL")
+    return _read_jsonl(CORRECTIONS_LOG, days, department_id)
+
+
+def _get_api_usage(days: Optional[int] = None) -> List[Dict]:
+    """Read api_usage from DB when available, otherwise JSONL."""
+    try:
+        from src.db.database import get_engine, read_api_usage
+        engine = get_engine()
+        if engine:
+            return read_api_usage(engine, days)
+    except Exception as e:
+        logger.warning(f"DB read failed for api_usage ({e}), using JSONL")
+    return _read_jsonl(API_USAGE_LOG, days)
+
+
+def _get_template_usage(days: Optional[int] = None) -> List[Dict]:
+    """Read template_usage from DB when available, otherwise JSONL."""
+    try:
+        from src.db.database import get_engine, read_template_usage
+        engine = get_engine()
+        if engine:
+            return read_template_usage(engine, days)
+    except Exception as e:
+        logger.warning(f"DB read failed for template_usage ({e}), using JSONL")
+    return _read_jsonl(TEMPLATE_USAGE_LOG, days)
+
+
+# ── Aggregation functions ─────────────────────────────────────────────────
+
 def get_summary(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """High-level metrics for dashboard header cards."""
-    classifications = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
-    corrections = _read_jsonl(CORRECTIONS_LOG, days, department_id)
-    templates = _read_jsonl(TEMPLATE_USAGE_LOG, days)
+    key = f"summary_{days}_{department_id}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    classifications = _get_classifications(days, department_id)
+    corrections = _get_corrections(days, department_id)
+    templates = _get_template_usage(days)
 
     total = len(classifications)
     errors = sum(1 for c in classifications if c.get("error"))
@@ -60,13 +137,11 @@ def get_summary(days: Optional[int] = None, department_id: Optional[str] = None)
     misclass = sum(1 for c in corrections if c.get("is_misclassification"))
     total_corrections = len(corrections)
 
-    # Accuracy: if we have corrections, calculate from those
-    # Otherwise report as N/A
     accuracy = None
     if total_corrections > 0:
         accuracy = round((total_corrections - misclass) / total_corrections * 100, 1)
 
-    return {
+    result = {
         "total_classifications": total,
         "successful_classifications": successful,
         "accuracy_rate": accuracy,
@@ -77,14 +152,20 @@ def get_summary(days: Optional[int] = None, department_id: Optional[str] = None)
         "templates_used": len(templates),
         "error_rate": round(errors / total * 100, 1) if total else 0,
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_classification_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Intent distribution, confidence stats, volume over time."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
+    key = f"classifications_{days}_{department_id}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    entries = _get_classifications(days, department_id)
     successful = [e for e in entries if not e.get("error")]
 
-    # Intent distribution
     intent_counts = defaultdict(int)
     for e in successful:
         intent_counts[e.get("intent", "unknown")] += 1
@@ -96,7 +177,6 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
         key=lambda x: x["count"], reverse=True
     )
 
-    # Confidence by intent
     conf_by_intent = defaultdict(list)
     for e in successful:
         if e.get("confidence") is not None:
@@ -112,7 +192,6 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
             "count": len(confs),
         })
 
-    # Volume over time (daily)
     daily_counts = defaultdict(int)
     for e in successful:
         date = e.get("timestamp", "")[:10]
@@ -121,7 +200,6 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
 
     volume_over_time = [{"date": d, "count": c} for d, c in sorted(daily_counts.items())]
 
-    # Complexity, urgency, language distributions
     complexity_dist = defaultdict(int)
     urgency_dist = defaultdict(int)
     language_dist = defaultdict(int)
@@ -133,7 +211,7 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
         if e.get("language"):
             language_dist[e["language"]] += 1
 
-    return {
+    result = {
         "intent_distribution": intent_dist,
         "confidence_by_intent": confidence_stats,
         "volume_over_time": volume_over_time,
@@ -141,23 +219,26 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
         "urgency_distribution": dict(urgency_dist),
         "language_distribution": dict(language_dist),
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_correction_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Confusion matrix, accuracy over time, top misclassification pairs."""
-    entries = _read_jsonl(CORRECTIONS_LOG, days, department_id)
+    key = f"corrections_{days}_{department_id}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
 
+    entries = _get_corrections(days, department_id)
     misclassifications = [e for e in entries if e.get("is_misclassification")]
 
-    # Confusion matrix
     matrix = defaultdict(lambda: defaultdict(int))
     for e in misclassifications:
         matrix[e["original_intent"]][e["corrected_intent"]] += 1
 
-    # Convert to serializable dict
     confusion_matrix = {k: dict(v) for k, v in matrix.items()}
 
-    # Top confusion pairs
     pair_counts = defaultdict(int)
     for e in misclassifications:
         pair_counts[(e["original_intent"], e["corrected_intent"])] += 1
@@ -167,7 +248,6 @@ def get_correction_analytics(days: Optional[int] = None, department_id: Optional
         key=lambda x: x["count"], reverse=True
     )
 
-    # Accuracy over time (weekly)
     weekly = defaultdict(lambda: {"total": 0, "correct": 0})
     for e in entries:
         ts = e.get("timestamp", "")
@@ -190,7 +270,7 @@ def get_correction_analytics(days: Optional[int] = None, department_id: Optional
             "accuracy": round(data["correct"] / data["total"] * 100, 1) if data["total"] else 0,
         })
 
-    return {
+    result = {
         "total_corrections": len(entries),
         "misclassifications": len(misclassifications),
         "accuracy_rate": round((len(entries) - len(misclassifications)) / len(entries) * 100, 1) if entries else None,
@@ -198,13 +278,19 @@ def get_correction_analytics(days: Optional[int] = None, department_id: Optional
         "confusion_pairs": confusion_pairs,
         "accuracy_over_time": accuracy_over_time,
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_template_analytics(days: Optional[int] = None) -> dict:
     """Template usage by template and by intent."""
-    entries = _read_jsonl(TEMPLATE_USAGE_LOG, days)
+    key = f"templates_{days}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
 
-    # By template
+    entries = _get_template_usage(days)
+
     template_counts = defaultdict(int)
     for e in entries:
         template_counts[e.get("template_file", "unknown")] += 1
@@ -216,7 +302,6 @@ def get_template_analytics(days: Optional[int] = None) -> dict:
         key=lambda x: x["count"], reverse=True
     )
 
-    # By intent
     intent_template = defaultdict(lambda: defaultdict(int))
     for e in entries:
         intent_template[e.get("intent", "unknown")][e.get("template_file", "unknown")] += 1
@@ -231,24 +316,30 @@ def get_template_analytics(days: Optional[int] = None) -> dict:
             )
         })
 
-    # Usage over time (daily)
     daily = defaultdict(int)
     for e in entries:
         date = e.get("timestamp", "")[:10]
         if date:
             daily[date] += 1
 
-    return {
+    result = {
         "total_uses": total,
         "by_template": by_template,
         "by_intent": by_intent,
         "usage_over_time": [{"date": d, "count": c} for d, c in sorted(daily.items())],
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_performance_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Processing time percentiles, error rates, tagging success."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
+    key = f"performance_{days}_{department_id}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    entries = _get_classifications(days, department_id)
 
     times = sorted([e["processing_time_seconds"] for e in entries if e.get("processing_time_seconds") is not None])
     total = len(entries)
@@ -262,11 +353,9 @@ def get_performance_analytics(days: Optional[int] = None, department_id: Optiona
         idx = min(idx, len(sorted_list) - 1)
         return round(sorted_list[idx], 2)
 
-    # Error breakdown
     error_types = defaultdict(int)
     for e in errors:
         err_msg = e.get("error", "Unknown")
-        # Truncate long error messages to a category
         if "rate limit" in err_msg.lower() or "429" in err_msg:
             error_types["Rate limit (429)"] += 1
         elif "timeout" in err_msg.lower():
@@ -276,7 +365,7 @@ def get_performance_analytics(days: Optional[int] = None, department_id: Optiona
         else:
             error_types["Other"] += 1
 
-    return {
+    result = {
         "processing_time": {
             "avg_seconds": round(sum(times) / len(times), 2) if times else None,
             "p50_seconds": percentile(times, 50),
@@ -290,16 +379,22 @@ def get_performance_analytics(days: Optional[int] = None, department_id: Optiona
         "tagging_success_rate": round(tagging_ok / total * 100, 1) if total else 0,
         "errors_by_type": [{"error": k, "count": v} for k, v in sorted(error_types.items(), key=lambda x: x[1], reverse=True)],
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_entity_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
     """Entity extraction rates by type and by intent."""
-    entries = _read_jsonl(CLASSIFICATIONS_LOG, days, department_id)
+    key = f"entities_{days}_{department_id}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    entries = _get_classifications(days, department_id)
     successful = [e for e in entries if not e.get("error") and e.get("entities")]
 
     entity_fields = ["license_plate", "move_out_date", "property_name", "amount"]
 
-    # Overall extraction rates
     overall = {}
     for field in entity_fields:
         found = sum(1 for e in successful if e.get("entities", {}).get(field))
@@ -310,7 +405,6 @@ def get_entity_analytics(days: Optional[int] = None, department_id: Optional[str
             "rate": round(found / total * 100, 1) if total else 0,
         }
 
-    # By intent
     by_intent = defaultdict(lambda: defaultdict(lambda: {"found": 0, "total": 0}))
     for e in successful:
         intent = e.get("intent", "unknown")
@@ -329,15 +423,22 @@ def get_entity_analytics(days: Optional[int] = None, department_id: Optional[str
                 "rate": round(data["found"] / data["total"] * 100, 1) if data["total"] else 0,
             }
 
-    return {
+    result = {
         "extraction_rates": overall,
         "by_intent": by_intent_result,
     }
+    _cache_set(key, result)
+    return result
 
 
 def get_api_usage_analytics(days: Optional[int] = None) -> dict:
     """API usage stats: call counts, token usage, cost tracking."""
-    entries = _read_jsonl(API_USAGE_LOG, days)
+    key = f"api_usage_{days}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
+    entries = _get_api_usage(days)
 
     openai_entries = [e for e in entries if e.get("provider") == "openai"]
     zoho_entries = [e for e in entries if e.get("provider") == "zoho"]
@@ -354,7 +455,6 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
     tickets_with_openai = set(e.get("ticket_id") for e in openai_entries if e.get("ticket_id"))
     avg_cost_per_ticket = round(total_cost / len(tickets_with_openai), 6) if tickets_with_openai else 0
 
-    # Cost over time (daily)
     daily_cost = defaultdict(float)
     daily_calls = defaultdict(int)
     for e in openai_entries:
@@ -368,7 +468,6 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         for d, c in sorted(daily_cost.items())
     ]
 
-    # API calls by type (prefixed with provider)
     call_type_counts = defaultdict(int)
     for e in entries:
         label = e.get("provider", "unknown") + ":" + e.get("call_type", "unknown")
@@ -379,7 +478,6 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         key=lambda x: x["count"], reverse=True
     )
 
-    # Zoho call distribution
     zoho_type_counts = defaultdict(int)
     for e in zoho_entries:
         zoho_type_counts[e.get("call_type", "unknown")] += 1
@@ -389,10 +487,9 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         key=lambda x: x["count"], reverse=True
     )
 
-    # Error rate
     failed = sum(1 for e in entries if not e.get("success", True))
 
-    return {
+    result = {
         "total_api_calls": total_calls,
         "total_openai_calls": total_openai_calls,
         "total_zoho_calls": total_zoho_calls,
@@ -408,4 +505,35 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         "zoho_distribution": zoho_distribution,
         "failed_calls": failed,
         "error_rate": round(failed / total_calls * 100, 1) if total_calls else 0,
+    }
+    _cache_set(key, result)
+    return result
+
+
+def get_error_logs(days: Optional[int] = 7, level: Optional[str] = None, limit: int = 200) -> dict:
+    """Return recent error log entries from DB or JSONL."""
+    try:
+        from src.db.database import get_engine, read_error_logs
+        engine = get_engine()
+        if engine:
+            entries = read_error_logs(engine, days=days, level=level, limit=limit)
+            return {
+                "total": len(entries),
+                "days": days,
+                "level_filter": level,
+                "entries": entries,
+            }
+    except Exception as e:
+        logger.warning(f"DB read failed for error_logs ({e}), using JSONL")
+
+    # JSONL fallback
+    entries = _read_jsonl(ERRORS_LOG, days)
+    if level:
+        entries = [e for e in entries if e.get("level", "").upper() == level.upper()]
+    entries = list(reversed(entries))[:limit]  # newest first
+    return {
+        "total": len(entries),
+        "days": days,
+        "level_filter": level,
+        "entries": entries,
     }

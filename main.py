@@ -597,6 +597,12 @@ async def analytics_dashboard(_: None = Depends(require_auth)):
     return FileResponse("dashboard/index.html", media_type="text/html")
 
 
+@app.get("/analytics/ai-usage")
+async def analytics_ai_usage_page(_: None = Depends(require_auth)):
+    """Serve the dedicated AI Usage page."""
+    return FileResponse("dashboard/ai-usage.html", media_type="text/html")
+
+
 @app.get("/analytics/summary")
 async def analytics_summary(days: int = None, _: None = Depends(require_auth)):
     """High-level KPI metrics for dashboard header cards."""

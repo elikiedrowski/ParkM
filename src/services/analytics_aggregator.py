@@ -489,6 +489,61 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
 
     failed = sum(1 for e in entries if not e.get("success", True))
 
+    # Build ticket_id → intent lookup from classifications (for enriching api_usage entries)
+    classifications = _get_classifications(days)
+    ticket_intent_map: Dict[str, str] = {
+        c.get("ticket_id"): c.get("intent") for c in classifications if c.get("ticket_id")
+    }
+
+    # Usage by intent — group OpenAI calls by the intent of the ticket they classified
+    intent_stats: Dict[str, Dict] = defaultdict(lambda: {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "cost": 0.0})
+    for e in openai_entries:
+        intent = ticket_intent_map.get(e.get("ticket_id"), "unknown")
+        s = intent_stats[intent]
+        s["calls"] += 1
+        s["prompt_tokens"] += e.get("prompt_tokens", 0) or 0
+        s["completion_tokens"] += e.get("completion_tokens", 0) or 0
+        s["total_tokens"] += e.get("total_tokens", 0) or 0
+        s["cost"] += e.get("estimated_cost_usd", 0) or 0
+
+    by_intent = sorted(
+        [{"intent": k, **v, "cost": round(v["cost"], 6)} for k, v in intent_stats.items()],
+        key=lambda x: x["calls"], reverse=True
+    )
+
+    # Usage by model
+    model_stats: Dict[str, Dict] = defaultdict(lambda: {"calls": 0, "total_tokens": 0, "cost": 0.0})
+    for e in openai_entries:
+        model = e.get("model") or "unknown"
+        s = model_stats[model]
+        s["calls"] += 1
+        s["total_tokens"] += e.get("total_tokens", 0) or 0
+        s["cost"] += e.get("estimated_cost_usd", 0) or 0
+
+    by_model = sorted(
+        [{"model": k, **v, "cost": round(v["cost"], 6)} for k, v in model_stats.items()],
+        key=lambda x: x["calls"], reverse=True
+    )
+
+    # Recent usage — last 50 OpenAI calls, most recent first, enriched with intent
+    sorted_openai = sorted(openai_entries, key=lambda e: e.get("timestamp", ""), reverse=True)
+    recent_usage = []
+    for e in sorted_openai[:50]:
+        intent = ticket_intent_map.get(e.get("ticket_id"), None)
+        recent_usage.append({
+            "timestamp": e.get("timestamp"),
+            "intent": intent,
+            "call_type": e.get("call_type"),
+            "model": e.get("model"),
+            "prompt_tokens": e.get("prompt_tokens"),
+            "completion_tokens": e.get("completion_tokens"),
+            "total_tokens": e.get("total_tokens"),
+            "estimated_cost_usd": e.get("estimated_cost_usd"),
+            "ticket_id": e.get("ticket_id"),
+            "success": e.get("success", True),
+            "error": e.get("error"),
+        })
+
     result = {
         "total_api_calls": total_calls,
         "total_openai_calls": total_openai_calls,
@@ -503,6 +558,9 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         "cost_over_time": cost_over_time,
         "calls_by_type": calls_by_type,
         "zoho_distribution": zoho_distribution,
+        "by_intent": by_intent,
+        "by_model": by_model,
+        "recent_usage": recent_usage,
         "failed_calls": failed,
         "error_rate": round(failed / total_calls * 100, 1) if total_calls else 0,
     }

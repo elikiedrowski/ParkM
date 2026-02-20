@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkM — AI Usage</title>
+  <link rel="icon" type="image/png" href="/dashboard/img/favicon.png">
+  <link rel="stylesheet" href="/dashboard/css/dashboard.css">
+  <style>
+    /* ── AI Usage page-specific styles ─────────────────────────────── */
+
+    .page-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .page-hero-left h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-hero-left h2 .hero-icon {
+      color: #003060;
+    }
+
+    .page-hero-left p {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .refresh-btn:hover {
+      background: #f8fafc;
+      border-color: #003060;
+      color: #003060;
+    }
+
+    .refresh-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ── Summary cards (4-up) ───────────────────────────────────────── */
+
+    .au-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 20px 24px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      .au-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .au-card {
+      background: #fff;
+      border: 1px solid #e8eef5;
+      border-radius: 12px;
+      padding: 20px 20px 18px;
+      position: relative;
+      box-shadow: 0 1px 6px rgba(0,48,96,0.06);
+    }
+
+    .au-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      margin-bottom: 14px;
+    }
+
+    .au-card-icon--blue   { background: #e8f0fb; color: #003060; }
+    .au-card-icon--green  { background: #e6f9f0; color: #0a7c42; }
+    .au-card-icon--orange { background: #fff4e6; color: #b45309; }
+    .au-card-icon--purple { background: #f3ecff; color: #6d28d9; }
+
+    .au-card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .au-card-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .au-card-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    /* ── Two-column breakdown panels ───────────────────────────────── */
+
+    .au-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 16px 24px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 800px) {
+      .au-panels { grid-template-columns: 1fr; }
+    }
+
+    .au-panel {
+      background: #fff;
+      border: 1px solid #e8eef5;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 6px rgba(0,48,96,0.06);
+    }
+
+    .au-panel-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .au-panel-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+
+    .au-list {
+      list-style: none;
+    }
+
+    .au-list-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+      gap: 10px;
+    }
+
+    .au-list-item:last-child { border-bottom: none; }
+
+    .au-list-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      text-transform: capitalize;
+    }
+
+    .au-list-name small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    .au-list-meta {
+      text-align: right;
+    }
+
+    .au-list-cost {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0a7c42;
+    }
+
+    .au-list-tokens {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .au-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .au-bar {
+      flex: 1;
+      height: 6px;
+      background: #f1f5f9;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .au-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #003060;
+      transition: width 0.4s ease;
+    }
+
+    .au-bar-fill--zoho { background: #0ea5e9; }
+
+    .au-bar-count {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    /* ── Recent Usage table ─────────────────────────────────────────── */
+
+    .au-table-wrap {
+      padding: 16px 24px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .au-table-panel {
+      background: #fff;
+      border: 1px solid #e8eef5;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,48,96,0.06);
+      overflow: hidden;
+    }
+
+    .au-table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .au-table-header-left h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .au-table-header-left p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .au-filters {
+      display: flex;
+      gap: 8px;
+    }
+
+    .au-filter-select {
+      padding: 6px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #374151;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .au-filter-select:focus {
+      border-color: #003060;
+    }
+
+    table.au-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .au-table th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      background: #f8fafc;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .au-table td {
+      padding: 11px 16px;
+      font-size: 13px;
+      color: #1e293b;
+      border-bottom: 1px solid #f8fafc;
+      vertical-align: middle;
+    }
+
+    .au-table tr:last-child td { border-bottom: none; }
+
+    .au-table tr:hover td { background: #f8fafc; }
+
+    .intent-chip {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #e8f0fb;
+      color: #003060;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    .tokens-cell {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px;
+    }
+
+    .tokens-cell .tok-in  { color: #0a7c42; }
+    .tokens-cell .tok-out { color: #b45309; }
+
+    .cost-cell {
+      font-weight: 600;
+      color: #0a7c42;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-badge--success { background: #e6f9f0; color: #0a7c42; }
+    .status-badge--error   { background: #fdecea; color: #c0392b; }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-dot--success { background: #0a7c42; }
+    .status-dot--error   { background: #c0392b; }
+
+    .time-cell {
+      font-size: 12px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    /* ── Empty / loading states ─────────────────────────────────────── */
+
+    .au-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .au-empty svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 12px;
+      opacity: 0.35;
+    }
+
+    .au-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 12px;
+      color: #64748b;
+    }
+
+    /* Range buttons (same as dashboard) */
+    .range-buttons { display: flex; gap: 4px; }
+    .range-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.65);
+      background: rgba(255,255,255,0.10);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .range-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .range-btn.active { background: rgba(255,255,255,0.22); color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="sticky-nav">
+    <header class="header">
+      <div class="header-left">
+        <img src="https://www.parkm.com/wp-content/uploads/2024/01/park_m_logo_white.png" class="header-logo" alt="ParkM">
+        <span class="header-divider"></span>
+        <h1 class="header-title">AI Usage</h1>
+      </div>
+      <div class="header-right">
+        <div class="range-buttons">
+          <button class="range-btn" data-days="7">7 days</button>
+          <button class="range-btn" data-days="30">30 days</button>
+          <button class="range-btn active" data-days="">All time</button>
+        </div>
+        <a href="/analytics/dashboard" class="logout-btn">← Dashboard</a>
+        <a href="/analytics/logout" class="logout-btn">Logout</a>
+      </div>
+    </header>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading" class="au-loading">
+    <div class="spinner"></div>
+    <p>Loading AI usage data...</p>
+  </div>
+
+  <!-- Main content -->
+  <div id="content" style="display:none; padding-bottom: 32px;">
+
+    <!-- Page Hero -->
+    <div class="page-hero">
+      <div class="page-hero-left">
+        <h2><span class="hero-icon">&#9889;</span> AI Usage</h2>
+        <p>Monitor AI API usage, costs, and performance</p>
+      </div>
+      <button class="refresh-btn" id="refresh-btn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M13.65 2.35A8 8 0 1 0 15 8" stroke-linecap="round"/>
+          <polyline points="11 2 13.65 2.35 14 5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="au-cards">
+      <div class="au-card">
+        <div class="au-card-icon au-card-icon--blue">&#128736;</div>
+        <div class="au-card-value" id="c-total-calls">--</div>
+        <div class="au-card-label">Total Calls</div>
+        <div class="au-card-sub" id="c-calls-sub">API requests made</div>
+      </div>
+      <div class="au-card">
+        <div class="au-card-icon au-card-icon--purple">&#128200;</div>
+        <div class="au-card-value" id="c-total-tokens">--</div>
+        <div class="au-card-label">Total Tokens</div>
+        <div class="au-card-sub" id="c-tokens-sub">--</div>
+      </div>
+      <div class="au-card">
+        <div class="au-card-icon au-card-icon--green">&#36;</div>
+        <div class="au-card-value" id="c-total-cost">--</div>
+        <div class="au-card-label">Total Cost</div>
+        <div class="au-card-sub">Based on OpenAI pricing</div>
+      </div>
+      <div class="au-card">
+        <div class="au-card-icon au-card-icon--orange">&#128176;</div>
+        <div class="au-card-value" id="c-avg-cost">--</div>
+        <div class="au-card-label">Avg Cost / Ticket</div>
+        <div class="au-card-sub">Per classified ticket</div>
+      </div>
+    </div>
+
+    <!-- Two-column breakdowns -->
+    <div class="au-panels">
+
+      <!-- Usage by Intent -->
+      <div class="au-panel">
+        <div class="au-panel-title">Usage by Intent</div>
+        <div class="au-panel-sub">Breakdown by classified AI intent</div>
+        <ul class="au-list" id="intent-list">
+          <li class="au-empty">No data yet</li>
+        </ul>
+      </div>
+
+      <!-- Zoho API Calls -->
+      <div class="au-panel">
+        <div class="au-panel-title">Zoho API Calls</div>
+        <div class="au-panel-sub">Breakdown by API operation type</div>
+        <ul class="au-list" id="zoho-list">
+          <li class="au-empty">No data yet</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Recent Usage Table -->
+    <div class="au-table-wrap">
+      <div class="au-table-panel">
+        <div class="au-table-header">
+          <div class="au-table-header-left">
+            <h3>Recent Usage</h3>
+            <p>Latest AI API calls</p>
+          </div>
+          <div class="au-filters">
+            <select class="au-filter-select" id="filter-intent">
+              <option value="">All Intents</option>
+            </select>
+            <select class="au-filter-select" id="filter-status">
+              <option value="">All Status</option>
+              <option value="success">Success</option>
+              <option value="error">Error</option>
+            </select>
+          </div>
+        </div>
+        <div id="recent-table-wrap">
+          <div class="au-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p>No API calls recorded yet.<br>Classification events will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/dashboard/js/api-usage.js"></script>
+</body>
+</html>

@@ -144,34 +144,34 @@ Pick one metro. Scan apartment complexes. Score them for parking pain. Deliver a
 | Cross-cutting | Infra setup, config, initial testing | 3–5 |
 | **Phase 1 Total** | | **23–35** |
 
-### Phase 2 — Account Brief MVP (2-3 weeks after Phase 1)
+### Phase 2 — PM Turnover + Account Briefs (3-4 weeks after Phase 1)
 
-Take the Phase 1 lead list and enrich each property with venue/event data and AI-generated talking points. Output: a one-page account brief per property.
-
-| Initiative | What Gets Built | Hours |
-|---|---|---|
-| **3. Account Brief Generator** | Data aggregation layer, brief template (HTML/PDF), GPT-4o talking points, email/PDF delivery | 25–40 |
-| **4. Venue Proximity** | Google Maps distance calculations, curated venue list, Ticketmaster/SeatGeek event calendar integration | 10–16 |
-| **Phase 2 Total** | | **35–56** |
-
-### Phase 3 — Full Intelligence Platform (4-6 weeks after Phase 2)
-
-Integrate ALN data for PM turnover alerts and target list generation. Automate refresh cadence. Connect to CRM if applicable.
+Integrate ALN data for PM turnover detection. Build the account brief generator that combines reviews data from Phase 1 with turnover signals into a one-page brief per property with AI-generated talking points.
 
 | Initiative | What Gets Built | Hours |
 |---|---|---|
 | **2. PM Turnover Monitoring** | ALN API or CSV integration, change detection logic, alert system (email or CRM push) | 15–25 |
+| **3. Account Brief Generator** | Data aggregation layer, brief template (HTML/PDF), GPT-4o talking points, email/PDF delivery | 25–40 |
+| **Phase 2 Total** | | **40–65** |
+
+### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
+
+Add venue/event enrichment and ALN target list generation. Automate refresh cadence. Connect to CRM if applicable.
+
+| Initiative | What Gets Built | Hours |
+|---|---|---|
+| **4. Venue Proximity** | Google Maps distance calculations, curated venue list, Ticketmaster/SeatGeek event calendar integration | 10–16 |
 | **5. ALN Target List Enrichment** | Enrichment pipeline (layer initiatives 1-4 onto ALN property universe), filtering and prioritization | 10–16 |
 | Cross-cutting | End-to-end QA, project management | 5–7 |
-| **Phase 3 Total** | | **30–48** |
+| **Phase 3 Total** | | **25–39** |
 
 ### Summary
 
 | Phase | Initiatives Included | Hours |
 |---|---|---|
 | Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 23–35 |
-| Phase 2 — Account Briefs MVP | #3 Account Briefs + #4 Venue Proximity | 35–56 |
-| Phase 3 — Full Intelligence | #2 PM Turnover + #5 ALN Enrichment | 30–48 |
+| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 40–65 |
+| Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 25–39 |
 | **Total (all 5 initiatives)** | | **88–139** |
 
 ## Estimated Costs

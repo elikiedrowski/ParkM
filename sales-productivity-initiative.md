@@ -140,9 +140,9 @@ Pick one metro. Scan apartment complexes. Score them for parking pain. Deliver a
 
 | Initiative | What Gets Built | Hours |
 |---|---|---|
-| **1. Google Reviews as Leads** | Google Places API integration, GPT-4o parking classifier, pain scoring, ranked lead list output | 22–30 |
+| **1. Google Reviews as Leads** | Google Places API integration, GPT-4o parking classifier, pain scoring, ranked lead list output | 24–30 |
 | Cross-cutting | Infra setup, config, initial testing | 3–5 |
-| **Phase 1 Total** | | **25–35** |
+| **Phase 1 Total** | | **27–35** |
 
 ### Phase 2 — PM Turnover + Account Briefs (3-4 weeks after Phase 1)
 
@@ -177,10 +177,10 @@ Add venue/event enrichment and ALN target list generation. Automate refresh cade
 
 | Phase | Initiatives Included | Hours |
 |---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 25–35 |
+| Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 27–35 |
 | Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–65 |
 | Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 29–39 |
-| **Total (all 5 initiatives)** | | **104–139** |
+| **Total (all 5 initiatives)** | | **106–139** |
 
 ## Estimated Costs
 

@@ -145,16 +145,35 @@ Integrate ALN data (PM turnover, property details, contact info). Automate refre
 
 ---
 
-## Total Estimated Investment
+## Estimated Hours
 
-| Item | One-Time | Monthly Ongoing |
+| Initiative | Hours |
+|---|---|
+| Google Reviews Lead Scanner (API integration, GPT-4o classifier, scoring, output) | 20–30 |
+| PM Turnover Monitoring (ALN integration, change detection, alerts) | 15–25 |
+| Account Brief Generator (data aggregation, templates, PDF/email delivery) | 25–40 |
+| Venue Proximity (Google Maps, event calendar integration) | 10–16 |
+| ALN Target List Enrichment (pipeline, filtering, prioritization) | 10–16 |
+| Cross-cutting (infra, testing, QA, project management) | 8–12 |
+| **Total** | **88–139** |
+
+**By phase:**
+
+| Phase | What's Included | Hours |
 |---|---|---|
-| Development (Phases 1-3) | 8-12 weeks of Eli's time | — |
-| Google APIs (Places, Maps) | — | ~$50-150 depending on scale |
-| OpenAI (GPT-4o classification) | — | ~$20-50 depending on volume |
-| ALN subscription (if not existing) | — | ~$2,500-$5,000/month |
-| Third-party review service (if needed) | — | ~$25-150 depending on provider |
-| **Total monthly run cost (excl. ALN)** | | **~$100-350/month** |
+| Phase 1 — Google Reviews POC | Reviews lead scanner + infra | 25–35 |
+| Phase 2 — Account Briefs MVP | Brief generator + venue proximity | 35–55 |
+| Phase 3 — Full Intelligence Platform | PM turnover + ALN enrichment + QA | 28–49 |
+
+## Estimated Costs
+
+| Item | Monthly Ongoing |
+|---|---|
+| Google APIs (Places, Maps) | ~$50-150 depending on scale |
+| OpenAI (GPT-4o classification) | ~$20-50 depending on volume |
+| ALN subscription (if not existing) | ~$2,500-$5,000/month |
+| Third-party review service (if needed) | ~$25-150 depending on provider |
+| **Total monthly run cost (excl. ALN)** | **~$100-350/month** |
 
 At $500/lead, ParkM would break even generating **1 lead per month** (excluding ALN). The ROI math is strongly in favor.
 

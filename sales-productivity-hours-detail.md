@@ -9,7 +9,7 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | Initiative | Component | Hours |
 |---|---|---|
 | **1. Google Reviews as Leads** | | **24–30** |
-| | Google Places API integration (search + review retrieval) | 4–6 |
+| | Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
 | | GPT-4o parking classifier (prompt engineering, tuning, testing) | 6–10 |
 | | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |

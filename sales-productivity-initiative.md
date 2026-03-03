@@ -27,20 +27,37 @@ Patrick shared 5 ideas to improve sales rep productivity. The core thesis: impro
 
 **Our take: This is real and buildable.**
 
-- Google Places API lets us search for apartment complexes by metro and pull reviews
+- ~~Google Places API lets us search for apartment complexes by metro and pull reviews~~ **Ruled out** (see below)
 - We run each review through GPT-4o to detect parking complaints, classify severity, and score the property
 - Output: a ranked lead list with a "Parking Pain Score" per property
 - Nobody else is doing this for the parking vertical — Patrick's "blue ocean" assessment checks out
 
-**The catch:** Google's official API only returns 5 reviews per property. Patrick raised concern that 5 general reviews might miss properties where a parking complaint exists outside the top 5. **Open question:** Can the API return 5 reviews matching specific criteria (e.g., mentioning parking), or is it always the top 5 by default? Eli committed to investigating this further. Third-party services (Outscraper, Lobstr.io) can pull all reviews if we need deeper coverage later.
+**Google Places API — ruled out (March 3 investigation):**
+The official Google Places API is hard-coded to return only 5 "most relevant" reviews per property. There is no pagination, no keyword filtering, and no way to customize which reviews are returned. Google treats the Places API as a discovery tool, not a review management tool. The Google Business Profile API offers unlimited reviews with filtering, but only for businesses you own/manage — not applicable here.
+
+**Recommended approach: Outscraper (POC) + Lobstr.io (ongoing monitoring)**
+
+Third-party scraping services bypass the API limits using cloud-based browser automation. They support keyword filtering (e.g., "parking"), unlimited review counts, and export to CSV/JSON.
+
+| | Outscraper | Lobstr.io |
+|---|---|---|
+| **Best for** | Discovery — find businesses + scrape reviews in one go | Automation — scheduled recurring scrapes |
+| **Keyword filtering** | Yes — keyword queries + rating filters | Yes — keyword, language, date filters |
+| **Export formats** | CSV, XLSX, JSON, Parquet | CSV, JSON, Google Sheets, S3 |
+| **Free tier** | First 500 reviews free | 100–1,000 credits (varies) |
+| **Paid pricing** | $3 per 1,000 reviews | Starts at $10/mo (~10K credits) |
+
+**Recommendation:** Use **Outscraper** for the Phase 1 POC — give it a category like "apartment complexes in [metro]", filter reviews by "parking" keyword, and feed results into GPT-4o for classification and scoring. Add **Lobstr.io** later if we want automated weekly scans across all 33 states.
+
+**Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. We are not impersonating users or violating GDPR — this is internal lead qualification only.
 
 **Estimate:**
 
-| | Time | API Cost |
+| | Time | Data Cost |
 |---|---|---|
-| POC — 1 metro, ~500 properties | 1-2 weeks | ~$5 |
-| Scale — 10 metros, ~5K properties | +1 week | ~$150 |
-| National — 50 metros, ~25K properties | +2 weeks | ~$750 |
+| POC — 1 metro, ~500 properties | 1-2 weeks | ~$0 (free tier covers 500 reviews) |
+| Scale — 10 metros, ~5K properties | +1 week | ~$15-45 (Outscraper pay-as-you-go) |
+| National — 50 metros, ~25K properties | +2 weeks | ~$75-225 + $10/mo Lobstr.io for automation |
 
 ### 2. Property Manager Turnover Alerts
 
@@ -75,7 +92,7 @@ Data sources per brief:
 |---|---|---|
 | Property details (units, location, rent, occupancy) | ALN | Yes — full API access confirmed |
 | Property manager name + tenure | ALN | Yes — full API access confirmed |
-| Parking complaints + pain score | Google Reviews + GPT-4o | Build in Phase 1 |
+| Parking complaints + pain score | Outscraper reviews + GPT-4o | Build in Phase 1 |
 | Nearby event venues + distances | Google Maps API | Easy add |
 | Upcoming events at nearby venues | Ticketmaster API (free) | Easy add |
 | Nearby ParkM customers | Internal CRM | Needs CRM access |
@@ -147,7 +164,7 @@ Pick one metro. Scan apartment complexes. Score them for parking pain. Deliver a
 
 | Initiative | What Gets Built | Hours |
 |---|---|---|
-| **1. Google Reviews as Leads** | Google Places API integration, GPT-4o parking classifier, pain scoring, ranked lead list output | 24–30 |
+| **1. Google Reviews as Leads** | Outscraper integration (keyword-filtered review scraping), GPT-4o parking classifier, pain scoring, ranked lead list output | 24–30 |
 | Cross-cutting | Infra setup, config, initial testing | 3–5 |
 | **Phase 1 Total** | | **27–35** |
 
@@ -192,11 +209,12 @@ Add venue/event enrichment and ALN target list generation. Automate refresh cade
 
 | Item | Monthly Ongoing |
 |---|---|
-| Google APIs (Places, Maps) | ~$50-150 depending on scale |
+| Outscraper (review scraping, pay-as-you-go) | ~$15-75 depending on scale |
+| Lobstr.io (automated recurring scans, if added) | ~$10/month |
+| Google APIs (Maps only — Places API no longer needed) | ~$5-20 |
 | OpenAI (GPT-4o classification) | ~$20-50 depending on volume |
 | ALN subscription (if not existing) | ~$2,500-$5,000/month |
-| Third-party review service (if needed) | ~$25-150 depending on provider |
-| **Total monthly run cost (excl. ALN)** | **~$100-350/month** |
+| **Total monthly run cost (excl. ALN)** | **~$50-155/month** |
 
 At $500/lead, ParkM would break even generating **1 lead per month** (excluding ALN). The ROI math is strongly in favor.
 
@@ -222,12 +240,13 @@ At $500/lead, ParkM would break even generating **1 lead per month** (excluding 
 | How are target lists built today? | Manually — reps query ALN: 250+ units, 80%+ occupancy, built before 2025 |
 | How many states? | 33 currently, goal is all states |
 | Outbound tooling? | Klenty (quarterly contract, just stood up) |
+| Google Places API 5-review limit? | Hard-coded top 5, no filtering/pagination. Pivoting to Outscraper + Lobstr.io. |
 
 ### Open Questions (Still Need Answers)
-1. **Google Reviews API 5-review limit** — Can we query for 5 reviews matching criteria, or is it always the top 5 by default? Eli investigating.
+1. ~~**Google Reviews API 5-review limit**~~ **Resolved:** Always top 5, no filtering possible. Pivoting to Outscraper/Lobstr.io for keyword-filtered scraping.
 2. **Target metro for Phase 1 POC** — Which metro to start with? (Dallas, Denver, another?)
 3. **Lead delivery format** — How should parking pain leads reach Chad's team?
-4. **Budget for API costs** — Appetite for ~$100-350/month beyond existing ALN sub?
+4. **Budget for API costs** — Appetite for ~$50-155/month beyond existing ALN sub?
 
 ---
 
@@ -334,7 +353,7 @@ Below is what a completed account brief would look like for a sales rep. This is
 - [ ] Prepare bulleted summary of top 5 initiatives for Patrick's Chad agenda (before March 4 AM)
 
 ### Eli
-- [ ] Investigate Google Places API 5-review limit — can we filter by criteria or is it always top 5?
+- [x] ~~Investigate Google Places API 5-review limit~~ — Confirmed: always top 5, no filtering. Pivoting to Outscraper for POC.
 - [ ] Send Lauren the detailed initiative document and sample account brief one-pager
 - [ ] Wait for Phase 1 & 2 feedback from Katie/Sadie to iterate on classification and wizard steps
 - [ ] Wait for Stuart to connect with ParkM people for Phase 3 API access

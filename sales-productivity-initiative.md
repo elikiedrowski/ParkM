@@ -160,16 +160,18 @@ Integrate ALN data for PM turnover detection. Build the account brief generator 
 | ALN API access (Compass tier) | 15–18 | 35–40 | **50–58** |
 | ALN CSV export only | 22–25 | 35–40 | **57–65** |
 
+*CSV export adds ~8 hours because we must build an import pipeline, a diffing engine to compare snapshots between exports, and scheduling to run it periodically. With the API, ALN handles change detection and we query for changes directly.*
+
 ### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
 
 Add venue/event enrichment and ALN target list generation. Automate refresh cadence. Connect to CRM if applicable.
 
 | Initiative | What Gets Built | Hours |
 |---|---|---|
-| **4. Venue Proximity** | Google Maps distance calculations, curated venue list, Ticketmaster/SeatGeek event calendar integration | 10–16 |
-| **5. ALN Target List Enrichment** | Enrichment pipeline (layer initiatives 1-4 onto ALN property universe), filtering and prioritization | 10–16 |
+| **4. Venue Proximity** | Google Maps distance calculations, curated venue list, Ticketmaster/SeatGeek event calendar integration | 12–16 |
+| **5. ALN Target List Enrichment** | Enrichment pipeline (layer initiatives 1-4 onto ALN property universe), filtering and prioritization | 12–16 |
 | Cross-cutting | End-to-end QA, project management | 5–7 |
-| **Phase 3 Total** | | **25–39** |
+| **Phase 3 Total** | | **29–39** |
 
 ### Summary
 
@@ -177,8 +179,8 @@ Add venue/event enrichment and ALN target list generation. Automate refresh cade
 |---|---|---|
 | Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 25–35 |
 | Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–65 |
-| Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 25–39 |
-| **Total (all 5 initiatives)** | | **100–139** |
+| Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 29–39 |
+| **Total (all 5 initiatives)** | | **104–139** |
 
 ## Estimated Costs
 

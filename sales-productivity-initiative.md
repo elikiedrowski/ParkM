@@ -150,11 +150,17 @@ Integrate ALN data for PM turnover detection. Build the account brief generator 
 
 | Initiative | What Gets Built | Hours |
 |---|---|---|
-| **2. PM Turnover Monitoring** | ALN API or CSV integration, change detection logic, alert system (email or CRM push) | 15–25 |
-| | *15–18 if ALN API access (Compass tier); 22–25 if CSV export only* | |
-| **3. Account Brief Generator** | Data aggregation layer, brief template (HTML/PDF), GPT-4o talking points, email/PDF delivery | 25–40 |
-| | *25–30 for basic HTML/CSV output; 35–40 with polished PDF rendering + email delivery pipeline* | |
-| **Phase 2 Total** | | **40–65** |
+| **2. PM Turnover Monitoring** | ALN integration, change detection logic, alert system (email or CRM push) | 15–25 |
+| **3. Account Brief Generator** | Data aggregation layer, brief template, GPT-4o talking points, delivery mechanism | 25–40 |
+
+**Phase 2 hours depend on two open questions:**
+
+| Scenario | #2 PM Turnover | #3 Account Brief | Phase 2 Total |
+|---|---|---|---|
+| ALN API access + basic HTML/CSV output | 15–18 | 25–30 | **40–48** |
+| ALN API access + polished PDF + email delivery | 15–18 | 35–40 | **50–58** |
+| ALN CSV export only + basic HTML/CSV output | 22–25 | 25–30 | **47–55** |
+| ALN CSV export only + polished PDF + email delivery | 22–25 | 35–40 | **57–65** |
 
 ### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
 

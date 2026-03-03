@@ -153,14 +153,12 @@ Integrate ALN data for PM turnover detection. Build the account brief generator 
 | **2. PM Turnover Monitoring** | ALN integration, change detection logic, alert system (email or CRM push) | 15–25 |
 | **3. Account Brief Generator** | Data aggregation layer, brief template, GPT-4o talking points, delivery mechanism | 25–40 |
 
-**Phase 2 hours depend on two open questions:**
+**Phase 2 hours depend on ALN access tier (open question for Patrick):**
 
-| Scenario | #2 PM Turnover | #3 Account Brief | Phase 2 Total |
+| Scenario | #2 PM Turnover | #3 Account Brief (polished PDF + email) | Phase 2 Total |
 |---|---|---|---|
-| ALN API access + basic HTML/CSV output | 15–18 | 25–30 | **40–48** |
-| ALN API access + polished PDF + email delivery | 15–18 | 35–40 | **50–58** |
-| ALN CSV export only + basic HTML/CSV output | 22–25 | 25–30 | **47–55** |
-| ALN CSV export only + polished PDF + email delivery | 22–25 | 35–40 | **57–65** |
+| ALN API access (Compass tier) | 15–18 | 35–40 | **50–58** |
+| ALN CSV export only | 22–25 | 35–40 | **57–65** |
 
 ### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
 
@@ -178,9 +176,9 @@ Add venue/event enrichment and ALN target list generation. Automate refresh cade
 | Phase | Initiatives Included | Hours |
 |---|---|---|
 | Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 25–35 |
-| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 40–65 |
+| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–65 |
 | Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 25–39 |
-| **Total (all 5 initiatives)** | | **90–139** |
+| **Total (all 5 initiatives)** | | **100–139** |
 
 ## Estimated Costs
 

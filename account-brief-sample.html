@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ParkM Account Brief — Sunset Ridge Apartments</title>
+<style>
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #2D3748;
+    line-height: 1.45;
+    width: 8.5in;
+    height: 11in;
+    padding: 0;
+  }
+
+  /* ── Top green bar ── */
+  .topbar {
+    background: #1B5E20;
+    color: white;
+    padding: 20px 36px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .topbar .brand {
+    font-size: 10pt;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .topbar .title {
+    font-size: 16pt;
+    font-weight: 800;
+    margin-top: 2px;
+  }
+  .topbar .meta {
+    text-align: right;
+    font-size: 8pt;
+    opacity: 0.85;
+    line-height: 1.5;
+  }
+
+  /* ── Property header ── */
+  .property-header {
+    background: #F7FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 14px 36px;
+  }
+  .property-name {
+    font-size: 15pt;
+    font-weight: 800;
+    color: #1A202C;
+    margin-bottom: 2px;
+  }
+  .property-address {
+    font-size: 8.5pt;
+    color: #718096;
+  }
+
+  /* ── Main content ── */
+  .content {
+    padding: 14px 36px 10px;
+  }
+
+  /* ── Two-column grid ── */
+  .grid {
+    display: flex;
+    margin-bottom: 14px;
+  }
+  .grid-left { width: 47%; margin-right: 3%; }
+  .grid-right { width: 50%; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #1B5E20;
+    margin-bottom: 6px;
+    padding-bottom: 3px;
+    border-bottom: 2px solid #1B5E20;
+  }
+
+  /* ── Property details ── */
+  .prop-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .prop-table tr { border-bottom: 1px solid #EDF2F7; }
+  .prop-table td {
+    padding: 3.5px 0;
+    font-size: 8pt;
+  }
+  .prop-table td:first-child {
+    color: #A0AEC0;
+    font-weight: 500;
+    width: 44%;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .prop-table td:last-child {
+    font-weight: 600;
+    color: #2D3748;
+  }
+
+  /* ── Priority signal cards ── */
+  .signal-card {
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .signal-card.turnover {
+    background: #FFFBEB;
+    border: 1px solid #F6AD55;
+  }
+  .signal-card.turnover .badge {
+    display: inline-block;
+    background: #ED8936;
+    color: white;
+    font-size: 6.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+  }
+  .signal-card p {
+    font-size: 8pt;
+    color: #744210;
+    line-height: 1.4;
+  }
+  .signal-card strong { color: #C05621; }
+
+  .signal-card.pain {
+    background: #FFF5F5;
+    border: 1px solid #FC8181;
+    display: flex;
+    align-items: center;
+  }
+  .score-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #C53030;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17pt;
+    font-weight: 800;
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+  .score-detail .score-title {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #C53030;
+  }
+  .score-detail .score-sub {
+    font-size: 7pt;
+    color: #9B2C2C;
+    margin-top: 1px;
+  }
+
+  /* ── Full-width section header ── */
+  .section-bar {
+    background: #1B5E20;
+    color: white;
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    margin-top: 12px;
+  }
+
+  /* ── Complaints grid ── */
+  .complaints-grid {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  .complaints-left { width: 48%; margin-right: 2%; }
+  .complaints-right { width: 50%; }
+
+  /* ── Clean table style ── */
+  .clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+  }
+  .clean-table th {
+    text-align: left;
+    font-size: 7pt;
+    font-weight: 700;
+    color: #A0AEC0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 6px 4px;
+    border-bottom: 2px solid #E2E8F0;
+  }
+  .clean-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #EDF2F7;
+  }
+  .clean-table tr:last-child td { border-bottom: none; }
+  .mentions-num {
+    font-weight: 700;
+    color: #C53030;
+  }
+  .recency { color: #718096; font-size: 7.5pt; }
+
+  /* ── Review quotes ── */
+  .review-quote {
+    background: #F7FAFC;
+    border-left: 3px solid #E53E3E;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    border-radius: 0 4px 4px 0;
+    font-size: 7.5pt;
+    font-style: italic;
+    color: #4A5568;
+    line-height: 1.4;
+  }
+  .review-quote .attr {
+    font-style: normal;
+    color: #A0AEC0;
+    font-size: 7pt;
+    font-weight: 600;
+    margin-top: 2px;
+    display: block;
+  }
+  .stars { color: #ECC94B; }
+
+  /* ── Venue table ── */
+  .venue-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-bottom: 4px;
+  }
+  .venue-table th {
+    text-align: left;
+    font-size: 7pt;
+    font-weight: 700;
+    color: #A0AEC0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 6px 4px;
+    border-bottom: 2px solid #E2E8F0;
+  }
+  .venue-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #EDF2F7;
+  }
+  .venue-note {
+    font-size: 7.5pt;
+    color: #2E7D32;
+    font-weight: 600;
+    font-style: italic;
+    margin-top: 2px;
+    padding-left: 6px;
+  }
+
+  /* ── Talking points ── */
+  .tp {
+    display: flex;
+    margin-bottom: 7px;
+    align-items: flex-start;
+  }
+  .tp-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #1B5E20;
+    color: white;
+    font-size: 7pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    margin-right: 8px;
+  }
+  .tp-content { font-size: 8pt; }
+  .tp-content .tp-label {
+    font-weight: 700;
+    color: #1B5E20;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .tp-content .tp-script {
+    color: #4A5568;
+    font-style: italic;
+    margin-top: 1px;
+    line-height: 1.4;
+  }
+
+  /* ── Bottom section: two columns ── */
+  .bottom-grid {
+    display: flex;
+    margin-top: 12px;
+  }
+  .bottom-left { width: 54%; margin-right: 3%; }
+  .bottom-right { width: 43%; }
+
+  /* ── Nearby customers ── */
+  .ref-quote {
+    font-size: 7.5pt;
+    color: #2E7D32;
+    font-style: italic;
+    font-weight: 500;
+    padding-left: 6px;
+    margin-top: 4px;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #F7FAFC;
+    border-top: 1px solid #E2E8F0;
+    padding: 8px 36px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 6.5pt;
+    color: #A0AEC0;
+  }
+  .footer-right {
+    font-weight: 600;
+    color: #1B5E20;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<div class="topbar">
+  <div>
+    <div class="brand">ParkM</div>
+    <div class="title">Account Brief</div>
+  </div>
+  <div class="meta">
+    Prepared: March 3, 2026<br>
+    For: Chad's Sales Team
+  </div>
+</div>
+
+<!-- ══ PROPERTY HEADER ══ -->
+<div class="property-header">
+  <div class="property-name">Sunset Ridge Apartments</div>
+  <div class="property-address">1420 W Mockingbird Ln, Dallas, TX 75235</div>
+</div>
+
+<!-- ══ MAIN CONTENT ══ -->
+<div class="content">
+
+  <!-- Property Details + Priority Signals -->
+  <div class="grid">
+    <div class="grid-left">
+      <div class="section-label">Property Details</div>
+      <table class="prop-table">
+        <tr><td>Units</td><td>312</td></tr>
+        <tr><td>Year Built</td><td>2003</td></tr>
+        <tr><td>Average Rent</td><td>$1,485 /mo</td></tr>
+        <tr><td>Occupancy</td><td>91%</td></tr>
+        <tr><td>Google Rating</td><td>3.2 / 5.0 (147 reviews)</td></tr>
+        <tr><td>Management Co.</td><td>Greystone Property Mgmt</td></tr>
+        <tr><td>Property Manager</td><td>Jennifer Walsh</td></tr>
+        <tr><td>PM Start Date</td><td>January 2026 (8 wks ago)</td></tr>
+        <tr><td>Previous PM</td><td>Marcus Rivera (2.5 yrs)</td></tr>
+      </table>
+    </div>
+    <div class="grid-right">
+      <div class="section-label">Priority Signals</div>
+      <div class="signal-card turnover">
+        <div class="badge">PM Turnover Detected</div>
+        <p>New PM started 8 weeks ago. New managers typically re-evaluate vendor relationships in the first 90 days. <strong>Window is closing &mdash; act within the next 4 weeks.</strong></p>
+      </div>
+      <div class="signal-card pain">
+        <div class="score-circle">78</div>
+        <div class="score-detail">
+          <div class="score-title">Parking Pain Score &mdash; HIGH</div>
+          <div class="score-sub">Based on 47 Google reviews mentioning parking</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parking Complaint Breakdown -->
+  <div class="section-bar">Parking Complaint Breakdown</div>
+  <div class="complaints-grid">
+    <div class="complaints-left">
+      <table class="clean-table">
+        <tr><th>Complaint</th><th>Mentions</th><th>Recency</th></tr>
+        <tr><td>Not enough spots / overflow</td><td class="mentions-num">19</td><td class="recency">2 weeks ago</td></tr>
+        <tr><td>Visitor parking / towing</td><td class="mentions-num">14</td><td class="recency">1 month ago</td></tr>
+        <tr><td>Reserved spot violations</td><td class="mentions-num">9</td><td class="recency">3 months ago</td></tr>
+        <tr><td>Garage lighting / safety</td><td class="mentions-num">5</td><td class="recency">1 month ago</td></tr>
+      </table>
+    </div>
+    <div class="complaints-right">
+      <div class="review-quote">
+        "There are NEVER enough parking spots. I've had to park on the street multiple times this week."
+        <span class="attr">&mdash; Sarah M., 2 weeks ago <span class="stars">&#9733;&#9733;&#9734;&#9734;&#9734;</span></span>
+      </div>
+      <div class="review-quote">
+        "Visitor parking is a joke. My guests got towed twice."
+        <span class="attr">&mdash; James R., 1 month ago <span class="stars">&#9733;&#9734;&#9734;&#9734;&#9734;</span></span>
+      </div>
+      <div class="review-quote">
+        "Management does nothing about people parking in reserved spots."
+        <span class="attr">&mdash; Michelle K., 3 months ago <span class="stars">&#9733;&#9733;&#9734;&#9734;&#9734;</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nearby Venues -->
+  <div class="section-bar">Nearby Venues</div>
+  <table class="venue-table">
+    <tr><th>Venue</th><th>Distance</th><th>Events / Year</th><th>Next Event</th></tr>
+    <tr><td>American Airlines Center</td><td>2.1 mi</td><td>48</td><td>Mavs vs. Lakers &mdash; Mar 15</td></tr>
+    <tr><td>Dallas Convention Center</td><td>3.4 mi</td><td>35</td><td>Home &amp; Garden Expo &mdash; Mar 22</td></tr>
+    <tr><td>Deep Ellum (entertainment district)</td><td>1.8 mi</td><td>Nightly</td><td>&mdash;</td></tr>
+  </table>
+  <div class="venue-note">Proximity to American Airlines Center = opportunity for premium event-night parking revenue.</div>
+
+  <!-- Talking Points + Nearby Customers -->
+  <div class="bottom-grid">
+    <div class="bottom-left">
+      <div class="section-bar">Suggested Talking Points</div>
+      <div class="tp">
+        <div class="tp-num">1</div>
+        <div class="tp-content">
+          <div class="tp-label">Lead with the new role</div>
+          <div class="tp-script">"Congratulations on your new role at Sunset Ridge. I work with a lot of property managers in the Dallas market who are looking to get parking under control early in their tenure."</div>
+        </div>
+      </div>
+      <div class="tp">
+        <div class="tp-num">2</div>
+        <div class="tp-content">
+          <div class="tp-label">Reference resident feedback</div>
+          <div class="tp-script">"I've seen some resident feedback online about parking availability and visitor towing issues. We help properties like yours manage parking more efficiently &mdash; would that be worth a quick conversation?"</div>
+        </div>
+      </div>
+      <div class="tp">
+        <div class="tp-num">3</div>
+        <div class="tp-content">
+          <div class="tp-label">Lead with revenue opportunity</div>
+          <div class="tp-script">"With your proximity to American Airlines Center, there's an opportunity to generate revenue from event-night parking that most properties are leaving on the table."</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-right">
+      <div class="section-bar">Nearby ParkM Customers</div>
+      <table class="clean-table">
+        <tr><th>Property</th><th>Dist.</th><th>Since</th></tr>
+        <tr><td>The Village at Lake Highlands</td><td>4.2 mi</td><td>2024</td></tr>
+        <tr><td>Preston Hollow Apartments</td><td>3.1 mi</td><td>2025</td></tr>
+      </table>
+      <div class="ref-quote">"We already work with Preston Hollow just down the road &mdash; happy to connect you with their PM if you'd like a reference."</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ FOOTER ══ -->
+<div class="footer">
+  <div>Sources: ALN Data &bull; Google Reviews &bull; Google Maps &bull; Ticketmaster &bull; ParkM CRM</div>
+  <div class="footer-right">Generated by ParkM Sales Intelligence</div>
+</div>
+
+</body>
+</html>

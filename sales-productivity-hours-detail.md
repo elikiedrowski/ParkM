@@ -36,14 +36,13 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | | Email delivery pipeline (scheduling, formatting, recipients) | 8–12 |
 | | Integration testing across data sources | 4–6 |
 
-**Phase 2 total depends on ALN access tier:**
+**Phase 2 total (ALN API access confirmed March 3):**
 
-| Scenario | #2 PM Turnover | #3 Account Brief | Phase 2 Total |
-|---|---|---|---|
-| ALN API access (Compass tier) | 15–18 | 35–40 | **50–58** |
-| ALN CSV export only | 22–25 | 35–40 | **57–65** |
-
-CSV export adds ~8 hours: import pipeline to ingest files, diffing engine to compare snapshots between exports, and scheduling to run periodically. With the API, ALN handles change detection and we query directly.
+| Initiative | Hours |
+|---|---|
+| #2 PM Turnover (ALN API integration) | 15–18 |
+| #3 Account Brief (polished PDF + email) | 35–40 |
+| **Phase 2 Total** | **50–58** |
 
 ---
 
@@ -71,6 +70,6 @@ CSV export adds ~8 hours: import pipeline to ingest files, diffing engine to com
 | Phase | Initiatives | Hours |
 |---|---|---|
 | Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 27–35 |
-| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–65 |
+| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–58 |
 | Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 29–39 |
-| **Total (all 5 initiatives)** | | **106–139** |
+| **Total (all 5 initiatives)** | | **106–132** |

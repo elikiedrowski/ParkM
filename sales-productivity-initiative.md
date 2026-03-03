@@ -1,14 +1,21 @@
-# ParkM Sales Productivity Initiative — Meeting Prep
+# ParkM Sales Productivity Initiative — Meeting Notes
 
 **Meeting:** Tuesday, March 3, 2026 ~11:00 AM
 **Attendees:** Patrick Cameron, Lauren Kiedrowski, Eli Kiedrowski
 **Purpose:** Review "art of the possible" for Patrick's 5 sales productivity ideas
+**Status:** Meeting completed. All 5 initiatives reviewed and aligned. Patrick presenting to Chad on March 4.
 
 ---
 
 ## Background
 
-Patrick shared 5 ideas to improve sales rep productivity. The core thesis: use AI-driven pre-sales intelligence to turn average reps from 3x to 6x ROI. All ideas are low-risk (internal rep tooling, not customer-facing AI), and they extend the same AI pattern ParkM already has running in Zoho Desk.
+Patrick shared 5 ideas to improve sales rep productivity. The core thesis: improving rep productivity keeps Chad enthusiastic about extending the relationship — Chad has been the primary sales engine for ParkM for the past 8 years. The AI initiative was originally prompted by board chairman Troy asking "What are you doing with AI?" All 5 ideas are low-risk (internal rep tooling, not customer-facing AI), and they extend the same AI pattern ParkM already has running in Zoho Desk.
+
+**Current sales operations (confirmed in meeting):**
+- Reps organized by state (outbound by state, inside by state). Currently covering **33 states** with goal of every state
+- Outside team described as "old school pavement pounding sellers" — account briefs especially valuable for route planning
+- Target lists built manually today: reps query ALN for properties with 250+ units, 80%+ occupancy, built before 2025
+- Recently stood up an outbound engine using **Klenty** (K-L-E-N-T-Y, "cheap version of Gong") — quarterly contract, just started
 
 ---
 
@@ -25,7 +32,7 @@ Patrick shared 5 ideas to improve sales rep productivity. The core thesis: use A
 - Output: a ranked lead list with a "Parking Pain Score" per property
 - Nobody else is doing this for the parking vertical — Patrick's "blue ocean" assessment checks out
 
-**The catch:** Google's official API only returns 5 reviews per property. But 5 is likely enough for lead qualification — if even 1 of the top 5 reviews mentions parking, that's a signal. Third-party services (Outscraper, Lobstr.io) can pull all reviews if we need deeper coverage later.
+**The catch:** Google's official API only returns 5 reviews per property. Patrick raised concern that 5 general reviews might miss properties where a parking complaint exists outside the top 5. **Open question:** Can the API return 5 reviews matching specific criteria (e.g., mentioning parking), or is it always the top 5 by default? Eli committed to investigating this further. Third-party services (Outscraper, Lobstr.io) can pull all reviews if we need deeper coverage later.
 
 **Estimate:**
 
@@ -39,22 +46,22 @@ Patrick shared 5 ideas to improve sales rep productivity. The core thesis: use A
 
 **Patrick's idea:** New PMs are brought in to "clean this place up" — they're open to new vendors. Detect turnover and prioritize those accounts.
 
-**Our take: ALN already does this.** The question is what tier ParkM has access to.
+**Our take: ALN already does this — and ParkM has the access we need.**
 
 - ALN contacts every property on a 25-business-day cycle and tracks PM name, regional manager, and management company
 - They logged 11,000+ PM changes in Q1 2022 alone
 - **Vendor Edge Pro** has Watch Lists with email alerts on PM changes
 - **Compass tier** has API access for direct CRM integration
 
+**ALN Access (confirmed March 3):** Patrick confirmed ParkM has **full access to ALN**, including API access. They have ~150 licenses and only use ~10. Patrick offered to share credentials directly. This means no spreadsheet uploads — we can build a direct API integration.
+
 **Estimate:**
 
 | | Time | Cost |
 |---|---|---|
-| If ALN Compass (API access) | 1-2 weeks to integrate | Included in ALN sub |
-| If Vendor Edge Pro (alerts/exports) | 1 week to build import pipeline | Included in ALN sub |
-| If no ALN sub or basic tier | Needs subscription discussion | ~$31K-$60K/year |
+| ALN API integration (confirmed access) | 1-2 weeks to integrate | Included in ALN sub |
 
-**Key question for Patrick:** What ALN tier does ParkM have? He mentioned reps "currently use this tool."
+Patrick also noted that turnover-heavy properties may be better targets — "new regime in town" is open to re-pitching. High turnover = prospecting signal, not just a data freshness problem.
 
 ### 3. AI-Generated Account Briefs ("Sell 90")
 
@@ -66,8 +73,8 @@ Data sources per brief:
 
 | Data | Source | Ready? |
 |---|---|---|
-| Property details (units, location, rent, occupancy) | ALN | Depends on access |
-| Property manager name + tenure | ALN | Depends on access |
+| Property details (units, location, rent, occupancy) | ALN | Yes — full API access confirmed |
+| Property manager name + tenure | ALN | Yes — full API access confirmed |
 | Parking complaints + pain score | Google Reviews + GPT-4o | Build in Phase 1 |
 | Nearby event venues + distances | Google Maps API | Easy add |
 | Upcoming events at nearby venues | Ticketmaster API (free) | Easy add |
@@ -153,14 +160,13 @@ Integrate ALN data for PM turnover detection. Build the account brief generator 
 | **2. PM Turnover Monitoring** | ALN integration, change detection logic, alert system (email or CRM push) | 15–25 |
 | **3. Account Brief Generator** | Data aggregation layer, brief template, GPT-4o talking points, delivery mechanism | 25–40 |
 
-**Phase 2 hours depend on ALN access tier (open question for Patrick):**
+**Phase 2 estimate (ALN API access confirmed):**
 
-| Scenario | #2 PM Turnover | #3 Account Brief (polished PDF + email) | Phase 2 Total |
-|---|---|---|---|
-| ALN API access (Compass tier) | 15–18 | 35–40 | **50–58** |
-| ALN CSV export only | 22–25 | 35–40 | **57–65** |
-
-*CSV export adds ~8 hours because we must build an import pipeline, a diffing engine to compare snapshots between exports, and scheduling to run it periodically. With the API, ALN handles change detection and we query for changes directly.*
+| Initiative | Hours |
+|---|---|
+| #2 PM Turnover (ALN API integration) | 15–18 |
+| #3 Account Brief (polished PDF + email) | 35–40 |
+| **Phase 2 Total** | **50–58** |
 
 ### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
 
@@ -178,9 +184,9 @@ Add venue/event enrichment and ALN target list generation. Automate refresh cade
 | Phase | Initiatives Included | Hours |
 |---|---|---|
 | Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 27–35 |
-| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–65 |
+| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–58 |
 | Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 29–39 |
-| **Total (all 5 initiatives)** | | **106–139** |
+| **Total (all 5 initiatives)** | | **106–132** |
 
 ## Estimated Costs
 
@@ -196,13 +202,32 @@ At $500/lead, ParkM would break even generating **1 lead per month** (excluding 
 
 ---
 
-## Questions to Discuss with Patrick
+## Meeting Outcomes (March 3, 2026)
 
-1. **ALN Access** — What tier does ParkM have? Is API access available, or export only? Can we get a data sample?
-2. **Target Market** — Which metro for the Phase 1 POC? (Dallas, Denver, another?)
-3. **Rep Workflow** — How do reps consume intelligence today? Email, CRM, spreadsheet?
-4. **Lead Delivery** — How should parking pain leads reach Chad's team?
-5. **Budget** — Appetite for API costs (~$100-350/month) beyond existing ALN?
+### Decisions / Alignment
+- **All 5 initiatives aligned.** Patrick will present them to Chad on March 4 to gauge excitement
+- **ALN access confirmed** — ParkM has full access including API. Patrick offered to share credentials directly
+- **Phase 1 & 2 (Zoho Desk AI) are complete** for initial development — waiting on team feedback from Katie and Sadie (CSR manager)
+- **Phase 3 blocked** — waiting on Stuart to connect Eli with ParkM people for API access
+- **Notification templates added to Phase 2** wizard (not in original scope) — streamlines CSR communication and saves time
+- **Account brief sample requested** — Patrick needs the sample one-pager before his Chad meeting (March 4)
+- **Lauren preparing summary** — bulleted list of top 5 initiatives for Patrick's Chad agenda
+
+### Questions Answered
+
+| Question | Answer |
+|---|---|
+| ALN Access tier? | Full access including API. ~150 licenses, using ~10. Patrick sharing creds. |
+| Rep workflow? | Outside reps = pavement pounders on routes. Inside reps organized by state. |
+| How are target lists built today? | Manually — reps query ALN: 250+ units, 80%+ occupancy, built before 2025 |
+| How many states? | 33 currently, goal is all states |
+| Outbound tooling? | Klenty (quarterly contract, just stood up) |
+
+### Open Questions (Still Need Answers)
+1. **Google Reviews API 5-review limit** — Can we query for 5 reviews matching criteria, or is it always the top 5 by default? Eli investigating.
+2. **Target metro for Phase 1 POC** — Which metro to start with? (Dallas, Denver, another?)
+3. **Lead delivery format** — How should parking pain leads reach Chad's team?
+4. **Budget for API costs** — Appetite for ~$100-350/month beyond existing ALN sub?
 
 ---
 
@@ -297,9 +322,19 @@ Below is what a completed account brief would look like for a sales rep. This is
 
 ---
 
-## What We're Asking Patrick For
+## Action Items
 
-1. **Go/no-go on Phase 1** — green light to build the Google Reviews POC for one metro
-2. **ALN access details** — so we can scope Phase 2 accurately
-3. **A target metro** — so we can deliver real results, not hypotheticals
-4. **Intro to Chad** (or Chad's input) on how reps want to receive this intelligence
+### Patrick
+- [ ] Present top 5 initiatives to Chad (March 4 meeting) and report back on excitement level
+- [ ] Connect with Katie today to get Phase 1 & 2 feedback from testing team
+- [ ] Share ALN API credentials with Eli
+- [ ] Resolve Zoho login / authenticator issue (talk to Stuart or set up new authenticator)
+
+### Lauren
+- [ ] Prepare bulleted summary of top 5 initiatives for Patrick's Chad agenda (before March 4 AM)
+
+### Eli
+- [ ] Investigate Google Places API 5-review limit — can we filter by criteria or is it always top 5?
+- [ ] Send Lauren the detailed initiative document and sample account brief one-pager
+- [ ] Wait for Phase 1 & 2 feedback from Katie/Sadie to iterate on classification and wizard steps
+- [ ] Wait for Stuart to connect with ParkM people for Phase 3 API access

@@ -1,6 +1,7 @@
 """
 Ticket Tagging Service
-Applies AI classification results to Zoho Desk tickets via custom fields
+Applies AI classification results to Zoho Desk tickets via custom fields.
+Supports multi-intent tags written as semicolon-separated values to cf_ai_tags.
 """
 import logging
 from typing import Dict, Any, Optional
@@ -12,14 +13,13 @@ logger = logging.getLogger(__name__)
 
 class TicketTagger:
     """Service for applying classification tags to Zoho Desk tickets"""
-    
+
     def __init__(self):
         self.zoho_client = ZohoDeskClient()
-        
+
         # Custom field mappings (API names)
-        # These will be created in Zoho Desk during setup
         self.custom_fields = {
-            "intent": "cf_ai_intent",
+            "tags": "cf_ai_tags",                          # multi-select (semicolon-separated)
             "complexity": "cf_ai_complexity",
             "language": "cf_ai_language",
             "urgency": "cf_ai_urgency",
@@ -30,7 +30,7 @@ class TicketTagger:
             "move_out_date": "cf_move_out_date",
             "routing_queue": "cf_routing_queue",
         }
-    
+
     async def apply_classification_tags(
         self,
         ticket_id: str,
@@ -38,211 +38,103 @@ class TicketTagger:
         routing: Dict[str, Any]
     ) -> bool:
         """
-        Apply classification results to a ticket via custom fields
-        
+        Apply classification results to a ticket via custom fields.
+
         Args:
             ticket_id: Zoho Desk ticket ID
             classification: Classification result from EmailClassifier
             routing: Routing recommendation
-            
+
         Returns:
             bool: True if successful, False otherwise
         """
         try:
             logger.info(f"[{ticket_id}] Building custom field updates")
-            
-            # Build custom field update payload
+
             custom_field_data = {}
-            
-            # Map classification data to custom fields
-            if "intent" in classification:
-                custom_field_data[self.custom_fields["intent"]] = classification["intent"]
-            
+
+            # Write tags as semicolon-separated multi-select value
+            tags = classification.get("tags", [])
+            if tags:
+                custom_field_data[self.custom_fields["tags"]] = ";".join(tags)
+
             if "complexity" in classification:
                 custom_field_data[self.custom_fields["complexity"]] = classification["complexity"]
-            
+
             if "language" in classification:
                 custom_field_data[self.custom_fields["language"]] = classification["language"]
-            
+
             if "urgency" in classification:
                 custom_field_data[self.custom_fields["urgency"]] = classification["urgency"]
-            
+
             if "confidence" in classification:
-                # Convert to percentage for display
                 confidence_pct = int(classification["confidence"] * 100)
                 custom_field_data[self.custom_fields["confidence"]] = confidence_pct
-            
+
             if "requires_refund" in classification:
                 custom_field_data[self.custom_fields["requires_refund"]] = classification["requires_refund"]
-            
+
             if "requires_human_review" in classification:
                 custom_field_data[self.custom_fields["requires_human_review"]] = classification["requires_human_review"]
-            
+
             # Extract entities
             key_entities = classification.get("key_entities", {})
-            
-            if "license_plate" in key_entities and key_entities["license_plate"]:
+
+            if key_entities.get("license_plate"):
                 custom_field_data[self.custom_fields["license_plate"]] = key_entities["license_plate"]
-            
-            if "move_out_date" in key_entities and key_entities["move_out_date"]:
-                # Convert natural language date to YYYY-MM-DD format
+
+            if key_entities.get("move_out_date"):
                 move_out_date = self._parse_date(key_entities["move_out_date"])
                 if move_out_date:
                     custom_field_data[self.custom_fields["move_out_date"]] = move_out_date
-            
-            # Add routing recommendation (routing is a string from get_routing_recommendation)
+
+            # Add routing recommendation
             if routing:
                 custom_field_data[self.custom_fields["routing_queue"]] = routing if isinstance(routing, str) else routing.get("queue", "")
-            
+
             logger.info(f"[{ticket_id}] Custom fields to update: {len(custom_field_data)}")
-            
-            # Update ticket via Zoho API
-            # Zoho uses "cf" key for custom fields, not "customFields"
+
             result = await self.zoho_client.update_ticket(ticket_id, {
                 "cf": custom_field_data
             })
-            
+
             if result:
                 logger.info(f"[{ticket_id}] Custom fields updated successfully")
                 return True
             else:
                 logger.error(f"[{ticket_id}] Failed to update custom fields")
                 return False
-                
+
         except Exception as e:
             logger.error(f"[{ticket_id}] Error applying tags: {e}", exc_info=True)
             return False
-    
+
     def _parse_date(self, date_string: str) -> Optional[str]:
-        """
-        Convert natural language date to YYYY-MM-DD format
-        
-        Args:
-            date_string: Date in natural language (e.g., "January 1st, 2026")
-            
-        Returns:
-            Date in YYYY-MM-DD format or None if parsing fails
-        """
+        """Convert natural language date to YYYY-MM-DD format"""
         import re
         from datetime import datetime
-        
+
         try:
-            # Remove ordinal suffixes (st, nd, rd, th)
             cleaned = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', date_string)
-            
-            # Try common date formats
+
             formats = [
-                "%B %d, %Y",  # January 1, 2026
+                "%B %d, %Y",   # January 1, 2026
                 "%b %d, %Y",   # Jan 1, 2026
                 "%m/%d/%Y",    # 01/01/2026
-                "%Y-%m-%d",    # 2026-01-01 (already correct)
+                "%Y-%m-%d",    # 2026-01-01
                 "%d-%m-%Y",    # 01-01-2026
             ]
-            
+
             for fmt in formats:
                 try:
                     parsed_date = datetime.strptime(cleaned, fmt)
                     return parsed_date.strftime("%Y-%m-%d")
                 except ValueError:
                     continue
-            
+
             logger.warning(f"Failed to parse date '{date_string}' with known formats")
             return None
-            
+
         except Exception as e:
             logger.warning(f"Failed to parse date '{date_string}': {e}")
             return None
-    
-    def create_custom_fields_in_zoho(self) -> Dict[str, Any]:
-        """
-        Helper method to create custom fields in Zoho Desk
-        This should be run once during initial setup
-        
-        Returns:
-            dict: Results of field creation
-        """
-        # Note: This requires admin API access
-        # Custom fields in Zoho Desk are typically created via UI
-        # This is a placeholder for the manual setup instructions
-        
-        logger.info("Custom fields should be created manually in Zoho Desk")
-        logger.info("Required custom fields:")
-        
-        fields_to_create = [
-            {
-                "name": "AI Intent",
-                "api_name": "cf_ai_intent",
-                "type": "dropdown",
-                "options": [
-                    "refund_request",
-                    "permit_cancellation",
-                    "account_update",
-                    "payment_issue",
-                    "permit_inquiry",
-                    "move_out",
-                    "technical_issue",
-                    "tow_issue",
-                    "password_reset",
-                    "general_question",
-                    "unclear"
-                ]
-            },
-            {
-                "name": "AI Complexity",
-                "api_name": "cf_ai_complexity",
-                "type": "dropdown",
-                "options": ["simple", "moderate", "complex"]
-            },
-            {
-                "name": "AI Language",
-                "api_name": "cf_ai_language",
-                "type": "dropdown",
-                "options": ["english", "spanish", "mixed", "other"]
-            },
-            {
-                "name": "AI Urgency",
-                "api_name": "cf_ai_urgency",
-                "type": "dropdown",
-                "options": ["high", "medium", "low"]
-            },
-            {
-                "name": "AI Confidence",
-                "api_name": "cf_ai_confidence",
-                "type": "number",
-                "description": "Classification confidence (0-100%)"
-            },
-            {
-                "name": "Requires Refund",
-                "api_name": "cf_requires_refund",
-                "type": "boolean"
-            },
-            {
-                "name": "Requires Human Review",
-                "api_name": "cf_requires_human_review",
-                "type": "boolean"
-            },
-            {
-                "name": "License Plate",
-                "api_name": "cf_license_plate",
-                "type": "text"
-            },
-            {
-                "name": "Move Out Date",
-                "api_name": "cf_move_out_date",
-                "type": "date"
-            },
-            {
-                "name": "Routing Queue",
-                "api_name": "cf_routing_queue",
-                "type": "text"
-            }
-        ]
-        
-        for field in fields_to_create:
-            logger.info(f"  - {field['name']} ({field['api_name']}) - {field['type']}")
-        
-        return {
-            "status": "manual_setup_required",
-            "fields": fields_to_create,
-            "instructions": "Create these fields in Zoho Desk Settings > Customize > Modules > Tickets > Fields"
-        }

@@ -42,7 +42,7 @@ var WizardRenderer = (function () {
   /* ── Header Panel ─────────────────────────────────────────────────── */
 
   function renderHeader(wizard, customFields) {
-    var intent = wizard.ai_intent || customFields[ParkMConfig.FIELDS.AI_INTENT] || "unclear";
+    var intent = wizard.ai_intent || (customFields[ParkMConfig.FIELDS.AI_TAGS] || "").split(";")[0] || "unclear";
     var confidence = wizard.ai_confidence || customFields[ParkMConfig.FIELDS.AI_CONFIDENCE] || 0;
     var urgency = customFields[ParkMConfig.FIELDS.AI_URGENCY] || "medium";
     var complexity = customFields[ParkMConfig.FIELDS.AI_COMPLEXITY] || "moderate";
@@ -166,7 +166,9 @@ var WizardRenderer = (function () {
       var row = document.createElement("div");
       row.className = "step-row";
 
-      if (step.decision_point) {
+      if (step.is_section_header) {
+        renderSectionHeader(row, step);
+      } else if (step.decision_point) {
         renderDecisionStep(row, step);
       } else {
         renderCheckboxStep(row, step);
@@ -174,6 +176,14 @@ var WizardRenderer = (function () {
 
       container.appendChild(row);
     });
+  }
+
+  function renderSectionHeader(row, step) {
+    row.className = "step-row section-header";
+    var header = document.createElement("div");
+    header.className = "section-header-text";
+    header.textContent = step.text;
+    row.appendChild(header);
   }
 
   function renderCheckboxStep(row, step) {

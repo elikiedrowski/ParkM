@@ -1,35 +1,36 @@
 """
 Email Classification Service using OpenAI
-Classifies support emails by intent, complexity, language, and urgency
+Classifies support emails with granular tags and multi-intent support.
+Tags align with the Zoho Desk 'Tagging' picklist values.
 """
+import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
 from openai import OpenAI
 from src.config import get_settings
 
 
+# Load tag values from the canonical source
+_TAG_VALUES_PATH = os.path.join(os.path.dirname(__file__), "..", "wizard", "tagging_values.json")
+with open(_TAG_VALUES_PATH) as _f:
+    VALID_TAGS: List[str] = json.load(_f)["values"]
+
+
 class EmailClassifier:
     """Classifies support emails using AI"""
-    
+
     def __init__(self):
         self.settings = get_settings()
         self.client = OpenAI(api_key=self.settings.openai_api_key)
         self.model = self.settings.ai_model
-    
+
     def classify_email(self, subject: str, body: str, from_email: str = "", ticket_id: str = "") -> Dict[str, Any]:
         """
-        Classify an email and return structured classification data
+        Classify an email and return structured classification data.
 
-        Args:
-            subject: Email subject line
-            body: Email body content
-            from_email: Sender email address
-            ticket_id: Optional ticket ID for analytics tracking
-
-        Returns:
-            Dictionary with classification results
+        Returns a dict with "tags" (list of 1+ tag strings) plus complexity,
+        language, urgency, confidence, key_entities, and other metadata.
         """
-
         prompt = self._build_classification_prompt(subject, body)
 
         response = self.client.chat.completions.create(
@@ -37,9 +38,13 @@ class EmailClassifier:
             messages=[
                 {
                     "role": "system",
-                    "content": """You are an expert customer support email classifier for ParkM,
-                    a virtual parking permit provider. Analyze support emails and classify them
-                    accurately to help route them to the right team and set expectations."""
+                    "content": (
+                        "You are an expert customer support email classifier for ParkM, "
+                        "a virtual parking permit provider. ParkM manages parking permits "
+                        "for apartment communities. Emails come from three groups: "
+                        "Customers (residents), Property managers/staff, and Sales reps. "
+                        "Analyze support emails and classify them with one or more granular tags."
+                    )
                 },
                 {
                     "role": "user",
@@ -69,12 +74,22 @@ class EmailClassifier:
             except Exception:
                 pass  # Never let logging break classification
 
-        import json
-        return json.loads(response.choices[0].message.content)
-    
+        result = json.loads(response.choices[0].message.content)
+
+        # Validate tags against allowed values
+        raw_tags = result.get("tags", [])
+        if isinstance(raw_tags, str):
+            raw_tags = [raw_tags]
+        result["tags"] = [t for t in raw_tags if t in VALID_TAGS] or ["Needs Tag"]
+
+        # Backwards compat: set "intent" to primary (first) tag for routing/logging
+        result["intent"] = result["tags"][0]
+
+        return result
+
     def _build_classification_prompt(self, subject: str, body: str) -> str:
-        """Build the classification prompt"""
-        return f"""Analyze this customer support email and classify it with the following categories:
+        """Build the classification prompt with granular tags"""
+        return f"""Analyze this customer support email and classify it.
 
 EMAIL:
 Subject: {subject}
@@ -82,162 +97,215 @@ Body: {body}
 
 Provide your classification in JSON format with these fields:
 
-1. "intent" - Primary intent (choose ONE):
-   - "refund_request" - Customer wants money back (refund, reimbursement, credit). Use this whenever the customer explicitly asks for a refund, even if combined with a charge dispute or cancellation.
-   - "permit_cancellation" - Customer wants to CANCEL their parking permit but does NOT mention a refund or wanting money back.
-   - "account_update" - Update vehicle info, license plate, contact details, unit number, etc.
-   - "permit_inquiry" - Questions about permits, status, pricing, how permits work.
-   - "payment_issue" - Billing problems, charge disputes, failed payments, unauthorized charges where customer does NOT ask for a refund.
-   - "technical_issue" - App/website problems, login issues, error messages (NOT password resets — use "password_reset" for those).
-   - "tow_issue" - Customer is reporting a tow, requesting a tow, disputing a tow, or reporting a boot on their vehicle. Includes booting and towing situations.
-   - "password_reset" - Customer needs help resetting their password, can't log in due to forgotten password, or locked out of their account.
-   - "move_out" - Customer says they are moving out or have moved out, but does NOT explicitly request a refund or cancellation. They are notifying us.
-   - "general_question" - Other questions that don't fit above categories.
-   - "unclear" - Cannot determine intent at all (very short, gibberish, completely off-topic).
+1. "tags" - A JSON array of one or more tags that apply. Choose from EXACTLY these values:
 
-   IMPORTANT distinctions:
-   - If customer mentions BOTH moving out AND wanting a refund → "refund_request" (refund is the actionable intent)
-   - If customer mentions BOTH moving out AND wanting to cancel permit (no refund) → "permit_cancellation"
-   - If customer just says "I'm moving out, what do I do?" with no specific request → "move_out"
-   - If customer disputes a charge AND asks for money back → "refund_request"
-   - If customer disputes a charge but does NOT ask for money back → "payment_issue"
-   - If BOTH subject AND body are empty/meaningless (e.g. "(No Subject)" with no body) → "unclear"
-   - "Renew", "Renewal", "Expiring Permit" without further context → "permit_inquiry", NOT "refund_request"
-   - If customer mentions towing, booting, or vehicle impound → "tow_issue"
-   - If customer says they were towed AND wants a refund → "tow_issue" (tow is the primary issue)
-   - If customer can't log in due to forgotten/reset password → "password_reset", NOT "technical_issue"
-   - If customer has an app bug or error (NOT password-related) → "technical_issue"
+   CUSTOMER TAGS (resident/end-user emails):
+   - "Customer Canceling a Permit and Refunding" — wants to cancel AND get money back
+   - "Customer Inquiring for Grandfathered Permit" — asking about a grandfathered permit
+   - "Customer Inquiring for Locked Down Permit" — asking about a locked/restricted permit
+   - "Customer Inquiring for Additional Permit" — wants another permit added to their account
+   - "Customer Rental Car" — has a rental car, needs temporary permit or update
+   - "Customer Double Charged or Extra Charges" — billing dispute, charged twice, unexpected charges
+   - "Customer Guest Permit and Pricing Questions" — questions about guest passes or pricing
+   - "Customer Miscellaneous Questions" — general questions that don't fit other categories
+   - "Customer Sending Money Order" — paying by money order
+   - "Customer Need help buying a permit" — first-time buyer needs help purchasing
+   - "Customer Need Help Renewing Permit" — existing customer needs help with renewal
+   - "Customer Need Help Creating an Account" — can't create an account, signup issues
+   - "Customer New Towing Legislation No Parking" — asking about towing laws or no-parking rules
+   - "Customer No Plate or Expired Tags" — vehicle has no plate or expired registration
+   - "Customer Someone is Parking in my Spot" — reporting unauthorized vehicle in their space
+   - "Customer Parking Space Not in Dropdown" — their parking space isn't listed in the system
+   - "Customer Password Reset" — forgot password, locked out, needs reset
+   - "Customer Towed Booted Ticketed" — vehicle was towed, booted, or ticketed
+   - "Customer Warned or Tagged" — vehicle received a warning sticker or tag
+   - "Customer Payment Help" — general payment issues, can't pay, payment failed
+   - "Customer Update Vehicle Info" — changing license plate or vehicle details
+   - "Customer Update Contact Info" — changing email, phone, address, unit number
+
+   PROPERTY TAGS (property manager/staff emails):
+   - "Property Changing Resident Type for Approved Permit" — changing resident status on a permit
+   - "Property Approving Grandfathered Permit" — property approving a grandfathered permit
+   - "Property Approving Override Additional Permit" — property overriding to allow extra permit
+   - "Property Extending Expiration Date on a Permit" — extending a permit's expiration
+   - "Property Audits or Reports" — requesting audit data, reports, or parking stats
+   - "Property Checking if a Vehicle is Permitted" — verifying a vehicle has a permit
+   - "Property Checking Who Has a Space Number" — looking up who is assigned a space
+   - "Property Checking Who is in a Unit" — looking up who lives in a unit
+   - "Property Inquiring about a Tow Boot Ticket" — property asking about a tow/boot/ticket
+   - "Property Inquiring About a Warning Tag" — property asking about a warning tag
+   - "Property Monitor Request" — requesting parking lot monitoring/patrol
+   - "Property Leasing Staff Login" — leasing office staff needs login help
+   - "Property Miscellaneous Questions" — general property manager questions
+   - "Property Sending Money Order" — property sending payment by money order
+   - "Property Update or Register Employee Vehicles" — adding/updating staff vehicles
+   - "Property Update Resident Vehicle" — property updating a resident's vehicle info
+   - "Property Update Resident Contact Information" — property updating resident contact info
+   - "Property Update Resident Password" — property resetting a resident's password
+   - "Property Register Resident Account for Them" — property creating a resident account
+   - "Property Cancel Resident Account" — property canceling a resident's account
+   - "Property Permitting PAID Resident Vehicle for Them" — property permitting a vehicle on behalf of resident
+   - "Property Resident Payment Help" — property helping a resident with payment issues
+   - "Property Guest Permits" — property asking about guest permit process
+   - "Property Potential Leads" — new property interested in ParkM services
+
+   OTHER TAGS:
+   - "Sales Rep Asking for a Vehicle to be Released" — sales rep requesting vehicle release
+   - "Sales Rep Asking for a Vehicle to be Grandfathered" — sales rep requesting grandfathered status
+   - "Towing or Monitoring Leads" — potential towing/monitoring business leads
+   - "The Law Asking for Information" — law enforcement requesting information
+   - "Needs Tag" — ONLY if the email is completely unintelligible or empty
+
+   MULTI-INTENT RULES:
+   - If the email covers MULTIPLE distinct issues, include ALL applicable tags.
+   - Order tags by importance: the primary issue first, secondary issues after.
+   - Most emails will have 1 tag. Some will have 2-3. Rarely more than 3.
+   - Example: customer says "I need to update my plate AND my car was warned" → ["Customer Update Vehicle Info", "Customer Warned or Tagged"]
+
+   SENDER DETECTION:
+   - If the email is from a property manager or leasing office → use "Property ..." tags
+   - If the email is from a resident/customer → use "Customer ..." tags
+   - If the email mentions "on behalf of" a resident → still use "Property ..." tags
+   - Clues for property: mentions "resident", "unit", "leasing office", property company name, "our community"
+   - Clues for customer: mentions "my permit", "my car", "I moved out", "I need help"
 
 2. "complexity" - How difficult to resolve (choose ONE):
-   - "simple" - Clear request, straightforward resolution, one permit/vehicle
-   - "moderate" - Some ambiguity, may need follow-up, multiple items
-   - "complex" - Unclear request, multiple issues, edge cases, conflicts
+   - "simple" - Clear request, straightforward resolution
+   - "moderate" - Some ambiguity, may need follow-up
+   - "complex" - Multiple issues, edge cases, unclear
 
 3. "language" - Detected language:
-   - "english"
-   - "spanish"
-   - "other"
-   - "mixed"
+   - "english", "spanish", "other", or "mixed"
 
 4. "urgency" - How urgent (choose ONE):
-   - "high" - Angry customer, immediate need, legal threat
+   - "high" - Angry customer, immediate need, legal threat, tow/boot situation
    - "medium" - Normal request timing
    - "low" - General inquiry, no rush
 
 5. "confidence" - Your confidence in this classification (0.0 to 1.0).
-   STRICT scoring rules — follow these exactly:
-   - 0.90-1.00: ONLY when intent is crystal clear AND all key entities are present (plate, date, amount where applicable). Very few emails deserve this.
-   - 0.75-0.89: Clear intent, but missing one or more entities (no plate, no date, no amount).
-   - 0.60-0.74: Ambiguous — could be multiple intents, vague language, or conflicting signals.
-   - 0.40-0.59: Very unclear, rambling, contradictory, or extremely short with no context.
-   - Below 0.40: Cannot determine intent at all (gibberish, off-topic, empty).
+   STRICT scoring rules:
+   - 0.90-1.00: Crystal clear intent, all key entities present. Rare.
+   - 0.75-0.89: Clear intent, missing one or more entities.
+   - 0.60-0.74: Ambiguous, could be multiple categories, vague language.
+   - 0.40-0.59: Very unclear, short, contradictory.
+   - Below 0.40: Cannot determine (gibberish, empty, off-topic).
 
-   MANDATORY deductions — apply ALL that apply:
-   - Email body is empty or near-empty (subject only) → max 0.55
-   - Email is a forwarded/reply chain with noise → deduct 0.10
-   - Multiple possible intents with no clear winner → max 0.70
+   MANDATORY deductions:
+   - Empty body (subject only) → max 0.55
+   - Forwarded/reply chain with noise → deduct 0.10
+   - Multiple possible tags with no clear primary → deduct 0.10
    - Missing license plate when relevant → deduct 0.05
-   - Missing move-out date when relevant → deduct 0.05
-   - Third party writing on behalf of someone → deduct 0.05
+   - Third party writing → deduct 0.05
 
-6. "key_entities" - Extract important information as an object:
-   - "license_plate": null or the plate number if mentioned
+6. "key_entities" - Extract important information:
+   - "license_plate": null or plate number
    - "move_out_date": null or date mentioned
    - "property_name": null or property/community name
-   - "amount": null or dollar amount mentioned
+   - "amount": null or dollar amount
+   - "unit_number": null or unit/apartment number
+   - "space_number": null or parking space number
 
 7. "requires_refund" - Boolean: Does this email mention wanting money back?
 
-8. "requires_human_review" - Boolean: Should a human review this before any automation?
+8. "requires_human_review" - Boolean: Should a human review this?
 
-9. "suggested_response_type" - How should we respond:
+9. "suggested_response_type":
    - "auto_resolve" - Can be fully automated
    - "auto_draft" - Generate draft for CSR approval
    - "manual" - Needs full human handling
 
 10. "notes" - Brief explanation of your classification (1 sentence)
 
-EXAMPLES for calibration:
+EXAMPLES:
 
-Example 1 — Clear refund with all entities:
-Subject: "Refund for parking"
-Body: "I moved out on Jan 1. Plate ABC-1234. Refund me the $45 charge."
-→ intent: "refund_request", confidence: 0.95
+Example 1 — Customer cancel + refund:
+Subject: "Cancel and refund"
+Body: "I moved out Jan 1. Plate ABC-1234. Please cancel my permit and refund the $45."
+→ tags: ["Customer Canceling a Permit and Refunding"], confidence: 0.95
 
-Example 2 — Cancel permit, no refund:
-Subject: "Cancel parking permit"
-Body: "I'd like to cancel my parking permit effective immediately. Plate DEF-5678."
-→ intent: "permit_cancellation", confidence: 0.90
+Example 2 — Someone parking in their spot:
+Subject: "Unauthorized car"
+Body: "Someone is parking in my assigned spot #204. License plate XYZ-789."
+→ tags: ["Customer Someone is Parking in my Spot"], confidence: 0.90
 
-Example 3 — Moving out notification (no action requested):
-Subject: "Moving out"
-Body: "I'm moving out next month. What do I need to do about parking?"
-→ intent: "move_out", confidence: 0.80 (no specific date, no plate)
+Example 3 — Property checking a vehicle:
+Subject: "Is this car permitted?"
+Body: "Hi, can you check if plate DEF-456 is registered in our system? This is from Sunset Apartments leasing office."
+→ tags: ["Property Checking if a Vehicle is Permitted"], confidence: 0.90
 
-Example 4 — Vague/empty body:
-Subject: "Refund"
-Body: ""
-→ intent: "refund_request", confidence: 0.50 (subject-only, no details)
+Example 4 — Multi-intent:
+Subject: "Payment issue and password"
+Body: "I was double charged this month AND I can't log in to check my account. Please help."
+→ tags: ["Customer Double Charged or Extra Charges", "Customer Password Reset"], confidence: 0.80
 
-Example 5 — Angry charge dispute wanting money back:
-Subject: "UNAUTHORIZED CHARGE"
-Body: "You charged me $45 without authorization after I moved out. Refund immediately or I'm calling my lawyer!"
-→ intent: "refund_request", confidence: 0.90 (explicit refund demand, has amount, urgency: high)
+Example 5 — Customer towed and wants refund:
+Subject: "TOWED!!"
+Body: "My car was towed but I have a valid permit! I want it released AND a refund for the tow fee!"
+→ tags: ["Customer Towed Booted Ticketed"], confidence: 0.85
 
-Example 6 — No subject, no body (zero signal):
+Example 6 — Empty email:
 Subject: "(No Subject)"
 Body: ""
-→ intent: "unclear", confidence: 0.35 (absolutely no information to classify)
-
-Example 7 — Renewal inquiry (NOT a refund):
-Subject: "Renew"
-Body: ""
-→ intent: "permit_inquiry", confidence: 0.50 (subject suggests renewal, no body)
-
-Example 8 — Tow/boot issue:
-Subject: "My car was towed!"
-Body: "I have a valid permit but my car was towed from lot B. Plate XYZ-1234. Please help."
-→ intent: "tow_issue", confidence: 0.90 (clear tow issue, has plate)
-
-Example 9 — Booting issue:
-Subject: "Boot on my vehicle"
-Body: "There is a boot on my car in the garage. I pay for parking here. Please remove it."
-→ intent: "tow_issue", confidence: 0.85 (booting falls under tow_issue)
-
-Example 10 — Password reset:
-Subject: "Can't log in"
-Body: "I forgot my password and can't get into my account to manage my permit."
-→ intent: "password_reset", confidence: 0.90 (clear password/login issue)
+→ tags: ["Needs Tag"], confidence: 0.30
 
 Respond ONLY with valid JSON, no other text."""
-    
+
     def get_routing_recommendation(self, classification: Dict[str, Any]) -> str:
         """
-        Recommend which department/queue to route to based on classification
-        
-        Args:
-            classification: Result from classify_email()
-        
-        Returns:
-            Department name recommendation
+        Recommend which department/queue to route to based on classification.
+        Uses the primary tag (first in the tags list).
         """
-        intent = classification.get("intent")
+        tags = classification.get("tags", [])
+        primary_tag = tags[0] if tags else "Needs Tag"
         complexity = classification.get("complexity")
-        
-        # Simple routing logic (can be enhanced)
-        if intent == "refund_request" and complexity == "simple":
-            return "Auto-Resolution Queue"
-        elif intent in ["refund_request", "payment_issue"]:
+        urgency = classification.get("urgency")
+
+        # Escalation cases
+        if urgency == "high" or complexity == "complex":
+            return "Escalations"
+
+        # Tow/boot situations
+        if primary_tag in [
+            "Customer Towed Booted Ticketed",
+            "Customer New Towing Legislation No Parking",
+            "Property Inquiring about a Tow Boot Ticket",
+        ]:
+            return "Escalations"
+
+        # Refund / billing
+        if primary_tag in [
+            "Customer Canceling a Permit and Refunding",
+            "Customer Double Charged or Extra Charges",
+        ]:
             return "Accounting/Refunds"
-        elif intent == "permit_cancellation" and complexity == "simple":
+
+        # Quick resolution items
+        if primary_tag in [
+            "Customer Password Reset",
+            "Customer Update Vehicle Info",
+            "Customer Update Contact Info",
+            "Customer Warned or Tagged",
+            "Property Update Resident Vehicle",
+            "Property Update Resident Contact Information",
+            "Property Update Resident Password",
+        ] and complexity == "simple":
             return "Quick Updates"
-        elif intent == "account_update" and complexity == "simple":
-            return "Quick Updates"
-        elif intent == "tow_issue":
+
+        # Property requests
+        if primary_tag.startswith("Property "):
+            return "Property Support"
+
+        # Sales / leads
+        if primary_tag in [
+            "Sales Rep Asking for a Vehicle to be Released",
+            "Sales Rep Asking for a Vehicle to be Grandfathered",
+            "Towing or Monitoring Leads",
+            "Property Potential Leads",
+        ]:
+            return "Sales / Leads"
+
+        # Law enforcement
+        if primary_tag == "The Law Asking for Information":
             return "Escalations"
-        elif intent == "password_reset":
-            return "Quick Updates"
-        elif complexity == "complex" or classification.get("urgency") == "high":
-            return "Escalations"
-        else:
-            return "General Support"
+
+        return "General Support"

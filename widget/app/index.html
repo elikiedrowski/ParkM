@@ -47,10 +47,11 @@
         Flagged for Human Review
       </div>
       <p id="wizard-intro" class="intro-text"></p>
+      <div id="tag-list" class="tag-list" style="display:none;"></div>
     </div>
 
-    <!-- Agent Corrected Intent -->
-    <div id="correction-panel" class="panel">
+    <!-- Agent Correction (handled via Zoho field directly) -->
+    <div id="correction-panel" class="panel correction-section" style="display:none;">
       <label for="corrected-intent-select" class="correction-label">Override AI Classification:</label>
       <select id="corrected-intent-select" class="correction-select">
         <option value="">-- AI classification is correct --</option>

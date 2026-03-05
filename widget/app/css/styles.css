@@ -489,3 +489,38 @@ body {
   color: #333;
   cursor: pointer;
 }
+
+/* ── Multi-tag list ──────────────────────────────────────────────── */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.tag-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.tag-pill--primary {
+  background: #1565c0;
+  color: #fff;
+}
+
+/* ── Section headers (multi-wizard stacking) ─────────────────────── */
+.step-row.section-header {
+  margin-top: 16px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #1565c0;
+  padding-bottom: 4px;
+}
+.section-header-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1565c0;
+  text-transform: none;
+}

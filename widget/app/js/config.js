@@ -5,9 +5,9 @@ var ParkMConfig = {
   // Railway API base URL (no trailing slash)
   API_BASE_URL: "https://parkm-production.up.railway.app",
 
-  // Custom field API names (must match tagger.py lines 22-33)
+  // Custom field API names
   FIELDS: {
-    AI_INTENT:             "cf_ai_intent",
+    AI_TAGS:               "cf_ai_tags",
     AI_CONFIDENCE:         "cf_ai_confidence",
     AI_URGENCY:            "cf_ai_urgency",
     AI_COMPLEXITY:         "cf_ai_complexity",
@@ -17,33 +17,7 @@ var ParkMConfig = {
     LICENSE_PLATE:         "cf_license_plate",
     MOVE_OUT_DATE:         "cf_move_out_date",
     ROUTING_QUEUE:         "cf_routing_queue",
-    AGENT_CORRECTED:       "cf_agent_corrected_intent"
-  },
-
-  // All 9 supported intents
-  INTENTS: [
-    "refund_request",
-    "permit_cancellation",
-    "account_update",
-    "payment_issue",
-    "permit_inquiry",
-    "move_out",
-    "technical_issue",
-    "general_question",
-    "unclear"
-  ],
-
-  // Intent display labels
-  INTENT_LABELS: {
-    refund_request:      "Refund Request",
-    permit_cancellation: "Permit Cancellation",
-    account_update:      "Account / Vehicle Update",
-    payment_issue:       "Payment Issue",
-    permit_inquiry:      "Permit Inquiry",
-    move_out:            "Move-Out Notification",
-    technical_issue:     "Technical Issue",
-    general_question:    "General Question",
-    unclear:             "Unclear / Needs Review"
+    AGENT_CORRECTED_TAGS:  "cf_agent_corrected_tags"
   },
 
   // Urgency badge styles

@@ -2,12 +2,15 @@
 Wizard Service
 Loads wizard step definitions from wizard_content.json and resolves
 entity placeholders using ticket classification data.
+
+Supports lookup by both tag name (e.g. "Customer Password Reset")
+and legacy intent key (e.g. "password_reset").
 """
 import json
 import logging
-import os
+import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +28,24 @@ def _load_wizard_data() -> Dict[str, Any]:
     return _wizard_data
 
 
+def _normalize_tag_key(tag: str) -> str:
+    """Convert a tag name to the wizard_content.json key format.
+    e.g. 'Customer Password Reset' → 'customer_password_reset'
+    """
+    return re.sub(r'[^a-z0-9]+', '_', tag.lower()).strip('_')
+
+
 def get_wizard_for_intent(
     intent: str,
     classification: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Return the wizard definition for a given intent, with entity placeholders
-    filled in from the classification data where available.
+    Return the wizard definition for a given intent/tag, with entity
+    placeholders filled in from the classification data.
 
     Args:
-        intent: One of the 11 intent values (e.g. 'refund_request', 'tow_issue', 'password_reset')
+        intent: Either a tag name ("Customer Password Reset") or
+                a legacy key ("password_reset")
         classification: Full classification dict from EmailClassifier (optional)
 
     Returns:
@@ -42,14 +53,18 @@ def get_wizard_for_intent(
     """
     data = _load_wizard_data()
 
-    if intent not in data or intent.startswith("_"):
-        logger.warning(f"Unknown intent '{intent}', falling back to 'unclear'")
-        intent = "unclear"
+    # Try direct lookup first (legacy key), then normalized tag key
+    key = intent
+    if key not in data or key.startswith("_"):
+        key = _normalize_tag_key(intent)
+    if key not in data or key.startswith("_"):
+        logger.warning(f"No wizard for '{intent}' (key='{key}'), falling back to 'unclear'")
+        # Return a generic placeholder wizard
+        return _placeholder_wizard(intent, classification)
 
-    wizard = json.loads(json.dumps(data[intent]))  # deep copy
+    wizard = json.loads(json.dumps(data[key]))  # deep copy
 
     # Extract entities for placeholder substitution
-    # Classifier returns field as "key_entities"
     entities: Dict[str, str] = {}
     if classification:
         extracted = classification.get("key_entities") or classification.get("extracted_entities") or {}
@@ -64,13 +79,12 @@ def get_wizard_for_intent(
     for step in wizard.get("steps", []):
         if "substep" in step:
             step["substep"] = _fill_placeholders(step["substep"], entities)
-        # Mark whether entity was actually found
         entity_field = step.get("entity_field")
         if entity_field:
             step["entity_value"] = entities.get(entity_field)
             step["entity_found"] = entity_field in entities
 
-    # Attach confidence + intent from classification
+    # Attach classification metadata
     if classification:
         wizard["ai_confidence"] = classification.get("confidence")
         wizard["ai_intent"] = intent
@@ -80,16 +94,35 @@ def get_wizard_for_intent(
     return wizard
 
 
+def _placeholder_wizard(tag: str, classification: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Return a generic wizard for tags that don't have a full definition yet."""
+    wizard = {
+        "label": tag,
+        "icon": "",
+        "color": "#607d8b",
+        "intro": f"Wizard steps for \"{tag}\" are being developed. Follow your standard process.",
+        "steps": [
+            {"id": "1", "text": "Review the ticket and identify the customer's request", "required": True},
+            {"id": "2", "text": "Follow the standard process for this type of request"},
+            {"id": "3", "text": "Send appropriate response to customer"},
+            {"id": "4", "text": "Update ticket status"},
+        ],
+        "validation_on_close": [
+            "Did you respond to the customer?",
+            "Did you complete all required actions?"
+        ],
+        "quick_templates": []
+    }
+    if classification:
+        wizard["ai_confidence"] = classification.get("confidence")
+        wizard["ai_intent"] = tag
+        wizard["requires_human_review"] = classification.get("requires_human_review", False)
+        wizard["extracted_entities"] = {}
+    return wizard
+
+
 def get_template_html(template_filename: str) -> Optional[str]:
-    """
-    Return the raw HTML content of a response template.
-
-    Args:
-        template_filename: e.g. 'refund_approved.html'
-
-    Returns:
-        HTML string or None if not found
-    """
+    """Return the raw HTML content of a response template."""
     path = _TEMPLATES_DIR / template_filename
     if not path.exists():
         logger.error(f"Template not found: {template_filename}")
@@ -105,7 +138,7 @@ def list_templates() -> list:
 
 
 def list_intents() -> list:
-    """Return all supported intent keys."""
+    """Return all supported intent/tag keys."""
     data = _load_wizard_data()
     return [k for k in data.keys() if not k.startswith("_")]
 
@@ -114,8 +147,6 @@ def _fill_placeholders(text: str, entities: Dict[str, str]) -> str:
     """Replace {{key}} placeholders with entity values or a 'not found' fallback."""
     for key, value in entities.items():
         text = text.replace("{{" + key + "}}", value)
-    # Replace any remaining unfilled placeholders with a clear indicator
-    import re
     text = re.sub(
         r"\{\{(\w+)\}\}",
         lambda m: f"[{m.group(1).replace('_', ' ').title()} — Not Found in Email]",

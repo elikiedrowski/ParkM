@@ -1,11 +1,11 @@
 /**
  * ParkM CSR Wizard — Main App Orchestrator
- * Initializes Zoho Desk SDK, loads ticket data, fetches wizard content,
- * and wires up the correction dropdown and event listeners.
+ * Supports multi-intent classification: reads semicolon-separated tags from
+ * cf_ai_tags and stacks wizard steps for each tag.
  */
 var ParkMApp = (function () {
-  var currentWizard = null;
-  var currentIntent = null;
+  var currentWizards = [];   // array of wizard objects (one per tag)
+  var currentTags = [];      // array of tag strings from AI
   var ticketId = null;
   var customFields = {};
 
@@ -16,7 +16,6 @@ var ParkMApp = (function () {
     states.forEach(function (id) {
       document.getElementById(id).style.display = (id === stateId) ? "" : "none";
     });
-    // The wizard-container and state panels use different default displays
     if (stateId === "wizard-container") {
       document.getElementById("wizard-container").style.display = "block";
     }
@@ -27,10 +26,17 @@ var ParkMApp = (function () {
     showState("error-state");
   }
 
+  /* ── Parse multi-select tags ───────────────────────────────────────── */
+
+  function parseTags(tagValue) {
+    if (!tagValue) return [];
+    return tagValue.split(";").map(function (t) { return t.trim(); }).filter(Boolean);
+  }
+
   /* ── Fetch wizard content from Railway API ────────────────────────── */
 
-  function fetchWizard(intent, tktId) {
-    var url = ParkMConfig.API_BASE_URL + "/wizard/" + encodeURIComponent(intent);
+  function fetchWizard(tag, tktId) {
+    var url = ParkMConfig.API_BASE_URL + "/wizard/" + encodeURIComponent(tag);
     if (tktId) url += "?ticket_id=" + encodeURIComponent(tktId);
 
     return fetch(url)
@@ -43,92 +49,99 @@ var ParkMApp = (function () {
       });
   }
 
-  /* ── Render the full wizard ───────────────────────────────────────── */
+  /* ── Fetch and render all wizards (stacked) ────────────────────────── */
 
-  function renderWizard(wizard) {
-    currentWizard = wizard;
-    WizardRenderer.renderHeader(wizard, customFields);
-    WizardRenderer.renderEntities(wizard);
-    WizardRenderer.renderSteps(wizard.steps);
-    TemplatePanel.renderButtons(wizard.quick_templates);
-    showState("wizard-container");
+  function loadWizardsForTags(tags) {
+    showState("loading-state");
+
+    var promises = tags.map(function (tag) {
+      return fetchWizard(tag, ticketId);
+    });
+
+    Promise.all(promises)
+      .then(function (wizards) {
+        currentWizards = wizards;
+        renderStackedWizards(tags, wizards);
+        showState("wizard-container");
+      })
+      .catch(function (err) {
+        console.error("Failed to load wizards:", err);
+        showError("Failed to load wizard data.");
+      });
+  }
+
+  /* ── Render stacked wizards ────────────────────────────────────────── */
+
+  function renderStackedWizards(tags, wizards) {
+    // Render header for the primary (first) tag
+    var primary = wizards[0];
+    WizardRenderer.renderHeader(primary, customFields);
+
+    // If multiple tags, show a tag list
+    var tagListEl = document.getElementById("tag-list");
+    if (tagListEl) {
+      tagListEl.innerHTML = "";
+      if (tags.length > 1) {
+        tagListEl.style.display = "block";
+        tags.forEach(function (tag, idx) {
+          var pill = document.createElement("span");
+          pill.className = "tag-pill" + (idx === 0 ? " tag-pill--primary" : "");
+          pill.textContent = tag;
+          tagListEl.appendChild(pill);
+        });
+      } else {
+        tagListEl.style.display = "none";
+      }
+    }
+
+    // Render entities from primary wizard
+    WizardRenderer.renderEntities(primary);
+
+    // Stack steps from all wizards with section headers
+    var allSteps = [];
+    var allTemplates = [];
+    wizards.forEach(function (wizard, idx) {
+      // Add section header step if multiple wizards
+      if (wizards.length > 1) {
+        allSteps.push({
+          id: "_section_" + idx,
+          text: tags[idx],
+          is_section_header: true
+        });
+      }
+      (wizard.steps || []).forEach(function (step) {
+        // Namespace step IDs to avoid collisions between wizards
+        var namespacedStep = Object.assign({}, step, {
+          id: idx + "_" + step.id
+        });
+        allSteps.push(namespacedStep);
+      });
+      (wizard.quick_templates || []).forEach(function (tpl) {
+        if (allTemplates.indexOf(tpl) === -1) allTemplates.push(tpl);
+      });
+    });
+
+    WizardRenderer.renderSteps(allSteps);
+    TemplatePanel.renderButtons(allTemplates);
   }
 
   /* ── Populate the correction dropdown ─────────────────────────────── */
 
-  function populateCorrectionDropdown(currentIntentValue) {
+  function populateCorrectionDropdown() {
     var select = document.getElementById("corrected-intent-select");
 
-    // Clear existing options (keep the first "AI is correct" option)
-    while (select.options.length > 1) {
-      select.remove(1);
+    // Correction dropdown not applicable for multi-select tags in the same way.
+    // Hide it — CSRs use the Agent Corrected Tags field in Zoho directly.
+    if (select) {
+      var wrapper = select.closest(".correction-section") || select.parentElement;
+      if (wrapper) wrapper.style.display = "none";
     }
-
-    ParkMConfig.INTENTS.forEach(function (intent) {
-      if (intent === currentIntentValue) return; // skip current — it's the default
-      var opt = document.createElement("option");
-      opt.value = intent;
-      opt.textContent = ParkMConfig.INTENT_LABELS[intent] || intent;
-      select.appendChild(opt);
-    });
-
-    // Set to current corrected value if one exists
-    var correctedValue = customFields[ParkMConfig.FIELDS.AGENT_CORRECTED] || "";
-    if (correctedValue && correctedValue !== currentIntentValue) {
-      select.value = correctedValue;
-    }
-
-    // Listen for changes
-    select.addEventListener("change", onCorrectionChange);
-  }
-
-  /* ── Handle correction dropdown change ────────────────────────────── */
-
-  function onCorrectionChange() {
-    var select = document.getElementById("corrected-intent-select");
-    var newIntent = select.value;
-
-    if (!newIntent) {
-      // Reset to original AI classification
-      if (currentIntent) {
-        loadWizardForIntent(currentIntent);
-      }
-      return;
-    }
-
-    // Update custom field in Zoho
-    try {
-      ZOHODESK.set("ticket.cf." + ParkMConfig.FIELDS.AGENT_CORRECTED, { value: newIntent });
-    } catch (e) {
-      console.warn("Could not set corrected intent field:", e);
-    }
-
-    // Reload wizard for new intent
-    loadWizardForIntent(newIntent);
-  }
-
-  /* ── Load wizard for a specific intent ────────────────────────────── */
-
-  function loadWizardForIntent(intent) {
-    showState("loading-state");
-
-    fetchWizard(intent, ticketId)
-      .then(function (wizard) {
-        renderWizard(wizard);
-      })
-      .catch(function (err) {
-        console.error("Failed to load wizard:", err);
-        showError("Failed to load wizard for " + intent);
-      });
   }
 
   /* ── Redirect wizard (called by decision points) ──────────────────── */
 
-  function onRedirectWizard(newIntent) {
-    // Update correction dropdown
-    var select = document.getElementById("corrected-intent-select");
-    select.value = newIntent;
-    loadWizardForIntent(newIntent);
+  function onRedirectWizard(newTag) {
+    loadWizardsForTags([newTag]);
   }
 
   /* ── Validation confirmed callback ────────────────────────────────── */
@@ -142,25 +155,20 @@ var ParkMApp = (function () {
   function init() {
     showState("loading-state");
 
-    // Init sub-modules
     TemplatePanel.init();
     ValidationModal.init();
 
-    // Retry button
     document.getElementById("retry-btn").addEventListener("click", function () {
       init();
     });
 
-    // Check SDK is available
     if (typeof ZOHODESK === "undefined") {
       showError("Zoho Desk SDK not loaded. Please refresh.");
       return;
     }
 
-    // Initialize Zoho Desk SDK
     ZOHODESK.extension.onload().then(function (App) {
       console.log("SDK loaded, fetching ticket data...");
-      // Get ticket ID and custom fields in parallel
       return Promise.all([
         ZOHODESK.get("ticket.id"),
         ZOHODESK.get("ticket.cf")
@@ -180,27 +188,26 @@ var ParkMApp = (function () {
         return;
       }
 
-      // Read AI intent from custom fields
-      var aiIntent = customFields[ParkMConfig.FIELDS.AI_INTENT];
+      // Read AI tags (semicolon-separated multi-select)
+      var aiTagsRaw = customFields[ParkMConfig.FIELDS.AI_TAGS];
+      var aiTags = parseTags(aiTagsRaw);
 
-      if (!aiIntent) {
+      if (aiTags.length === 0) {
         showState("no-classification-state");
         return;
       }
 
-      currentIntent = aiIntent;
+      currentTags = aiTags;
 
-      // Populate correction dropdown
-      populateCorrectionDropdown(aiIntent);
+      // Check if agent already overrode the tags
+      var correctedTagsRaw = customFields[ParkMConfig.FIELDS.AGENT_CORRECTED_TAGS];
+      var correctedTags = parseTags(correctedTagsRaw);
+      var activeTags = correctedTags.length > 0 ? correctedTags : aiTags;
 
-      // Check if agent already overrode the intent
-      var correctedIntent = customFields[ParkMConfig.FIELDS.AGENT_CORRECTED];
-      var activeIntent = correctedIntent || aiIntent;
+      populateCorrectionDropdown();
 
-      // Fetch and render wizard
-      return fetchWizard(activeIntent, ticketId).then(function (wizard) {
-        renderWizard(wizard);
-      });
+      // Fetch and render stacked wizards
+      loadWizardsForTags(activeTags);
     }).catch(function (err) {
       console.error("Initialization failed:", err);
       showError("Failed to initialize: " + (err.message || String(err)));
@@ -214,22 +221,31 @@ var ParkMApp = (function () {
     onRedirectWizard: onRedirectWizard,
     onValidationConfirmed: onValidationConfirmed,
 
-    /** Access current state (for template tracking and validation) */
     getTicketId: function () { return ticketId; },
-    getCurrentIntent: function () { return currentIntent; },
-    getWizard: function () { return currentWizard; },
-    getSteps: function () { return currentWizard ? currentWizard.steps : []; },
+    getCurrentTags: function () { return currentTags; },
+    getCurrentIntent: function () { return currentTags[0] || null; },
+    getWizard: function () { return currentWizards[0] || null; },
+    getSteps: function () {
+      var steps = [];
+      currentWizards.forEach(function (w) {
+        steps = steps.concat(w.steps || []);
+      });
+      return steps;
+    },
 
-    /** Show validation modal (called externally or by status change) */
     showValidation: function () {
-      if (currentWizard) {
-        ValidationModal.show(currentWizard, currentWizard.steps);
+      if (currentWizards.length > 0) {
+        var allSteps = [];
+        currentWizards.forEach(function (w) {
+          allSteps = allSteps.concat(w.steps || []);
+        });
+        ValidationModal.show(currentWizards[0], allSteps);
       }
     }
   };
 })();
 
-// Boot the app when the page fully loads (Zoho SDK requires window.onload)
+// Boot the app when the page fully loads
 window.onload = function () {
   ParkMApp.init();
 };

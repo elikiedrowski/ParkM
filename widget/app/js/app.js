@@ -63,6 +63,7 @@ var ParkMApp = (function () {
         currentWizards = wizards;
         renderStackedWizards(tags, wizards);
         showState("wizard-container");
+        resizeWidget();
       })
       .catch(function (err) {
         console.error("Failed to load wizards:", err);
@@ -150,6 +151,23 @@ var ParkMApp = (function () {
       var wrapper = select.closest(".correction-section") || select.parentElement;
       if (wrapper) wrapper.style.display = "none";
     }
+  }
+
+  /* ── Resize widget to fit content ──────────────────────────────────── */
+
+  function resizeWidget() {
+    try {
+      if (typeof ZOHODESK !== "undefined") {
+        var height = document.body.scrollHeight;
+        ZOHODESK.invoke("RESIZE", { height: height + "px", width: "100%" });
+      }
+    } catch (e) { /* resize not supported in this context */ }
+  }
+
+  // Keep widget height dynamic as content changes (checkboxes, expand/collapse)
+  if (typeof ResizeObserver !== "undefined") {
+    var ro = new ResizeObserver(function () { resizeWidget(); });
+    ro.observe(document.body);
   }
 
   /* ── Redirect wizard (called by decision points) ──────────────────── */

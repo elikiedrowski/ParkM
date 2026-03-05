@@ -153,20 +153,29 @@ var ParkMApp = (function () {
     }
   }
 
-  /* ── Resize widget to fit content ──────────────────────────────────── */
+  /* ── Resize widget to fill available panel height ─────────────────── */
 
   function resizeWidget() {
     try {
       if (typeof ZOHODESK !== "undefined") {
-        var height = document.body.scrollHeight;
-        ZOHODESK.invoke("RESIZE", { height: height + "px", width: "100%" });
+        // Use the larger of content height or viewport to fill the panel
+        var contentHeight = document.body.scrollHeight;
+        var viewportHeight = window.innerHeight || 800;
+        var targetHeight = Math.max(contentHeight, viewportHeight, 600);
+        ZOHODESK.invoke("RESIZE", { height: targetHeight + "px", width: "100%" });
       }
-    } catch (e) { /* resize not supported in this context */ }
+    } catch (e) {
+      console.log("Resize failed:", e);
+    }
   }
 
-  // Keep widget height dynamic as content changes (checkboxes, expand/collapse)
+  // Keep widget height dynamic as content changes
   if (typeof ResizeObserver !== "undefined") {
-    var ro = new ResizeObserver(function () { resizeWidget(); });
+    var _resizeTimer;
+    var ro = new ResizeObserver(function () {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(resizeWidget, 100);
+    });
     ro.observe(document.body);
   }
 
@@ -201,6 +210,8 @@ var ParkMApp = (function () {
 
     ZOHODESK.extension.onload().then(function (App) {
       console.log("SDK loaded, fetching ticket data...");
+      // Resize immediately on load
+      resizeWidget();
       return Promise.all([
         ZOHODESK.get("ticket.id"),
         ZOHODESK.get("ticket.cf")

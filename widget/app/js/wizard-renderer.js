@@ -55,10 +55,11 @@ var WizardRenderer = (function () {
     iconEl.textContent = wizard.icon || "";
     labelEl.textContent = wizard.label || ParkMConfig.INTENT_LABELS[intent] || intent;
 
-    // Confidence badge
+    // Confidence badge — handle both 0-1 and 0-100 ranges
     var confBadge = document.getElementById("confidence-badge");
-    var confPct = Math.round(parseFloat(confidence) * 100);
-    confBadge.textContent = confPct + "% conf.";
+    var confRaw = parseFloat(confidence) || 0;
+    var confPct = confRaw > 1 ? Math.round(confRaw) : Math.round(confRaw * 100);
+    confBadge.textContent = confPct + "% Confidence";
     if (confPct >= 85) {
       confBadge.style.background = "#e8f5e9";
       confBadge.style.color = "#27ae60";
@@ -180,6 +181,9 @@ var WizardRenderer = (function () {
 
   function renderSectionHeader(row, step) {
     row.className = "step-row section-header";
+    // Extract index from id "_section_0" → "0"
+    var sectionIdx = step.id.replace("_section_", "");
+    row.id = "section-header-" + sectionIdx;
     var header = document.createElement("div");
     header.className = "section-header-text";
     header.textContent = step.text;

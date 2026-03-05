@@ -94,11 +94,32 @@ def get_wizard_for_intent(
     return wizard
 
 
+_TAG_ICONS: Dict[str, str] = {
+    "cancel": "🚫", "refund": "💰", "password": "🔑", "update": "✏️",
+    "payment": "💳", "double charged": "💳", "extra charges": "💳",
+    "towed": "🚗", "booted": "🚗", "ticketed": "🚗",
+    "permit": "🅿️", "parking": "🅿️", "spot": "🅿️",
+    "move": "🏠", "property": "🏢", "sales": "📊",
+    "enforce": "⚖️", "citation": "⚖️", "appeal": "⚖️",
+    "grandfathered": "📋", "inquir": "❓", "question": "❓",
+    "needs tag": "⚠️",
+}
+
+
+def _icon_for_tag(tag: str) -> str:
+    """Pick an emoji icon based on keywords in the tag name."""
+    tag_lower = tag.lower()
+    for keyword, icon in _TAG_ICONS.items():
+        if keyword in tag_lower:
+            return icon
+    return "📋"
+
+
 def _placeholder_wizard(tag: str, classification: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Return a generic wizard for tags that don't have a full definition yet."""
     wizard = {
         "label": tag,
-        "icon": "",
+        "icon": _icon_for_tag(tag),
         "color": "#607d8b",
         "intro": f"Wizard steps for \"{tag}\" are being developed. Follow your standard process.",
         "steps": [

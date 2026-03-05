@@ -87,6 +87,20 @@ var ParkMApp = (function () {
           var pill = document.createElement("span");
           pill.className = "tag-pill" + (idx === 0 ? " tag-pill--primary" : "");
           pill.textContent = tag;
+          pill.setAttribute("data-section-idx", idx);
+          pill.addEventListener("click", function () {
+            // Highlight this pill
+            var allPills = tagListEl.querySelectorAll(".tag-pill");
+            for (var i = 0; i < allPills.length; i++) {
+              allPills[i].classList.remove("tag-pill--primary");
+            }
+            pill.classList.add("tag-pill--primary");
+            // Scroll to section header
+            var sectionEl = document.getElementById("section-header-" + idx);
+            if (sectionEl) {
+              sectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          });
           tagListEl.appendChild(pill);
         });
       } else {

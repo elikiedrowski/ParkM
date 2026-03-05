@@ -7,12 +7,17 @@
   padding: 0;
 }
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 13px;
   color: #333;
   background: #fff;
   line-height: 1.4;
+  min-height: 100vh;
 }
 
 /* ── State Panels (loading, error, no-classification) ──────────────── */
@@ -505,10 +510,18 @@ body {
   font-weight: 500;
   background: #e3f2fd;
   color: #1565c0;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tag-pill:hover {
+  background: #bbdefb;
 }
 .tag-pill--primary {
   background: #1565c0;
   color: #fff;
+}
+.tag-pill--primary:hover {
+  background: #0d47a1;
 }
 
 /* ── Section headers (multi-wizard stacking) ─────────────────────── */

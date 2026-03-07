@@ -156,8 +156,18 @@ def get_summary(days: Optional[int] = None, department_id: Optional[str] = None)
     return result
 
 
+def _get_tags(entry: Dict) -> list:
+    """Extract tags from a classification entry, falling back to intent."""
+    tags = entry.get("tags") or []
+    if not tags:
+        intent = entry.get("intent")
+        if intent:
+            tags = [t.strip() for t in intent.split(";") if t.strip()]
+    return tags if tags else ["unknown"]
+
+
 def get_classification_analytics(days: Optional[int] = None, department_id: Optional[str] = None) -> dict:
-    """Intent distribution, confidence stats, volume over time."""
+    """Tag distribution, confidence stats, volume over time."""
     key = f"classifications_{days}_{department_id}"
     cached = _cache_get(key)
     if cached is not None:
@@ -166,21 +176,25 @@ def get_classification_analytics(days: Optional[int] = None, department_id: Opti
     entries = _get_classifications(days, department_id)
     successful = [e for e in entries if not e.get("error")]
 
-    intent_counts = defaultdict(int)
+    # Count each tag individually (a ticket with 3 tags counts 3 times)
+    tag_counts = defaultdict(int)
     for e in successful:
-        intent_counts[e.get("intent", "unknown")] += 1
+        for tag in _get_tags(e):
+            tag_counts[tag] += 1
 
-    total = len(successful)
+    total_tag_occurrences = sum(tag_counts.values())
     intent_dist = sorted(
-        [{"intent": k, "count": v, "percentage": round(v / total * 100, 1) if total else 0}
-         for k, v in intent_counts.items()],
+        [{"intent": k, "count": v, "percentage": round(v / total_tag_occurrences * 100, 1) if total_tag_occurrences else 0}
+         for k, v in tag_counts.items()],
         key=lambda x: x["count"], reverse=True
     )
 
+    # Confidence by tag (each tag in a ticket gets the ticket's confidence)
     conf_by_intent = defaultdict(list)
     for e in successful:
         if e.get("confidence") is not None:
-            conf_by_intent[e.get("intent", "unknown")].append(e["confidence"])
+            for tag in _get_tags(e):
+                conf_by_intent[tag].append(e["confidence"])
 
     confidence_stats = []
     for intent, confs in sorted(conf_by_intent.items()):
@@ -235,13 +249,17 @@ def get_correction_analytics(days: Optional[int] = None, department_id: Optional
 
     matrix = defaultdict(lambda: defaultdict(int))
     for e in misclassifications:
-        matrix[e["original_intent"]][e["corrected_intent"]] += 1
+        orig = "; ".join(e.get("original_tags", [])) or e.get("original_intent", "unknown")
+        corr = "; ".join(e.get("corrected_tags", [])) or e.get("corrected_intent", "unknown")
+        matrix[orig][corr] += 1
 
     confusion_matrix = {k: dict(v) for k, v in matrix.items()}
 
     pair_counts = defaultdict(int)
     for e in misclassifications:
-        pair_counts[(e["original_intent"], e["corrected_intent"])] += 1
+        orig = "; ".join(e.get("original_tags", [])) or e.get("original_intent", "unknown")
+        corr = "; ".join(e.get("corrected_tags", [])) or e.get("corrected_intent", "unknown")
+        pair_counts[(orig, corr)] += 1
 
     confusion_pairs = sorted(
         [{"original": k[0], "corrected": k[1], "count": v} for k, v in pair_counts.items()],
@@ -407,11 +425,11 @@ def get_entity_analytics(days: Optional[int] = None, department_id: Optional[str
 
     by_intent = defaultdict(lambda: defaultdict(lambda: {"found": 0, "total": 0}))
     for e in successful:
-        intent = e.get("intent", "unknown")
-        for field in entity_fields:
-            by_intent[intent][field]["total"] += 1
-            if e.get("entities", {}).get(field):
-                by_intent[intent][field]["found"] += 1
+        for tag in _get_tags(e):
+            for field in entity_fields:
+                by_intent[tag][field]["total"] += 1
+                if e.get("entities", {}).get(field):
+                    by_intent[tag][field]["found"] += 1
 
     by_intent_result = {}
     for intent, fields in by_intent.items():
@@ -489,22 +507,26 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
 
     failed = sum(1 for e in entries if not e.get("success", True))
 
-    # Build ticket_id → intent lookup from classifications (for enriching api_usage entries)
+    # Build ticket_id → tags lookup from classifications (for enriching api_usage entries)
     classifications = _get_classifications(days)
-    ticket_intent_map: Dict[str, str] = {
-        c.get("ticket_id"): c.get("intent") for c in classifications if c.get("ticket_id")
-    }
+    ticket_tags_map: Dict[str, list] = {}
+    for c in classifications:
+        if c.get("ticket_id"):
+            ticket_tags_map[c["ticket_id"]] = _get_tags(c)
 
-    # Usage by intent — group OpenAI calls by the intent of the ticket they classified
+    # Usage by tag — group OpenAI calls by the tags of the ticket they classified
     intent_stats: Dict[str, Dict] = defaultdict(lambda: {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "cost": 0.0})
     for e in openai_entries:
-        intent = ticket_intent_map.get(e.get("ticket_id"), "unknown")
-        s = intent_stats[intent]
-        s["calls"] += 1
-        s["prompt_tokens"] += e.get("prompt_tokens", 0) or 0
-        s["completion_tokens"] += e.get("completion_tokens", 0) or 0
-        s["total_tokens"] += e.get("total_tokens", 0) or 0
-        s["cost"] += e.get("estimated_cost_usd", 0) or 0
+        tags = ticket_tags_map.get(e.get("ticket_id"), ["unknown"])
+        for tag in tags:
+            s = intent_stats[tag]
+            # Divide cost/tokens evenly across tags for multi-tag tickets
+            divisor = len(tags)
+            s["calls"] += 1
+            s["prompt_tokens"] += (e.get("prompt_tokens", 0) or 0) // divisor
+            s["completion_tokens"] += (e.get("completion_tokens", 0) or 0) // divisor
+            s["total_tokens"] += (e.get("total_tokens", 0) or 0) // divisor
+            s["cost"] += (e.get("estimated_cost_usd", 0) or 0) / divisor
 
     by_intent = sorted(
         [{"intent": k, **v, "cost": round(v["cost"], 6)} for k, v in intent_stats.items()],
@@ -525,14 +547,15 @@ def get_api_usage_analytics(days: Optional[int] = None) -> dict:
         key=lambda x: x["calls"], reverse=True
     )
 
-    # Recent usage — last 50 OpenAI calls, most recent first, enriched with intent
+    # Recent usage — last 50 OpenAI calls, most recent first, enriched with tags
     sorted_openai = sorted(openai_entries, key=lambda e: e.get("timestamp", ""), reverse=True)
     recent_usage = []
     for e in sorted_openai[:50]:
-        intent = ticket_intent_map.get(e.get("ticket_id"), None)
+        tags = ticket_tags_map.get(e.get("ticket_id"), [])
         recent_usage.append({
             "timestamp": e.get("timestamp"),
-            "intent": intent,
+            "intent": "; ".join(tags) if tags else None,
+            "tags": tags,
             "call_type": e.get("call_type"),
             "model": e.get("model"),
             "prompt_tokens": e.get("prompt_tokens"),

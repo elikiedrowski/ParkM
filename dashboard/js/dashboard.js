@@ -143,7 +143,13 @@ var Dashboard = (function () {
   function renderSummaryCards(s) {
     setText("card-total", formatNumber(s.total_classifications || 0));
     setText("card-accuracy", s.accuracy_rate !== null ? s.accuracy_rate + "%" : "N/A");
-    setText("card-confidence", s.avg_confidence !== null ? Math.round(s.avg_confidence * 100) + "%" : "N/A");
+    // Confidence may be stored as 0-1 or 0-100; handle both
+    var confDisplay = "N/A";
+    if (s.avg_confidence !== null && s.avg_confidence !== undefined) {
+      var confVal = s.avg_confidence > 1 ? Math.round(s.avg_confidence) : Math.round(s.avg_confidence * 100);
+      confDisplay = confVal + "%";
+    }
+    setText("card-confidence", confDisplay);
     setText("card-time", s.avg_processing_time_seconds !== null ? s.avg_processing_time_seconds + "s" : "N/A");
     setText("card-errors", s.error_rate + "%");
     setText("card-templates", s.templates_used || 0);
@@ -161,7 +167,8 @@ var Dashboard = (function () {
 
   function renderConfidenceByIntent(data) {
     Charts.drawHorizontalBarChart("chart-confidence", (data || []).map(function (d, i) {
-      return { label: formatIntent(d.intent), value: Math.round(d.avg_confidence * 100), color: Charts.getColor(i) };
+      var confVal = d.avg_confidence > 1 ? Math.round(d.avg_confidence) : Math.round(d.avg_confidence * 100);
+      return { label: formatIntent(d.intent), value: confVal, color: Charts.getColor(i) };
     }), { suffix: "%" });
   }
 

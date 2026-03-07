@@ -1,0 +1,24 @@
+<!--
+Template: vehicle_permit_status.html
+Use when: Property asks if a vehicle is permitted - provide FULL details, not just yes/no
+Variables: {{license_plate}}, {{property_name}}
+-->
+<p>Hi there,</p>
+
+<p>Thank you for reaching out. Here is the permit status for the vehicle you inquired about:</p>
+
+<ul>
+  <li><strong>License Plate:</strong> {{license_plate}}</li>
+  <li><strong>Community:</strong> {{property_name}}</li>
+  <li><strong>Permit Active Since:</strong> [CSR: Insert date permit became active on this plate]</li>
+  <li><strong>Permit Type:</strong> [CSR: Insert permit type - e.g., Open Lot, Carport, Garage, 1st Car]</li>
+  <li><strong>Current Status:</strong> [CSR: Active / Expired / Canceled]</li>
+</ul>
+
+<p>[CSR: Add any additional context, such as if the plate was recently changed or if the permit was not active at the time of a tow/boot.]</p>
+
+<p>If you need any further information, please let us know.</p>
+
+<p>Best regards,<br>
+[YOUR NAME]<br>
+ParkM Support Team</p>

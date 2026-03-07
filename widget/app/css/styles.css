@@ -293,6 +293,22 @@ body {
   color: #e65100;
 }
 
+/* Email link in step */
+.step-email-link {
+  display: inline-block;
+  margin: 4px 0 0 26px;
+  padding: 3px 10px;
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 4px;
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.step-email-link:hover {
+  background: #bbdefb;
+}
+
 /* Decision point buttons */
 .decision-buttons {
   display: flex;

@@ -49,6 +49,7 @@ if _SA_AVAILABLE:
         Column("ticket_id", String(50), nullable=True),
         Column("department_id", String(50), nullable=True),
         Column("intent", String(50), nullable=True),
+        Column("tags_json", Text, nullable=True),  # JSON array of all tags
         Column("confidence", Float, nullable=True),
         Column("complexity", String(20), nullable=True),
         Column("urgency", String(20), nullable=True),
@@ -69,6 +70,8 @@ if _SA_AVAILABLE:
         Column("department_id", String(50), nullable=True),
         Column("original_intent", String(50), nullable=False),
         Column("corrected_intent", String(50), nullable=False),
+        Column("original_tags_json", Text, nullable=True),  # JSON array of AI tags
+        Column("corrected_tags_json", Text, nullable=True),  # JSON array of agent-corrected tags
         Column("confidence", Integer, nullable=True),
         Column("is_misclassification", Boolean, default=False),
     )
@@ -192,11 +195,20 @@ def read_classifications(engine, days: Optional[int] = None, department_id: Opti
             except (json.JSONDecodeError, TypeError):
                 pass
         ts = row["timestamp"]
+        tags = []
+        if row.get("tags_json"):
+            try:
+                tags = json.loads(row["tags_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if not tags and row["intent"]:
+            tags = [row["intent"]]
         result.append({
             "timestamp": ts.isoformat() + "Z" if isinstance(ts, datetime) else str(ts),
             "ticket_id": row["ticket_id"],
             "department_id": row["department_id"],
             "intent": row["intent"],
+            "tags": tags,
             "confidence": row["confidence"],
             "complexity": row["complexity"],
             "urgency": row["urgency"],
@@ -219,12 +231,30 @@ def read_corrections(engine, days: Optional[int] = None, department_id: Optional
     result = []
     for row in rows:
         ts = row["timestamp"]
+        original_tags = []
+        corrected_tags = []
+        if row.get("original_tags_json"):
+            try:
+                original_tags = json.loads(row["original_tags_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if not original_tags and row["original_intent"]:
+            original_tags = [t.strip() for t in row["original_intent"].split(";") if t.strip()]
+        if row.get("corrected_tags_json"):
+            try:
+                corrected_tags = json.loads(row["corrected_tags_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if not corrected_tags and row["corrected_intent"]:
+            corrected_tags = [t.strip() for t in row["corrected_intent"].split(";") if t.strip()]
         result.append({
             "timestamp": ts.isoformat() + "Z" if isinstance(ts, datetime) else str(ts),
             "ticket_id": row["ticket_id"],
             "department_id": row["department_id"],
             "original_intent": row["original_intent"],
             "corrected_intent": row["corrected_intent"],
+            "original_tags": original_tags,
+            "corrected_tags": corrected_tags,
             "confidence": row["confidence"],
             "is_misclassification": row["is_misclassification"],
         })

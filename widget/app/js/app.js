@@ -8,6 +8,8 @@ var ParkMApp = (function () {
   var currentTags = [];      // array of tag strings from AI
   var ticketId = null;
   var customFields = {};
+  var pollTimer = null;
+  var POLL_INTERVAL = 5000;  // 5 seconds
 
   /* ── Show / hide state panels ─────────────────────────────────────── */
 
@@ -179,6 +181,43 @@ var ParkMApp = (function () {
     ro.observe(document.body);
   }
 
+  /* ── Poll for classification updates ─────────────────────────────── */
+
+  function startPolling() {
+    stopPolling();
+    console.log("Starting poll for AI classification...");
+    pollTimer = setInterval(function () {
+      ZOHODESK.get("ticket.cf").then(function (cfResponse) {
+        var cf = cfResponse["ticket.cf"] || {};
+        var aiTagsRaw = cf[ParkMConfig.FIELDS.AI_TAGS];
+        var aiTags = parseTags(aiTagsRaw);
+
+        if (aiTags.length > 0) {
+          console.log("Classification detected:", aiTags);
+          stopPolling();
+          customFields = cf;
+          currentTags = aiTags;
+
+          var correctedTagsRaw = cf[ParkMConfig.FIELDS.AGENT_CORRECTED_TAGS];
+          var correctedTags = parseTags(correctedTagsRaw);
+          var activeTags = correctedTags.length > 0 ? correctedTags : aiTags;
+
+          populateCorrectionDropdown();
+          loadWizardsForTags(activeTags);
+        }
+      }).catch(function (err) {
+        console.log("Poll check failed:", err);
+      });
+    }, POLL_INTERVAL);
+  }
+
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
   /* ── Redirect wizard (called by decision points) ──────────────────── */
 
   function onRedirectWizard(newTag) {
@@ -237,6 +276,7 @@ var ParkMApp = (function () {
 
       if (aiTags.length === 0) {
         showState("no-classification-state");
+        startPolling();
         return;
       }
 

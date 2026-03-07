@@ -17,6 +17,13 @@ logger = logging.getLogger(__name__)
 CORRECTIONS_LOG = "logs/corrections.jsonl"
 
 
+def _parse_tags(value: str) -> list:
+    """Split semicolon-separated tags into a sorted list."""
+    if not value:
+        return []
+    return sorted([t.strip() for t in value.split(";") if t.strip()])
+
+
 def log_correction(
     ticket_id: str,
     original_intent: str,
@@ -29,15 +36,22 @@ def log_correction(
 
     Args:
         ticket_id: Zoho Desk ticket ID
-        original_intent: What the AI classified it as (cf_ai_intent)
-        corrected_intent: What the CSR says it should be (cf_agent_corrected_intent)
+        original_intent: AI tags (semicolon-separated string from cf_ai_tags)
+        corrected_intent: Agent corrected tags (semicolon-separated from cf_agent_corrected_tags)
         confidence: AI confidence score at time of classification (0-100)
         department_id: Zoho department ID
 
     Returns:
         True if logged successfully, False otherwise
     """
-    is_misclassification = corrected_intent != "correct" and corrected_intent != original_intent
+    original_tags = _parse_tags(original_intent)
+    corrected_tags = _parse_tags(corrected_intent)
+
+    # Compare tag sets — misclassification if agent provided different tags
+    is_misclassification = (
+        corrected_intent.lower() != "correct"
+        and set(corrected_tags) != set(original_tags)
+    )
 
     # Try DB first
     try:
@@ -51,12 +65,14 @@ def log_correction(
                     department_id=department_id,
                     original_intent=original_intent,
                     corrected_intent=corrected_intent,
+                    original_tags_json=json.dumps(original_tags) if original_tags else None,
+                    corrected_tags_json=json.dumps(corrected_tags) if corrected_tags else None,
                     confidence=confidence,
                     is_misclassification=is_misclassification,
                 ))
                 conn.commit()
             logger.info(
-                f"[{ticket_id}] Correction written to DB: {original_intent} → {corrected_intent} "
+                f"[{ticket_id}] Correction written to DB: {original_tags} → {corrected_tags} "
                 f"(confidence was {confidence}%)"
             )
             return True
@@ -72,13 +88,15 @@ def log_correction(
             "department_id": department_id,
             "original_intent": original_intent,
             "corrected_intent": corrected_intent,
+            "original_tags": original_tags,
+            "corrected_tags": corrected_tags,
             "confidence": confidence,
             "is_misclassification": is_misclassification,
         }
         with open(CORRECTIONS_LOG, "a") as f:
             f.write(json.dumps(entry) + "\n")
         logger.info(
-            f"[{ticket_id}] Correction logged to JSONL: {original_intent} → {corrected_intent} "
+            f"[{ticket_id}] Correction logged to JSONL: {original_tags} → {corrected_tags} "
             f"(confidence was {confidence}%)"
         )
         return True
@@ -103,7 +121,9 @@ def get_corrections_summary() -> dict:
 
     confusion_counts: dict = {}
     for e in misclassifications:
-        pair = f"{e['original_intent']} → {e['corrected_intent']}"
+        orig = "; ".join(e.get("original_tags", [])) or e.get("original_intent", "unknown")
+        corr = "; ".join(e.get("corrected_tags", [])) or e.get("corrected_intent", "unknown")
+        pair = f"{orig} → {corr}"
         confusion_counts[pair] = confusion_counts.get(pair, 0) + 1
 
     sorted_pairs = sorted(confusion_counts.items(), key=lambda x: x[1], reverse=True)

@@ -16,7 +16,7 @@
         "location": "desk.ticket.detail.rightpanel",
         "url": "/app/index.html",
         "name": "parkm_csr_wizard",
-        "title": "ParkM CSR Wizard",
+        "title": "CSR Wizard",
         "logo": "/app/img/logo.png",
         "icon": "/app/img/icon.png"
       }

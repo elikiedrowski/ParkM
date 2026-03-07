@@ -240,6 +240,16 @@ var WizardRenderer = (function () {
       row.appendChild(warning);
     }
 
+    // Email link button
+    if (step.email_link) {
+      var emailBtn = document.createElement("a");
+      emailBtn.href = step.email_link;
+      emailBtn.className = "step-email-link";
+      emailBtn.textContent = step.email_link.replace("mailto:", "");
+      emailBtn.target = "_blank";
+      row.appendChild(emailBtn);
+    }
+
     // Substep
     if (step.substep) {
       var substepDiv = document.createElement("div");

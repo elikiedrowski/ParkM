@@ -51,11 +51,17 @@ def log_classification_event(
     # Build the common entry dict
     if classification:
         entities = classification.get("key_entities") or classification.get("extracted_entities") or {}
+        # Support both new multi-tag "tags" field and legacy single "intent"
+        tags = classification.get("tags") or []
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(";") if t.strip()]
+        intent = classification.get("intent") or (tags[0] if tags else None)
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "ticket_id": ticket_id,
             "department_id": department_id,
-            "intent": classification.get("intent"),
+            "intent": intent,
+            "tags": tags,
             "confidence": classification.get("confidence"),
             "complexity": classification.get("complexity"),
             "urgency": classification.get("urgency"),
@@ -79,6 +85,7 @@ def log_classification_event(
             "ticket_id": ticket_id,
             "department_id": department_id,
             "intent": None,
+            "tags": [],
             "confidence": None,
             "complexity": None,
             "urgency": None,
@@ -103,6 +110,7 @@ def log_classification_event(
                     ticket_id=ticket_id,
                     department_id=department_id,
                     intent=entry["intent"],
+                    tags_json=json.dumps(entry["tags"]) if entry["tags"] else None,
                     confidence=entry["confidence"],
                     complexity=entry["complexity"],
                     urgency=entry["urgency"],

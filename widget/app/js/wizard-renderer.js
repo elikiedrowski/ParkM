@@ -175,8 +175,36 @@ var WizardRenderer = (function () {
         renderCheckboxStep(row, step);
       }
 
+      // Conditional step: hidden until the matching decision is selected
+      if (step.show_for_action) {
+        row.setAttribute("data-show-for-action", step.show_for_action);
+        row.setAttribute("data-decision-id", step.depends_on || "");
+        row.style.display = "none";
+        row.classList.add("conditional-step");
+      }
+
       container.appendChild(row);
     });
+
+    // Restore conditional step visibility from saved decisions
+    _applyConditionalVisibility();
+  }
+
+  function _applyConditionalVisibility() {
+    var container = document.getElementById("steps-list");
+    if (!container) return;
+    var conditionalRows = container.querySelectorAll(".conditional-step");
+    for (var i = 0; i < conditionalRows.length; i++) {
+      var row = conditionalRows[i];
+      var action = row.getAttribute("data-show-for-action");
+      var decisionId = row.getAttribute("data-decision-id");
+      var selectedAction = decisionSelections[decisionId];
+      if (selectedAction && selectedAction === action) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    }
   }
 
   function renderSectionHeader(row, step) {
@@ -325,6 +353,7 @@ var WizardRenderer = (function () {
         btn.classList.remove("dimmed");
 
         _saveState();
+        _applyConditionalVisibility();
 
         // If option has a next_template, preview it
         if (option.next_template && typeof TemplatePanel !== "undefined") {

@@ -293,6 +293,13 @@ body {
   color: #e65100;
 }
 
+/* Conditional steps (hidden until decision is made) */
+.conditional-step {
+  border-left: 3px solid #2196f3;
+  margin-left: 12px;
+  padding-left: 8px;
+}
+
 /* Email link in step */
 .step-email-link {
   display: inline-block;

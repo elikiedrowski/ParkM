@@ -131,6 +131,10 @@ var ParkMApp = (function () {
         var namespacedStep = Object.assign({}, step, {
           id: idx + "_" + step.id
         });
+        // Also namespace depends_on for conditional steps
+        if (step.depends_on !== undefined) {
+          namespacedStep.depends_on = idx + "_" + step.depends_on;
+        }
         allSteps.push(namespacedStep);
       });
       (wizard.quick_templates || []).forEach(function (tpl) {

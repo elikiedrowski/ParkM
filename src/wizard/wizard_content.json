@@ -241,7 +241,7 @@
     "label": "Locked Down Permit Inquiry",
     "icon": "#",
     "color": "#8e44ad",
-    "intro": "Customer is asking about a locked/restricted permit type they cannot purchase on their own. The property has restricted certain permits (e.g., carport, garage) and requires approval. PENDING: Confirm exact process with Sadie.",
+    "intro": "Customer is asking about a locked-down permit. These permits show as 'Sold Out' because the property has locked down ALL permit purchases community-wide. CSRs CANNOT open these up — overrides are per-account and do NOT work for locked-down permits. Forward to Internal Managers.",
     "steps": [
       {
         "id": 1,
@@ -250,48 +250,37 @@
       },
       {
         "id": 2,
-        "text": "Check Zoho CRM notes for the property",
-        "substep": "Some properties restrict permit types (e.g., carport, garage) to specific resident classifications. Check if the property has notes about which permits require approval.",
+        "text": "Confirm the permits show as 'Sold Out' for the community",
+        "substep": "Locked-down permits are community-wide restrictions set by the property. They are different from per-account overrides. A typical override will NOT open up locked-down permits.",
         "required": true
       },
       {
         "id": 3,
-        "text": "Determine if the customer needs a resident type change or override",
-        "substep": "The leasing office may need to email us to approve the customer for the restricted permit type. If so, direct the customer to speak to their leasing office first.",
-        "decision_point": true,
-        "options": [
-          {
-            "label": "Property has approved - Do override/change resident type",
-            "action": "do_override"
-          },
-          {
-            "label": "No approval - Direct to leasing office",
-            "action": "direct_to_leasing"
-          }
-        ],
+        "text": "Forward the WHOLE thread to Internal Managers",
+        "substep": "CSRs do not have permission to open up locked-down permit types. Forward to internalmanagers@parkm.com and include:\n- Customer email\n- Property/community name\n- What permit type they need\nLet the customer know a manager will review their request.",
+        "email_link": "mailto:internalmanagers@parkm.com",
         "required": true
       },
       {
         "id": 4,
-        "text": "If approved: Change resident type or open permits as needed",
-        "substep": "Go to the customer's account > Edit > Change customer classification to the approved type. Then they can purchase the permit themselves, or you can issue it for them.",
-        "required": true,
-        "show_for_action": "do_override",
-        "depends_on": 3
+        "text": "Respond to the customer",
+        "substep": "Let them know you've sent their request to a manager for review. Their leasing office may also need to approve the permit — suggest they contact their leasing office as well.",
+        "required": true
       },
       {
         "id": 5,
-        "text": "Send response to customer and close ticket",
+        "text": "Set ticket status to Waiting/Escalated",
         "required": true
       }
     ],
     "validation_on_close": [
-      "Did you verify property approval before making changes?",
+      "Did you forward to internalmanagers@parkm.com?",
+      "Did you NOT try to override or open up the permits yourself?",
       "Did you respond to the customer?"
     ],
     "quick_templates": [
       {
-        "label": "Locked Permit - Needs Approval",
+        "label": "Locked Permit - Forwarded to Manager",
         "file": "locked_permit_needs_approval.html"
       },
       {
@@ -831,34 +820,54 @@
     "label": "Towing Legislation / No Parking",
     "icon": "!",
     "color": "#7f8c8d",
-    "intro": "Customer is asking about towing laws or no-parking rules. PENDING: Confirm exact process with Sadie.",
+    "intro": "Customer has a paid permit but is complaining they have nowhere to park due to the new Colorado towing legislation (passed 2024). This law changed towing rules and may affect how parking is enforced at their community.",
     "steps": [
       {
         "id": 1,
-        "text": "Read the email carefully to understand the specific question",
+        "text": "Search parkm.app by customer email address",
         "required": true
       },
       {
         "id": 2,
-        "text": "Remind the customer that ParkM is NOT a towing company",
-        "substep": "ParkM sells parking permits. We do not tow, boot, or ticket vehicles. For towing questions, they should contact the towing company or their leasing office.",
+        "text": "Verify the customer has an active paid permit",
+        "substep": "Confirm they are paying for a permit and the permit is active. Note the community name.",
         "required": true
       },
       {
         "id": 3,
-        "text": "If unsure how to respond, escalate to Internal Managers",
-        "substep": "Email internalmanagers@parkm.com with the thread and a summary.",
+        "text": "Understand their complaint",
+        "substep": "The customer is frustrated because they pay for a permit but cannot find available parking. This is often related to the new Colorado towing legislation (2024) which changed enforcement rules and may result in more unpermitted vehicles not being towed, taking up spots.",
+        "required": true
+      },
+      {
+        "id": 4,
+        "text": "Remind the customer that ParkM sells permits, not parking spaces",
+        "substep": "ParkM does not guarantee a specific parking spot (unless they have an assigned space). ParkM sells permits and does NOT tow, boot, or ticket vehicles.",
+        "required": true
+      },
+      {
+        "id": 5,
+        "text": "Direct them to their leasing office for parking availability concerns",
+        "substep": "The leasing office manages the property and parking rules. They can address concerns about parking availability and enforcement with their towing company.",
+        "required": true
+      },
+      {
+        "id": 6,
+        "text": "If unsure how to respond: Escalate to Internal Managers",
+        "substep": "Email internalmanagers@parkm.com with the thread and summary if the customer is persistent or the situation is unclear.",
         "email_link": "mailto:internalmanagers@parkm.com",
         "required": false
       },
       {
-        "id": 4,
+        "id": 7,
         "text": "Send response and close ticket",
         "required": true
       }
     ],
     "validation_on_close": [
-      "Did you respond to the customer?"
+      "Did you verify the customer's permit is active?",
+      "Did you direct them to their leasing office for parking availability?",
+      "Did you clarify that ParkM does not tow or guarantee spots?"
     ],
     "quick_templates": [
       {
@@ -1904,7 +1913,7 @@
     "label": "Property: Monitor Request",
     "icon": "!",
     "color": "#34495e",
-    "intro": "Property is requesting monitoring, tagging, or patrol of their lot. PENDING: Confirm if this is for new monitoring setup or specific vehicle requests with Sadie.",
+    "intro": "Property is requesting monitoring, tagging, or patrol of their lot. This could be a request to tag/warn a specific vehicle, start monitoring their lot, or report an issue with current monitoring.",
     "steps": [
       {
         "id": 1,

@@ -102,7 +102,7 @@ Provide your classification in JSON format with these fields:
    CUSTOMER TAGS (resident/end-user emails):
    - "Customer Canceling a Permit and Refunding" — wants to cancel AND get money back
    - "Customer Inquiring for Grandfathered Permit" — asking about a grandfathered permit
-   - "Customer Inquiring for Locked Down Permit" — asking about a locked/restricted permit
+   - "Customer Inquiring for Locked Down Permit" — permits show as 'Sold Out', community-wide lockdown
    - "Customer Inquiring for Additional Permit" — wants another permit added to their account
    - "Customer Rental Car" — has a rental car, needs temporary permit or update
    - "Customer Double Charged or Extra Charges" — billing dispute, charged twice, unexpected charges
@@ -112,7 +112,7 @@ Provide your classification in JSON format with these fields:
    - "Customer Need help buying a permit" — first-time buyer needs help purchasing
    - "Customer Need Help Renewing Permit" — existing customer needs help with renewal
    - "Customer Need Help Creating an Account" — can't create an account, signup issues
-   - "Customer New Towing Legislation No Parking" — asking about towing laws or no-parking rules
+   - "Customer New Towing Legislation No Parking" — pays for permit but no parking available, mentions new towing law
    - "Customer No Plate or Expired Tags" — vehicle has no plate or expired registration
    - "Customer Someone is Parking in my Spot" — reporting unauthorized vehicle in their space
    - "Customer Parking Space Not in Dropdown" — their parking space isn't listed in the system

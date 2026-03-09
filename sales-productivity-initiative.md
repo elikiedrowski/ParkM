@@ -1,39 +1,38 @@
-# ParkM Sales Productivity Initiative — Meeting Notes
+# ParkM Sales Productivity Initiative — Project Outline & SOW
 
-**Meeting:** Tuesday, March 3, 2026 ~11:00 AM
-**Attendees:** Patrick Cameron, Lauren Kiedrowski, Eli Kiedrowski
-**Purpose:** Review "art of the possible" for Patrick's 5 sales productivity ideas
-**Status:** Meeting completed. All 5 initiatives reviewed and aligned. Patrick presenting to Chad on March 4.
+**Prepared by:** The CRM Wizards (Lauren Kiedrowski, Eli Kiedrowski)
+**Prepared for:** ParkM (Patrick Cameron, Chad)
+**Last updated:** March 8, 2026
+**Document version:** 3.0 — Priorities reordered per customer feedback, SOW cost structure added
 
 ---
 
 ## Background
 
-Patrick shared 5 ideas to improve sales rep productivity. The core thesis: improving rep productivity keeps Chad enthusiastic about extending the relationship — Chad has been the primary sales engine for ParkM for the past 8 years. The AI initiative was originally prompted by board chairman Troy asking "What are you doing with AI?" All 5 ideas are low-risk (internal rep tooling, not customer-facing AI), and they extend the same AI pattern ParkM already has running in Zoho Desk.
+ParkM has identified 5 sales productivity initiatives to improve rep effectiveness using AI-driven pre-sales intelligence. The priorities below are listed in the order specified by the customer as of March 8, 2026. All 5 initiatives are low-risk (internal rep tooling, not customer-facing AI) and extend the same AI pattern already running in ParkM's Zoho Desk environment.
 
-**Current sales operations (confirmed in meeting):**
+**Current sales operations (confirmed March 3):**
 - Reps organized by state (outbound by state, inside by state). Currently covering **33 states** with goal of every state
 - Outside team described as "old school pavement pounding sellers" — account briefs especially valuable for route planning
 - Target lists built manually today: reps query ALN for properties with 250+ units, 80%+ occupancy, built before 2025
-- Recently stood up an outbound engine using **Klenty** (K-L-E-N-T-Y, "cheap version of Gong") — quarterly contract, just started
+- Recently stood up an outbound engine using **Klenty** (K-L-E-N-T-Y) — quarterly contract, just started
+- ALN access confirmed: full access including API, ~150 licenses, ~10 in use
 
 ---
 
-## The 5 Initiatives — Our Assessment
+## Customer Priorities (Updated March 8, 2026)
 
-### 1. Google Reviews as Leads — "Blue Ocean" Opportunity
+### Priority #1: Google Reviews as Valuable Lead Source
 
-**Patrick's idea:** Flag bad Google reviews that mention parking as high-value leads (~$500/lead).
+**Customer goal:** Flag negative Google reviews that mention parking as high-potential leads.
 
-**Our take: This is real and buildable.**
-
-- ~~Google Places API lets us search for apartment complexes by metro and pull reviews~~ **Ruled out** (see below)
-- We run each review through GPT-4o to detect parking complaints, classify severity, and score the property
+- Use web scraping to search for apartment complexes by metro and pull reviews
+- Run reviews through AI to detect parking complaints, classify severity, and score the property
 - Output: a ranked lead list with a "Parking Pain Score" per property
-- Nobody else is doing this for the parking vertical — Patrick's "blue ocean" assessment checks out
+- Nobody else is doing this for the parking vertical — a "blue ocean" opportunity
 
 **Google Places API — ruled out (March 3 investigation):**
-The official Google Places API is hard-coded to return only 5 "most relevant" reviews per property. There is no pagination, no keyword filtering, and no way to customize which reviews are returned. Google treats the Places API as a discovery tool, not a review management tool. The Google Business Profile API offers unlimited reviews with filtering, but only for businesses you own/manage — not applicable here.
+The official Google Places API is hard-coded to return only 5 "most relevant" reviews per property. There is no pagination, no keyword filtering, and no way to customize which reviews are returned. Google treats the Places API as a discovery tool, not a review management or lead tool. The Google Business Profile API offers unlimited reviews with filtering, but only for businesses you own/manage — not applicable here.
 
 **Recommended approach: Outscraper (POC) + Lobstr.io (ongoing monitoring)**
 
@@ -47,87 +46,56 @@ Third-party scraping services bypass the API limits using cloud-based browser au
 | **Free tier** | First 500 reviews free | 100–1,000 credits (varies) |
 | **Paid pricing** | $3 per 1,000 reviews | Starts at $10/mo (~10K credits) |
 
-**Recommendation:** Use **Outscraper** for the Phase 1 POC — give it a category like "apartment complexes in [metro]", filter reviews by "parking" keyword, and feed results into GPT-4o for classification and scoring. Add **Lobstr.io** later if we want automated weekly scans across all 33 states.
+**Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. Data is used for internal lead qualification only — no impersonation or GDPR violations.
 
-**Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. We are not impersonating users or violating GDPR — this is internal lead qualification only.
+**Development estimate: 24–30 hours**
 
-**Estimate:**
+### Priority #2: AI-Generated Account Briefs
 
-| | Time | Data Cost |
-|---|---|---|
-| POC — 1 metro, ~500 properties | 1-2 weeks | ~$0 (free tier covers 500 reviews) |
-| Scale — 10 metros, ~5K properties | +1 week | ~$15-45 (Outscraper pay-as-you-go) |
-| National — 50 metros, ~25K properties | +2 weeks | ~$75-225 + $10/mo Lobstr.io for automation |
+**Customer goal:** Auto-generate a one-pager per target account so reps walk in prepared.
 
-### 2. Property Manager Turnover Alerts
+This is the platform that ties everything together. The brief aggregates signals from the other initiatives into one deliverable per property.
 
-**Patrick's idea:** New PMs are brought in to "clean this place up" — they're open to new vendors. Detect turnover and prioritize those accounts.
-
-**Our take: ALN already does this — and ParkM has the access we need.**
-
-- ALN contacts every property on a 25-business-day cycle and tracks PM name, regional manager, and management company
-- They logged 11,000+ PM changes in Q1 2022 alone
-- **Vendor Edge Pro** has Watch Lists with email alerts on PM changes
-- **Compass tier** has API access for direct CRM integration
-
-**ALN Access (confirmed March 3):** Patrick confirmed ParkM has **full access to ALN**, including API access. They have ~150 licenses and only use ~10. Patrick offered to share credentials directly. This means no spreadsheet uploads — we can build a direct API integration.
-
-**Estimate:**
-
-| | Time | Cost |
-|---|---|---|
-| ALN API integration (confirmed access) | 1-2 weeks to integrate | Included in ALN sub |
-
-Patrick also noted that turnover-heavy properties may be better targets — "new regime in town" is open to re-pitching. High turnover = prospecting signal, not just a data freshness problem.
-
-### 3. AI-Generated Account Briefs ("Sell 90")
-
-**Patrick's idea:** Auto-generate a one-pager per target account so reps walk in prepared. He called this "Sell 90."
-
-**Our take: This is the platform that ties everything together.** The brief aggregates signals from all the other initiatives into one deliverable per property.
-
-Data sources per brief:
+**Data sources per brief:**
 
 | Data | Source | Ready? |
 |---|---|---|
 | Property details (units, location, rent, occupancy) | ALN | Yes — full API access confirmed |
 | Property manager name + tenure | ALN | Yes — full API access confirmed |
-| Parking complaints + pain score | Outscraper reviews + GPT-4o | Build in Phase 1 |
-| Nearby event venues + distances | Google Maps API | Easy add |
-| Upcoming events at nearby venues | Ticketmaster API (free) | Easy add |
+| Parking complaints + pain score | Outscraper reviews + GPT-4o | Built in Priority #1 |
+| Nearby event venues + distances | Google Maps API | Built in Priority #3 |
+| Upcoming events at nearby venues | Ticketmaster API (free) | Built in Priority #3 |
 | Nearby ParkM customers | Internal CRM | Needs CRM access |
-| Suggested talking points | GPT-4o generated | Build in Phase 2 |
+| Suggested talking points | GPT-4o generated | Built here |
 
-**Estimate:**
+**Delivery options:** PDF email digest, web dashboard, or CRM card. Simplest first = email/PDF.
 
-| | Time | Cost |
-|---|---|---|
-| MVP brief (reviews + venues + GPT talking points) | 2-3 weeks | ~$50/month API costs |
-| Full brief (+ ALN data + CRM + events) | 4-6 weeks | ALN sub + ~$100/month |
+**Development estimate: 35–40 hours**
 
-Delivery options: PDF email digest, web dashboard, or Zoho CRM card. Simplest first = email/PDF.
+### Priority #3: Event Venue Proximity Intelligence
 
-### 4. Event Venue Proximity Intelligence
+**Customer goal:** Properties near venues like Red Rocks can charge premium event-night parking. Arm reps with this knowledge. Additionally, "flip it on its head" — given a major venue, show all surrounding apartment complexes as potential target accounts.
 
-**Patrick's idea:** Properties near venues like Red Rocks can charge premium event-night parking. Arm reps with this knowledge.
+**Two directions:**
 
-**Our take: Easy win, great "wow factor" in the brief.**
-
+**A) Property → Nearby Venues (original scope)**
 - Google Maps API calculates distance from any property to a curated venue list (stadiums, amphitheaters, convention centers)
 - Ticketmaster/SeatGeek APIs provide upcoming events (free tier)
 - Example output: "This property is 0.3 mi from American Airlines Center. 48 events/year. Next: Mavs vs. Lakers, March 15."
 
-**Estimate:**
+**B) Venue → Nearby Apartment Complexes (new scope, March 8)**
+- Given a major venue in a rep's metro, find all apartment complexes within a configurable radius (e.g., 1 mile, 3 miles)
+- Cross-reference with ALN property universe for unit counts, occupancy, and management details
+- Output: "American Airlines Center — 23 apartment communities within 2 miles, 8,400 total units. Here are the top 10 targets ranked by unit count and parking pain score."
+- Enables reps to prospect venue-adjacent properties as a category, not just enrich existing leads
 
-| | Time | Cost |
-|---|---|---|
-| Build + integrate into brief | 3-5 days | ~$5/month (Google Maps free tier covers most of it) |
+**Development estimate: 18–26 hours** (expanded from original 12–16 to include reverse venue lookup)
 
-### 5. ALN Target List Generation
+### Priority #4: "Smart" Target List Generation
 
-**Patrick's idea:** Use ALN to generate target lists of properties near existing ParkM customers, then enrich with intelligence from initiatives 1-4.
+**Customer goal:** Use ALN to generate target lists of properties near existing ParkM customers, then enrich with intelligence from the other priorities.
 
-**Our take: ALN is the foundation — everything else layers on top.**
+ALN is the foundation — everything else layers on top to generate "smart" target lists:
 
 ```
 ALN Property Universe
@@ -137,17 +105,173 @@ ALN Property Universe
  └── Account Brief → Synthesized Output for Rep
 ```
 
-This is less a standalone initiative and more the "glue." Once we know what ALN access looks like, building the enrichment pipeline is straightforward.
+This is less a standalone initiative and more the "glue." With ALN API access confirmed, building the enrichment pipeline is straightforward.
 
-**Estimate:** Included in the account brief work (Initiative 3).
+**Development estimate: 12–16 hours**
+
+### Priority #5: Automated Property Manager Turnover Alerts
+
+**Customer goal:** New PMs are often brought in to "clean the place up" and are open to new vendors/solutions. Detect turnover and prioritize those accounts.
+
+- Build ALN API integration to provide automated seller alerts when PM changes are detected
+- ALN contacts every property on a 25-business-day cycle and tracks PM name, regional manager, and management company (11,000+ PM changes in Q1 2022 alone)
+- Integrate key target account info into AI account briefs (Priority #2)
+- High turnover = prospecting signal — "new regime in town" is open to re-pitching
+
+**ALN Access (confirmed March 3):** ParkM has full access to ALN including API. ~150 licenses, ~10 in use. Direct API integration — no spreadsheet uploads.
+
+**Development estimate: 15–18 hours**
+
+---
+
+## Interdependency Analysis
+
+**Key observation (March 8):** These priorities are not fully independent. Several are interdependent and may need concurrent development rather than strict sequential phases.
+
+| Priority | Dependencies | Can be built standalone? |
+|---|---|---|
+| **#1 Google Reviews** | None | Yes — good candidate for initial phase |
+| **#2 Account Briefs** | Consumes output from #1, #3, #4, #5 | No — needs at least #1 complete, ideally #3 and #4 |
+| **#3 Event Venue** | Feeds into #2 (briefs) and #4 (target lists) | Partially — venue data is standalone, but full value comes from integration |
+| **#4 Smart Target Lists** | Layers #1, #3, #5 onto ALN property universe | No — needs other priorities to provide enrichment data |
+| **#5 PM Turnover** | Feeds into #2 (briefs) and #4 (target lists) | Yes — can be built independently, integrated later |
+
+**Recommended phasing:**
+
+- **Phase 1 — Priority #1 (Google Reviews):** Fully independent. Build and deliver as a standalone POC to demonstrate value.
+- **Phase 2 — Priorities #2, #3, #4 (Account Briefs + Event Venue + Smart Target Lists):** These are interdependent and should be developed concurrently. The account brief is the delivery vehicle; venue proximity and target lists are the intelligence that feeds it. Client should commit to all three.
+- **Phase 3 — Priority #5 (PM Turnover Alerts):** Can be built standalone and integrated into briefs/target lists after the fact. Could be deferred if client sees it as lower priority relative to the other sales intelligence.
+
+---
+
+## Proposed Phased Roadmap
+
+### Phase 1 — Google Reviews POC (2–3 weeks)
+
+Pick one metro. Scrape apartment complex reviews. Score them for parking pain. Deliver a ranked lead list.
+
+| Component | Hours |
+|---|---|
+| **Priority #1: Google Reviews as Leads** | **24–30** |
+| Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
+| GPT-4o parking classifier (prompt engineering, tuning, testing) | 6–10 |
+| Scoring algorithm (parking pain score 0–100) | 3–4 |
+| Output formatting (ranked lead list, CSV/JSON export) | 2–3 |
+| Real-data testing & iteration | 4–6 |
+| Demo prep & walkthrough with stakeholders | 2–3 |
+| Cross-cutting (infra setup, config, API key management) | 3–5 |
+| **Phase 1 Development Subtotal** | **27–35** |
+| Project management, meetings, & demos | 4–6 |
+| **Phase 1 Total** | **31–41** |
+
+### Phase 2 — Account Briefs + Event Venue + Smart Target Lists (5–7 weeks)
+
+Build the core intelligence platform: venue proximity data (both directions), enriched target lists, and the account brief that synthesizes everything into a one-pager per property.
+
+| Component | Hours |
+|---|---|
+| **Priority #2: AI-Generated Account Briefs** | **35–40** |
+| Data aggregation layer (pull from all sources) | 8–12 |
+| GPT-4o talking points prompt (engineering + testing) | 4–6 |
+| Brief template (HTML to polished PDF rendering) | 6–10 |
+| Email delivery pipeline (scheduling, formatting, recipients) | 8–12 |
+| Integration testing across data sources | 4–6 |
+| | |
+| **Priority #3: Event Venue Proximity Intelligence** | **18–26** |
+| Google Maps Distance Matrix integration | 3–4 |
+| Curated venue list per metro (stadiums, amphitheaters, convention centers) | 2–3 |
+| Ticketmaster / SeatGeek event calendar integration | 4–6 |
+| Wire venue + event data into account brief output | 2–3 |
+| Reverse venue lookup — find all apartment complexes near a venue | 4–6 |
+| Cross-reference reverse results with ALN property data + scoring | 2–4 |
+| | |
+| **Priority #4: Smart Target List Generation** | **12–16** |
+| Enrichment pipeline (layer priorities #1, #3, #5 onto ALN property universe) | 6–10 |
+| Filtering / prioritization logic (rank by pain score, turnover, proximity) | 4–6 |
+| | |
+| Cross-cutting (end-to-end QA, integration testing) | 5–7 |
+| **Phase 2 Development Subtotal** | **70–89** |
+| Project management, meetings, & demos | 10–14 |
+| **Phase 2 Total** | **80–103** |
+
+### Phase 3 — PM Turnover Alerts (2–3 weeks)
+
+Build ALN API integration for automated PM change detection. Wire turnover signals into account briefs and target lists.
+
+| Component | Hours |
+|---|---|
+| **Priority #5: Automated PM Turnover Alerts** | **15–18** |
+| ALN API integration (change detection client) | 8–10 |
+| Change detection / diff logic | 4–6 |
+| Alert system (email or CRM push) | 3–5 |
+| Integration into account briefs and target lists | 2–3 |
+| **Phase 3 Development Subtotal** | **17–24** |
+| Project management, meetings, & demos | 3–4 |
+| **Phase 3 Total** | **20–28** |
+
+### Summary
+
+| Phase | Priorities Included | Dev Hours | PM/Meetings | Total Hours |
+|---|---|---|---|---|
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 4–6 | 31–41 |
+| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 10–14 | 80–103 |
+| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 3–4 | 20–28 |
+| **Total (all 5 priorities)** | | **114–148** | **17–24** | **131–172** |
+
+---
+
+## Estimated Costs
+
+### The CRM Wizards — Software Consulting & Development
+
+| Phase | Hours |
+|---|---|
+| Phase 1 — Google Reviews POC | 31–41 |
+| Phase 2 — Briefs + Venue + Target Lists | 80–103 |
+| Phase 3 — PM Turnover Alerts | 20–28 |
+| **Total** | **131–172** |
+
+*Note: Includes development, project management, status meetings, and demo/review sessions.*
+
+### Third-Party Tool Costs (Ongoing, Paid by Customer)
+
+| Item | Monthly Cost | Notes |
+|---|---|---|
+| Outscraper (review scraping) | ~$15–75 | Pay-as-you-go, $3/1K reviews. Free tier covers POC. |
+| Lobstr.io (automated recurring scans) | ~$10 | Optional — add when scaling to automated weekly scans |
+| Google Maps API | ~$5–20 | Distance calculations for venue proximity. Free tier covers most usage. |
+| Ticketmaster / SeatGeek API | $0 | Free tier sufficient for event data |
+| OpenAI GPT-4o | ~$20–50 | Classification, scoring, talking point generation |
+| **Subtotal — Third-Party Tools** | **~$50–155/month** | |
+
+### Hosting & Infrastructure Costs (Ongoing, Paid by Customer)
+
+| Item | Monthly Cost | Notes |
+|---|---|---|
+| Application hosting (Railway or similar PaaS) | ~$5–20 | Depends on traffic volume and compute needs |
+| Database (PostgreSQL on Railway/Supabase) | ~$0–20 | Free tier likely sufficient initially; scales with data volume |
+| File storage (S3 or equivalent for generated PDFs) | ~$1–5 | Minimal — PDF briefs are small files |
+| **Subtotal — Hosting & Infrastructure** | **~$6–45/month** | |
+
+### Total Ongoing Customer Costs (Excluding ALN)
+
+| Category | Monthly Cost |
+|---|---|
+| Third-party tools | ~$50–155 |
+| Hosting & infrastructure | ~$6–45 |
+| **Total ongoing (excl. ALN)** | **~$56–200/month** |
+
+*Note: ALN subscription is an existing ParkM cost. ParkM currently has full API access with ~150 licenses.*
+
+At $500/lead, ParkM would break even generating **1 lead per month**. The ROI math is strongly in favor.
 
 ---
 
 ## Risk Framework
 
-Patrick categorized AI use cases as high-risk vs. low-risk. Everything we're proposing is low-risk:
+All 5 initiatives are low-risk (internal rep tooling):
 
-| | Low Risk (All 5 initiatives) | High Risk (Not proposing) |
+| | Low Risk (All 5 priorities) | High Risk (Not proposing) |
 |---|---|---|
 | **What** | Pre-sales intelligence, lead scoring, account briefs | Bots talking to customers/prospects |
 | **Who sees it** | Internal reps only | Prospects and customers |
@@ -156,103 +280,50 @@ Patrick categorized AI use cases as high-risk vs. low-risk. Everything we're pro
 
 ---
 
-## Proposed Phased Roadmap
+## Meeting History
 
-### Phase 1 — Google Reviews POC (1-2 weeks)
+### March 3, 2026 — Lauren/Eli/Patrick
 
-Pick one metro. Scan apartment complexes. Score them for parking pain. Deliver a ranked lead list to Chad.
+**Decisions / Alignment:**
+- All 5 initiatives reviewed and aligned. Patrick presented to Chad on March 4.
+- ALN access confirmed — full access including API. Patrick shared credentials.
+- Phase 1 & 2 (Zoho Desk AI — separate project) complete for initial development — waiting on team feedback from Katie and Sadie
+- Notification templates added to Zoho Desk Phase 2 wizard (not in original scope)
 
-| Initiative | What Gets Built | Hours |
-|---|---|---|
-| **1. Google Reviews as Leads** | Outscraper integration (keyword-filtered review scraping), GPT-4o parking classifier, pain scoring, ranked lead list output | 24–30 |
-| Cross-cutting | Infra setup, config, initial testing | 3–5 |
-| **Phase 1 Total** | | **27–35** |
-
-### Phase 2 — PM Turnover + Account Briefs (3-4 weeks after Phase 1)
-
-Integrate ALN data for PM turnover detection. Build the account brief generator that combines reviews data from Phase 1 with turnover signals into a one-page brief per property with AI-generated talking points.
-
-| Initiative | What Gets Built | Hours |
-|---|---|---|
-| **2. PM Turnover Monitoring** | ALN integration, change detection logic, alert system (email or CRM push) | 15–25 |
-| **3. Account Brief Generator** | Data aggregation layer, brief template, GPT-4o talking points, delivery mechanism | 25–40 |
-
-**Phase 2 estimate (ALN API access confirmed):**
-
-| Initiative | Hours |
-|---|---|
-| #2 PM Turnover (ALN API integration) | 15–18 |
-| #3 Account Brief (polished PDF + email) | 35–40 |
-| **Phase 2 Total** | **50–58** |
-
-### Phase 3 — Full Intelligence Platform (3-5 weeks after Phase 2)
-
-Add venue/event enrichment and ALN target list generation. Automate refresh cadence. Connect to CRM if applicable.
-
-| Initiative | What Gets Built | Hours |
-|---|---|---|
-| **4. Venue Proximity** | Google Maps distance calculations, curated venue list, Ticketmaster/SeatGeek event calendar integration | 12–16 |
-| **5. ALN Target List Enrichment** | Enrichment pipeline (layer initiatives 1-4 onto ALN property universe), filtering and prioritization | 12–16 |
-| Cross-cutting | End-to-end QA, project management | 5–7 |
-| **Phase 3 Total** | | **29–39** |
-
-### Summary
-
-| Phase | Initiatives Included | Hours |
-|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews as Leads | 27–35 |
-| Phase 2 — PM Turnover + Account Briefs | #2 PM Turnover + #3 Account Briefs | 50–58 |
-| Phase 3 — Full Intelligence | #4 Venue Proximity + #5 ALN Enrichment | 29–39 |
-| **Total (all 5 initiatives)** | | **106–132** |
-
-## Estimated Costs
-
-| Item | Monthly Ongoing |
-|---|---|
-| Outscraper (review scraping, pay-as-you-go) | ~$15-75 depending on scale |
-| Lobstr.io (automated recurring scans, if added) | ~$10/month |
-| Google APIs (Maps only — Places API no longer needed) | ~$5-20 |
-| OpenAI (GPT-4o classification) | ~$20-50 depending on volume |
-| ALN subscription (if not existing) | ~$2,500-$5,000/month |
-| **Total monthly run cost (excl. ALN)** | **~$50-155/month** |
-
-At $500/lead, ParkM would break even generating **1 lead per month** (excluding ALN). The ROI math is strongly in favor.
-
----
-
-## Meeting Outcomes (March 3, 2026)
-
-### Decisions / Alignment
-- **All 5 initiatives aligned.** Patrick will present them to Chad on March 4 to gauge excitement
-- **ALN access confirmed** — ParkM has full access including API. Patrick offered to share credentials directly
-- **Phase 1 & 2 (Zoho Desk AI) are complete** for initial development — waiting on team feedback from Katie and Sadie (CSR manager)
-- **Phase 3 blocked** — waiting on Stuart to connect Eli with ParkM people for API access
-- **Notification templates added to Phase 2** wizard (not in original scope) — streamlines CSR communication and saves time
-- **Account brief sample requested** — Patrick needs the sample one-pager before his Chad meeting (March 4)
-- **Lauren preparing summary** — bulleted list of top 5 initiatives for Patrick's Chad agenda
-
-### Questions Answered
+**Questions Answered:**
 
 | Question | Answer |
 |---|---|
-| ALN Access tier? | Full access including API. ~150 licenses, using ~10. Patrick sharing creds. |
+| ALN Access tier? | Full access including API. ~150 licenses, using ~10. |
 | Rep workflow? | Outside reps = pavement pounders on routes. Inside reps organized by state. |
 | How are target lists built today? | Manually — reps query ALN: 250+ units, 80%+ occupancy, built before 2025 |
 | How many states? | 33 currently, goal is all states |
 | Outbound tooling? | Klenty (quarterly contract, just stood up) |
 | Google Places API 5-review limit? | Hard-coded top 5, no filtering/pagination. Pivoting to Outscraper + Lobstr.io. |
 
-### Open Questions (Still Need Answers)
-1. ~~**Google Reviews API 5-review limit**~~ **Resolved:** Always top 5, no filtering possible. Pivoting to Outscraper/Lobstr.io for keyword-filtered scraping.
-2. **Target metro for Phase 1 POC** — Which metro to start with? (Dallas, Denver, another?)
-3. **Lead delivery format** — How should parking pain leads reach Chad's team?
-4. **Budget for API costs** — Appetite for ~$50-155/month beyond existing ALN sub?
+### March 8, 2026 — Priority Reordering & SOW Scoping
+
+**Key decisions:**
+- Customer reordered priorities: Account Briefs moved to #2, Event Venue to #3, Smart Target Lists to #4, PM Turnover to #5
+- Event Venue scope expanded: added reverse lookup (venue → nearby apartment complexes as targets)
+- Interdependency identified: Priorities #2, #3, #4 should be developed concurrently in Phase 2
+- Priority #5 (PM Turnover) can be deferred as a standalone final phase if client prefers
+- Need to prepare formal proposal and SOW with full cost breakdown
+
+---
+
+## Open Questions
+
+1. **Target metro for Phase 1 POC** — Which metro to start with? (Dallas, Denver, another?)
+2. **Lead delivery format** — How should parking pain leads reach the sales team?
+3. **Phase 2 commitment** — Client needs to commit to #2, #3, #4 together given interdependencies (or agree to a modified approach)
+4. **Priority #5 timing** — Does client want PM Turnover in the initial engagement or deferred?
 
 ---
 
 ## Example Output: Account Brief
 
-Below is what a completed account brief would look like for a sales rep. This is the end-state deliverable from Phase 2.
+Below is what a completed account brief would look like for a sales rep. This is the end-state deliverable from Priority #2.
 
 ---
 
@@ -343,17 +414,14 @@ Below is what a completed account brief would look like for a sales rep. This is
 
 ## Action Items
 
-### Patrick
-- [ ] Present top 5 initiatives to Chad (March 4 meeting) and report back on excitement level
-- [ ] Connect with Katie today to get Phase 1 & 2 feedback from testing team
+### The CRM Wizards (Lauren / Eli)
+- [ ] Prepare formal proposal document for client review (Lauren updating pricing in Google Docs)
+- [ ] Confirm Phase 1 target metro with Patrick
+- [ ] Determine if Phase 2 commitment model works for client (concurrent #2, #3, #4)
+
+### ParkM (Patrick)
 - [ ] Share ALN API credentials with Eli
-- [ ] Resolve Zoho login / authenticator issue (talk to Stuart or set up new authenticator)
-
-### Lauren
-- [ ] Prepare bulleted summary of top 5 initiatives for Patrick's Chad agenda (before March 4 AM)
-
-### Eli
-- [x] ~~Investigate Google Places API 5-review limit~~ — Confirmed: always top 5, no filtering. Pivoting to Outscraper for POC.
-- [ ] Send Lauren the detailed initiative document and sample account brief one-pager
-- [ ] Wait for Phase 1 & 2 feedback from Katie/Sadie to iterate on classification and wizard steps
-- [ ] Wait for Stuart to connect with ParkM people for Phase 3 API access
+- [ ] Confirm target metro for Phase 1 POC
+- [ ] Confirm commitment to Phase 2 priorities (#2, #3, #4) as a concurrent block
+- [ ] Decide on Priority #5 (PM Turnover) timing — include in initial engagement or defer?
+- [ ] Resolve Zoho login / authenticator issue (talk to Stuart)

@@ -48,7 +48,7 @@ Third-party scraping services bypass the API limits using cloud-based browser au
 
 **Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. Data is used for internal lead qualification only — no impersonation or GDPR violations.
 
-**Development estimate: 24–30 hours**
+**Development estimate: 27–30 hours**
 
 ### Priority #2: AI-Generated Account Briefs
 
@@ -70,7 +70,7 @@ This is the platform that ties everything together. The brief aggregates signals
 
 **Delivery options:** PDF email digest, web dashboard, or CRM card. Simplest first = email/PDF.
 
-**Development estimate: 35–40 hours**
+**Development estimate: 38–40 hours**
 
 ### Priority #3: Event Venue Proximity Intelligence
 
@@ -89,7 +89,7 @@ This is the platform that ties everything together. The brief aggregates signals
 - Output: "American Airlines Center — 23 apartment communities within 2 miles, 8,400 total units. Here are the top 10 targets ranked by unit count and parking pain score."
 - Enables reps to prospect venue-adjacent properties as a category, not just enrich existing leads
 
-**Development estimate: 18–26 hours** (expanded from original 12–16 to include reverse venue lookup)
+**Development estimate: 22–26 hours** (expanded from original 12–16 to include reverse venue lookup)
 
 ### Priority #4: "Smart" Target List Generation
 
@@ -107,7 +107,7 @@ ALN Property Universe
 
 This is less a standalone initiative and more the "glue." With ALN API access confirmed, building the enrichment pipeline is straightforward.
 
-**Development estimate: 12–16 hours**
+**Development estimate: 13–16 hours**
 
 ### Priority #5: Automated Property Manager Turnover Alerts
 
@@ -120,7 +120,7 @@ This is less a standalone initiative and more the "glue." With ALN API access co
 
 **ALN Access (confirmed March 3):** ParkM has full access to ALN including API. ~150 licenses, ~10 in use. Direct API integration — no spreadsheet uploads.
 
-**Development estimate: 15–18 hours**
+**Development estimate: 18–21 hours**
 
 ---
 
@@ -152,17 +152,17 @@ Pick one metro. Scrape apartment complex reviews. Score them for parking pain. D
 
 | Component | Hours |
 |---|---|
-| **Priority #1: Google Reviews as Leads** | **24–30** |
+| **Priority #1: Google Reviews as Leads** | **27–30** |
 | Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
-| GPT-4o parking classifier (prompt engineering, tuning, testing) | 6–10 |
+| GPT-4o parking classifier (prompt engineering, tuning, testing) | 8–10 |
 | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |
-| Real-data testing & iteration | 4–6 |
+| Real-data testing & iteration | 5–6 |
 | Demo prep & walkthrough with stakeholders | 2–3 |
 | Cross-cutting (infra setup, config, API key management) | 3–5 |
-| **Phase 1 Development Subtotal** | **27–35** |
+| **Phase 1 Development Subtotal** | **30–35** |
 | Project management, meetings, & demos | 2–3 |
-| **Phase 1 Total** | **29–38** |
+| **Phase 1 Total** | **32–38** |
 
 ### Phase 2 — Account Briefs + Event Venue + Smart Target Lists (5–7 weeks)
 
@@ -170,29 +170,29 @@ Build the core intelligence platform: venue proximity data (both directions), en
 
 | Component | Hours |
 |---|---|
-| **Priority #2: AI-Generated Account Briefs** | **35–40** |
-| Data aggregation layer (pull from all sources) | 8–12 |
+| **Priority #2: AI-Generated Account Briefs** | **38–40** |
+| Data aggregation layer (pull from all sources) | 10–12 |
 | GPT-4o talking points prompt (engineering + testing) | 4–6 |
-| Brief template (HTML to polished PDF rendering) | 6–10 |
-| Email delivery pipeline (scheduling, formatting, recipients) | 8–12 |
+| Brief template (HTML to polished PDF rendering) | 8–10 |
+| Email delivery pipeline (scheduling, formatting, recipients) | 9–12 |
 | Integration testing across data sources | 4–6 |
 | | |
-| **Priority #3: Event Venue Proximity Intelligence** | **18–26** |
-| Google Maps Distance Matrix integration | 3–4 |
+| **Priority #3: Event Venue Proximity Intelligence** | **22–26** |
+| Google Maps Distance Matrix integration | 4–4 |
 | Curated venue list per metro (stadiums, amphitheaters, convention centers) | 2–3 |
-| Ticketmaster / SeatGeek event calendar integration | 4–6 |
+| Ticketmaster / SeatGeek event calendar integration | 5–6 |
 | Wire venue + event data into account brief output | 2–3 |
-| Reverse venue lookup — find all apartment complexes near a venue | 4–6 |
-| Cross-reference reverse results with ALN property data + scoring | 2–4 |
+| Reverse venue lookup — find all apartment complexes near a venue | 5–6 |
+| Cross-reference reverse results with ALN property data + scoring | 3–4 |
 | | |
-| **Priority #4: Smart Target List Generation** | **12–16** |
-| Enrichment pipeline (layer priorities #1, #3, #5 onto ALN property universe) | 6–10 |
+| **Priority #4: Smart Target List Generation** | **13–16** |
+| Enrichment pipeline (layer priorities #1, #3, #5 onto ALN property universe) | 7–10 |
 | Filtering / prioritization logic (rank by pain score, turnover, proximity) | 4–6 |
 | | |
 | Cross-cutting (end-to-end QA, integration testing) | 5–7 |
-| **Phase 2 Development Subtotal** | **70–89** |
+| **Phase 2 Development Subtotal** | **78–89** |
 | Project management, meetings, & demos | 4–6 |
-| **Phase 2 Total** | **74–95** |
+| **Phase 2 Total** | **82–95** |
 
 ### Phase 3 — PM Turnover Alerts (2–3 weeks)
 
@@ -200,23 +200,23 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Component | Hours |
 |---|---|
-| **Priority #5: Automated PM Turnover Alerts** | **15–18** |
-| ALN API integration (change detection client) | 8–10 |
-| Change detection / diff logic | 4–6 |
-| Alert system (email or CRM push) | 3–5 |
+| **Priority #5: Automated PM Turnover Alerts** | **18–21** |
+| ALN API integration (change detection client) | 9–10 |
+| Change detection / diff logic | 5–6 |
+| Alert system (email or CRM push) | 4–5 |
 | Integration into account briefs and target lists | 2–3 |
-| **Phase 3 Development Subtotal** | **17–24** |
+| **Phase 3 Development Subtotal** | **20–24** |
 | Project management, meetings, & demos | 1–2 |
-| **Phase 3 Total** | **18–26** |
+| **Phase 3 Total** | **21–26** |
 
 ### Summary
 
 | Phase | Priorities Included | Dev Hours | PM/Meetings | Total Hours |
 |---|---|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 2–3 | 29–38 |
-| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 4–6 | 74–95 |
-| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 1–2 | 18–26 |
-| **Total (all 5 priorities)** | | **114–148** | **7–11** | **121–159** |
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 30–35 | 2–3 | 32–38 |
+| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 78–89 | 4–6 | 82–95 |
+| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 20–24 | 1–2 | 21–26 |
+| **Total (all 5 priorities)** | | **128–148** | **7–11** | **135–159** |
 
 ---
 
@@ -226,10 +226,10 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Phase | Hours |
 |---|---|
-| Phase 1 — Google Reviews POC | 29–38 |
-| Phase 2 — Briefs + Venue + Target Lists | 74–95 |
-| Phase 3 — PM Turnover Alerts | 18–26 |
-| **Total** | **121–159** |
+| Phase 1 — Google Reviews POC | 32–38 |
+| Phase 2 — Briefs + Venue + Target Lists | 82–95 |
+| Phase 3 — PM Turnover Alerts | 21–26 |
+| **Total** | **135–159** |
 
 *Note: Includes development, project management, status meetings, and demo/review sessions.*
 

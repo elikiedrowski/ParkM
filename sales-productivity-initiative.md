@@ -48,7 +48,7 @@ Third-party scraping services bypass the API limits using cloud-based browser au
 
 **Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. Data is used for internal lead qualification only — no impersonation or GDPR violations.
 
-**Development estimate: 27–30 hours**
+**Development estimate: 25–27 hours**
 
 ### Priority #2: AI-Generated Account Briefs
 
@@ -152,17 +152,16 @@ Pick one metro. Scrape apartment complex reviews. Score them for parking pain. D
 
 | Component | Hours |
 |---|---|
-| **Priority #1: Google Reviews as Leads** | **27–30** |
+| **Priority #1: Google Reviews as Leads** | **25–27** |
 | Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
 | GPT-4o parking classifier (prompt engineering, tuning, testing) | 8–10 |
 | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |
 | Real-data testing & iteration | 5–6 |
-| Demo prep & walkthrough with stakeholders | 2–3 |
 | Cross-cutting (infra setup, config, API key management) | 3–5 |
-| **Phase 1 Development Subtotal** | **30–35** |
+| **Phase 1 Development Subtotal** | **28–32** |
 | Project management, meetings, & demos | 2–3 |
-| **Phase 1 Total** | **32–38** |
+| **Phase 1 Total** | **30–35** |
 
 ### Phase 2 — Account Briefs + Event Venue + Smart Target Lists (5–7 weeks)
 
@@ -213,10 +212,10 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Phase | Priorities Included | Dev Hours | PM/Meetings | Total Hours |
 |---|---|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews | 30–35 | 2–3 | 32–38 |
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 28–32 | 2–3 | 30–35 |
 | Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 78–89 | 4–6 | 82–95 |
 | Phase 3 — PM Turnover Alerts | #5 PM Turnover | 20–24 | 1–2 | 21–26 |
-| **Total (all 5 priorities)** | | **128–148** | **7–11** | **135–159** |
+| **Total (all 5 priorities)** | | **126–145** | **7–11** | **133–156** |
 
 ---
 
@@ -226,10 +225,10 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Phase | Hours |
 |---|---|
-| Phase 1 — Google Reviews POC | 32–38 |
+| Phase 1 — Google Reviews POC | 30–35 |
 | Phase 2 — Briefs + Venue + Target Lists | 82–95 |
 | Phase 3 — PM Turnover Alerts | 21–26 |
-| **Total** | **135–159** |
+| **Total** | **133–156** |
 
 *Note: Includes development, project management, status meetings, and demo/review sessions.*
 

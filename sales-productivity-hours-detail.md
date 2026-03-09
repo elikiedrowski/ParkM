@@ -10,17 +10,16 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 
 | Priority | Component | Hours |
 |---|---|---|
-| **#1. Google Reviews as Leads** | | **27–30** |
+| **#1. Google Reviews as Leads** | | **25–27** |
 | | Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
 | | GPT-4o parking classifier (prompt engineering, tuning, testing) | 8–10 |
 | | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |
 | | Real-data testing & iteration | 5–6 |
-| | Demo prep & walkthrough with stakeholders | 2–3 |
 | **Cross-cutting** | Infra setup, config, API key management, initial testing | 3–5 |
-| **Phase 1 Dev Subtotal** | | **30–35** |
+| **Phase 1 Dev Subtotal** | | **28–32** |
 | **PM / Meetings / Demos** | Project management, status meetings, demo sessions | 2–3 |
-| **Phase 1 Total** | | **32–38** |
+| **Phase 1 Total** | | **30–35** |
 
 ---
 
@@ -77,7 +76,7 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 
 | Phase | Priorities | Dev Hours | PM/Meetings | Total Hours |
 |---|---|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews | 30–35 | 2–3 | 32–38 |
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 28–32 | 2–3 | 30–35 |
 | Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 78–89 | 4–6 | 82–95 |
 | Phase 3 — PM Turnover Alerts | #5 PM Turnover | 20–24 | 1–2 | 21–26 |
-| **Total (all 5 priorities)** | | **128–148** | **7–11** | **135–159** |
+| **Total (all 5 priorities)** | | **126–145** | **7–11** | **133–156** |

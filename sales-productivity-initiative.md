@@ -161,8 +161,8 @@ Pick one metro. Scrape apartment complex reviews. Score them for parking pain. D
 | Demo prep & walkthrough with stakeholders | 2–3 |
 | Cross-cutting (infra setup, config, API key management) | 3–5 |
 | **Phase 1 Development Subtotal** | **27–35** |
-| Project management, meetings, & demos | 4–6 |
-| **Phase 1 Total** | **31–41** |
+| Project management, meetings, & demos | 2–3 |
+| **Phase 1 Total** | **29–38** |
 
 ### Phase 2 — Account Briefs + Event Venue + Smart Target Lists (5–7 weeks)
 
@@ -191,8 +191,8 @@ Build the core intelligence platform: venue proximity data (both directions), en
 | | |
 | Cross-cutting (end-to-end QA, integration testing) | 5–7 |
 | **Phase 2 Development Subtotal** | **70–89** |
-| Project management, meetings, & demos | 10–14 |
-| **Phase 2 Total** | **80–103** |
+| Project management, meetings, & demos | 4–6 |
+| **Phase 2 Total** | **74–95** |
 
 ### Phase 3 — PM Turnover Alerts (2–3 weeks)
 
@@ -206,17 +206,17 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 | Alert system (email or CRM push) | 3–5 |
 | Integration into account briefs and target lists | 2–3 |
 | **Phase 3 Development Subtotal** | **17–24** |
-| Project management, meetings, & demos | 3–4 |
-| **Phase 3 Total** | **20–28** |
+| Project management, meetings, & demos | 1–2 |
+| **Phase 3 Total** | **18–26** |
 
 ### Summary
 
 | Phase | Priorities Included | Dev Hours | PM/Meetings | Total Hours |
 |---|---|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 4–6 | 31–41 |
-| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 10–14 | 80–103 |
-| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 3–4 | 20–28 |
-| **Total (all 5 priorities)** | | **114–148** | **17–24** | **131–172** |
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 2–3 | 29–38 |
+| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 4–6 | 74–95 |
+| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 1–2 | 18–26 |
+| **Total (all 5 priorities)** | | **114–148** | **7–11** | **121–159** |
 
 ---
 
@@ -226,10 +226,10 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Phase | Hours |
 |---|---|
-| Phase 1 — Google Reviews POC | 31–41 |
-| Phase 2 — Briefs + Venue + Target Lists | 80–103 |
-| Phase 3 — PM Turnover Alerts | 20–28 |
-| **Total** | **131–172** |
+| Phase 1 — Google Reviews POC | 29–38 |
+| Phase 2 — Briefs + Venue + Target Lists | 74–95 |
+| Phase 3 — PM Turnover Alerts | 18–26 |
+| **Total** | **121–159** |
 
 *Note: Includes development, project management, status meetings, and demo/review sessions.*
 

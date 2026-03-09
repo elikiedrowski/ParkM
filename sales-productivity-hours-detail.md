@@ -19,8 +19,8 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | | Demo prep & walkthrough with stakeholders | 2–3 |
 | **Cross-cutting** | Infra setup, config, API key management, initial testing | 3–5 |
 | **Phase 1 Dev Subtotal** | | **27–35** |
-| **PM / Meetings / Demos** | Project management, status meetings, demo sessions | 4–6 |
-| **Phase 1 Total** | | **31–41** |
+| **PM / Meetings / Demos** | Project management, status meetings, demo sessions | 2–3 |
+| **Phase 1 Total** | | **29–38** |
 
 ---
 
@@ -51,8 +51,8 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | | | |
 | **Cross-cutting** | End-to-end QA, integration testing | 5–7 |
 | **Phase 2 Dev Subtotal** | | **70–89** |
-| **PM / Meetings / Demos** | Project management, weekly status meetings, demo sessions | 10–14 |
-| **Phase 2 Total** | | **80–103** |
+| **PM / Meetings / Demos** | Project management, weekly status meetings, demo sessions | 4–6 |
+| **Phase 2 Total** | | **74–95** |
 
 ---
 
@@ -68,8 +68,8 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | | Alert system (email or CRM push) | 3–5 |
 | | Integration into account briefs and target lists | 2–3 |
 | **Phase 3 Dev Subtotal** | | **17–24** |
-| **PM / Meetings / Demos** | Project management, status meetings, demo sessions | 3–4 |
-| **Phase 3 Total** | | **20–28** |
+| **PM / Meetings / Demos** | Project management, status meetings, demo sessions | 1–2 |
+| **Phase 3 Total** | | **18–26** |
 
 ---
 
@@ -77,10 +77,10 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 
 | Phase | Priorities | Dev Hours | PM/Meetings | Total Hours |
 |---|---|---|---|---|
-| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 4–6 | 31–41 |
-| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 10–14 | 80–103 |
-| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 3–4 | 20–28 |
-| **Total (all 5 priorities)** | | **114–148** | **17–24** | **131–172** |
+| Phase 1 — Google Reviews POC | #1 Google Reviews | 27–35 | 2–3 | 29–38 |
+| Phase 2 — Briefs + Venue + Target Lists | #2 Briefs + #3 Venue + #4 Target Lists | 70–89 | 4–6 | 74–95 |
+| Phase 3 — PM Turnover Alerts | #5 PM Turnover | 17–24 | 1–2 | 18–26 |
+| **Total (all 5 priorities)** | | **114–148** | **7–11** | **121–159** |
 
 ---
 

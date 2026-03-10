@@ -107,6 +107,10 @@ class ParkMClient:
     async def get_customer_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Look up a ParkM customer by email address.
 
+        Tries GetCustomerFromEmail first, then validates the returned email
+        matches. If it doesn't (sandbox bug returns a default customer),
+        falls back to Customers/Search for an exact match.
+
         Returns customer dict with id, name, orgUnit, accountId, etc.
         Returns None if not found.
         """
@@ -117,15 +121,42 @@ class ParkMClient:
             )
             result = data.get("result")
             if result and result.get("id"):
-                logger.info(f"Found ParkM customer for {email}: {result['id']}")
-                return result
-            return None
+                # Verify the returned customer actually matches the requested email
+                returned_email = (result.get("primaryEmailAddress") or "").lower()
+                if returned_email == email.lower():
+                    logger.info(f"Found ParkM customer for {email}: {result['id']}")
+                    return result
+                # Email mismatch — fall back to search
+                logger.warning(
+                    f"GetCustomerFromEmail returned mismatched email "
+                    f"(requested={email}, got={returned_email}), falling back to search"
+                )
+                return await self._search_customer_by_email(email)
+            return await self._search_customer_by_email(email)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 500:
-                # 500 often means "not found" in this API
-                logger.info(f"No ParkM customer found for {email}")
-                return None
+                logger.info(f"GetCustomerFromEmail 500 for {email}, trying search fallback")
+                return await self._search_customer_by_email(email)
             raise
+
+    async def _search_customer_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """Fallback: search for a customer by email via Customers/Search."""
+        try:
+            data = await self._post(
+                "/api/services/app/Customers/Search",
+                body={"filter": email},
+            )
+            items = data.get("result", {}).get("items", [])
+            for item in items:
+                customer = item.get("customer", item)
+                if (customer.get("primaryEmailAddress") or "").lower() == email.lower():
+                    logger.info(f"Found ParkM customer via search for {email}: {customer['id']}")
+                    return customer
+            logger.info(f"No ParkM customer found for {email}")
+            return None
+        except Exception as e:
+            logger.error(f"Customer search fallback failed for {email}: {e}")
+            return None
 
     async def get_customer_by_id(self, customer_id: str) -> Optional[Dict[str, Any]]:
         """Look up a ParkM customer by their UUID."""

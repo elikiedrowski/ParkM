@@ -145,6 +145,7 @@ class ParkMClient:
             data = await self._post(
                 "/api/services/app/Customers/Search",
                 body={"filter": email},
+                timeout=30,
             )
             items = data.get("result", {}).get("items", [])
             for item in items:

@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     ai_provider: str = "openai"  # or "anthropic"
     ai_model: str = "gpt-4o-mini"  # or "claude-3-5-sonnet-20241022"
     
+    # ParkM App API
+    parkm_api_url: str = "https://app-api-dev-parkm.azurewebsites.net"
+    parkm_api_username: str = ""
+    parkm_api_password: str = ""
+    parkm_api_tenant_id: str = "0"
+
     # Application Configuration
     app_host: str = "0.0.0.0"
     app_port: int = 8080

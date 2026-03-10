@@ -20,6 +20,8 @@ from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import get_corrections_summary
 from src.services.wizard import get_wizard_for_intent, get_template_html, list_templates, list_intents
+from src.services.parkm_client import ParkMClient
+from src.services.refund_service import RefundService
 from src.services.analytics_logger import log_template_usage, log_classification_event
 from src.services.analytics_aggregator import (
     get_summary, get_classification_analytics, get_correction_analytics,
@@ -99,6 +101,8 @@ async def require_auth(request: Request):
 # Initialize services
 classifier = EmailClassifier()
 zoho_client = ZohoDeskClient()
+parkm_client = ParkMClient()
+refund_service = RefundService()
 
 # Concurrency limiter — prevents webhook flood from overwhelming OpenAI/Zoho APIs
 _webhook_semaphore = asyncio.Semaphore(3)
@@ -665,6 +669,144 @@ async def get_template(filename: str):
     if html is None:
         raise HTTPException(status_code=404, detail=f"Template '{filename}' not found")
     return {"filename": filename, "html": html}
+
+
+# ── ParkM API / Refund Automation ──────────────────────────────────────
+
+@app.get("/parkm/health")
+async def parkm_health():
+    """Check ParkM API connectivity."""
+    try:
+        info = await parkm_client.health_check()
+        return {"status": "connected", **info}
+    except Exception as e:
+        logger.error(f"ParkM health check failed: {e}")
+        return JSONResponse(status_code=503, content={"status": "disconnected", "error": str(e)})
+
+
+@app.get("/parkm/customer")
+async def parkm_customer_lookup(email: str):
+    """Look up a customer in ParkM by email.
+
+    Returns customer info, active permits, vehicles, and transactions.
+    Usage: GET /parkm/customer?email=john@example.com
+    """
+    try:
+        result = await refund_service.lookup_customer(email)
+        return result
+    except Exception as e:
+        logger.error(f"Customer lookup failed for {email}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/parkm/refund/evaluate")
+async def parkm_evaluate_refund(request: Request):
+    """Evaluate refund eligibility for a customer.
+
+    Request body:
+    {
+        "customer_email": "john@example.com",
+        "permit_id": "optional-uuid",
+        "move_out_date": "2026-02-15",
+        "reason": "Customer moved out",
+        "ticket_id": "12345"
+    }
+
+    Returns customer info, permit details, eligibility assessment,
+    and a pre-built accounting email if eligible.
+    Does NOT cancel the permit or process the refund — CSR must confirm.
+    """
+    try:
+        data = await request.json()
+        result = await refund_service.process_refund_request(
+            customer_email=data.get("customer_email", ""),
+            permit_id=data.get("permit_id"),
+            move_out_date=data.get("move_out_date"),
+            reason=data.get("reason", "Customer requested cancellation/refund"),
+            ticket_id=data.get("ticket_id", ""),
+            auto_cancel=False,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Refund evaluation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/parkm/refund/process")
+async def parkm_process_refund(request: Request):
+    """Cancel permit and prepare accounting email.
+
+    Request body:
+    {
+        "customer_email": "john@example.com",
+        "permit_id": "uuid-of-permit-to-cancel",
+        "move_out_date": "2026-02-15",
+        "reason": "Customer moved out",
+        "ticket_id": "12345"
+    }
+
+    This WILL cancel the permit in ParkM. CSR should confirm before calling.
+    """
+    try:
+        data = await request.json()
+        permit_id = data.get("permit_id")
+        if not permit_id:
+            raise HTTPException(status_code=400, detail="permit_id is required")
+
+        result = await refund_service.process_refund_request(
+            customer_email=data.get("customer_email", ""),
+            permit_id=permit_id,
+            move_out_date=data.get("move_out_date"),
+            reason=data.get("reason", "Customer requested cancellation/refund"),
+            ticket_id=data.get("ticket_id", ""),
+            auto_cancel=True,
+        )
+
+        # If refund eligible, also update the Zoho ticket status
+        ticket_id = data.get("ticket_id")
+        if ticket_id and result.get("status") == "refund_eligible":
+            try:
+                await zoho_client.update_ticket(ticket_id, {"status": "Waiting on Accounting"})
+                result["zoho_status_updated"] = True
+            except Exception as e:
+                logger.error(f"Failed to update Zoho ticket {ticket_id}: {e}")
+                result["zoho_status_updated"] = False
+                result["zoho_error"] = str(e)
+
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Refund processing failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/parkm/permit/cancel")
+async def parkm_cancel_permit(request: Request):
+    """Cancel a specific permit in ParkM.
+
+    Request body:
+    {
+        "permit_id": "uuid",
+        "send_notice": true
+    }
+    """
+    try:
+        data = await request.json()
+        permit_id = data.get("permit_id")
+        if not permit_id:
+            raise HTTPException(status_code=400, detail="permit_id is required")
+
+        result = await refund_service.cancel_permit(
+            permit_id=permit_id,
+            send_notice=data.get("send_notice", True),
+        )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Permit cancellation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── Analytics Dashboard ────────────────────────────────────────────────

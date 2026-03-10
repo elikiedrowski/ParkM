@@ -560,3 +560,278 @@ body {
   color: #1565c0;
   text-transform: none;
 }
+
+/* ── Refund Automation Panel ──────────────────────────────────────── */
+
+.refund-lookup-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.refund-email-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #333;
+  outline: none;
+}
+.refund-email-input:focus {
+  border-color: #1976d2;
+}
+
+.refund-lookup-btn {
+  padding: 7px 14px !important;
+  font-size: 12px !important;
+  white-space: nowrap;
+}
+
+.refund-lookup-error {
+  color: #c0392b;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+/* Customer info card */
+.refund-customer-card {
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.refund-customer-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 2px;
+}
+.refund-customer-detail {
+  font-size: 12px;
+  color: #555;
+}
+.refund-customer-meta {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* Not found state */
+.refund-not-found {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.refund-not-found-msg {
+  font-weight: 600;
+  color: #e65100;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.refund-not-found-hint {
+  font-size: 11px;
+  color: #795548;
+  line-height: 1.5;
+}
+
+/* Permits section */
+.refund-permits-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin: 10px 0 6px;
+}
+
+.refund-no-permits {
+  font-size: 12px;
+  color: #999;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.refund-cancelled-note {
+  font-size: 11px;
+  color: #999;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Individual permit card */
+.refund-permit-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.refund-permit-card--cancelled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.refund-permit-header {
+  margin-bottom: 6px;
+}
+.refund-permit-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+.refund-permit-community {
+  font-size: 11px;
+  color: #888;
+}
+
+.refund-permit-details {
+  margin-bottom: 8px;
+}
+.refund-permit-detail {
+  font-size: 11px;
+  color: #555;
+  line-height: 1.6;
+}
+.refund-detail-label {
+  color: #888;
+  font-weight: 500;
+}
+.refund-balance-due {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+/* Permit action buttons */
+.refund-permit-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.refund-action-btn {
+  padding: 6px 12px !important;
+  font-size: 11px !important;
+}
+
+/* Evaluation result */
+.refund-permit-result {
+  margin-top: 8px;
+}
+
+.refund-loading {
+  font-size: 12px;
+  color: #1976d2;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.refund-error {
+  font-size: 12px;
+  color: #c0392b;
+  padding: 4px 0;
+}
+
+.refund-eval-result {
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+.refund-eval-eligible {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+}
+.refund-eval-ineligible {
+  background: #fdecea;
+  border: 1px solid #ef9a9a;
+}
+
+.refund-eval-status {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.refund-eval-eligible .refund-eval-status {
+  color: #2e7d32;
+}
+.refund-eval-ineligible .refund-eval-status {
+  color: #c62828;
+}
+
+.refund-eval-reason {
+  font-size: 11px;
+  color: #555;
+}
+.refund-eval-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-top: 4px;
+}
+.refund-eval-detail {
+  font-size: 11px;
+  color: #888;
+}
+
+.refund-eval-actions {
+  margin-top: 6px;
+}
+.refund-eval-hint {
+  font-size: 11px;
+  color: #795548;
+  font-style: italic;
+}
+
+/* Process result */
+.refund-process-result {
+  margin-top: 6px;
+}
+.refund-process-step {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+.refund-process-step.step-ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.refund-process-step.step-fail {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+/* Accounting email preview */
+.refund-accounting-email {
+  margin-top: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.refund-accounting-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.refund-accounting-preview {
+  font-size: 11px;
+  color: #333;
+  line-height: 1.5;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  padding: 6px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+.refund-accounting-preview p {
+  margin-bottom: 6px;
+}
+.refund-accounting-preview ul,
+.refund-accounting-preview li {
+  margin-left: 16px;
+  margin-bottom: 2px;
+}

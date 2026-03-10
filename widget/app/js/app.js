@@ -64,6 +64,10 @@ var ParkMApp = (function () {
       .then(function (wizards) {
         currentWizards = wizards;
         renderStackedWizards(tags, wizards);
+        // Initialize refund panel if tags are refund/cancellation-related
+        if (typeof RefundPanel !== "undefined") {
+          RefundPanel.init(tags);
+        }
         showState("wizard-container");
         resizeWidget();
       })

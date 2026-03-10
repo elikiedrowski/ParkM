@@ -50,10 +50,18 @@ class RefundService:
         customer_id = customer["id"]
         name = f"{customer.get('firstName', '')} {customer.get('lastName', '')}".strip()
 
-        # Fetch permits and vehicles in parallel-ish (sequential for simplicity)
+        # Fetch permits (required) and vehicles/transactions (best-effort)
         raw_permits = await self.parkm.get_customer_permits(customer_id)
-        vehicles = await self.parkm.get_customer_vehicles(customer_id)
-        transactions = await self.parkm.get_customer_transactions(customer_id)
+        try:
+            vehicles = await self.parkm.get_customer_vehicles(customer_id)
+        except Exception:
+            logger.warning(f"Could not fetch vehicles for {customer_id}")
+            vehicles = []
+        try:
+            transactions = await self.parkm.get_customer_transactions(customer_id)
+        except Exception:
+            logger.warning(f"Could not fetch transactions for {customer_id}")
+            transactions = []
 
         permits = []
         for item in raw_permits:

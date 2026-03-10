@@ -11,7 +11,7 @@ This is the component-level breakdown behind the phase estimates in [sales-produ
 | Priority | Component | Hours |
 |---|---|---|
 | **#1. Google Reviews as Leads** | | **25–27** |
-| | Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
+| | Lobstr.io integration (keyword-filtered review scraping + property discovery) | 4–6 |
 | | GPT-4o parking classifier (prompt engineering, tuning, testing) | 8–10 |
 | | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |

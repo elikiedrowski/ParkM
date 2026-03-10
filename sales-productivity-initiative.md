@@ -34,17 +34,18 @@ ParkM has identified 5 sales productivity initiatives to improve rep effectivene
 **Google Places API — ruled out (March 3 investigation):**
 The official Google Places API is hard-coded to return only 5 "most relevant" reviews per property. There is no pagination, no keyword filtering, and no way to customize which reviews are returned. Google treats the Places API as a discovery tool, not a review management or lead tool. The Google Business Profile API offers unlimited reviews with filtering, but only for businesses you own/manage — not applicable here.
 
-**Recommended approach: Outscraper (POC) + Lobstr.io (ongoing monitoring)**
+**Recommended approach: Lobstr.io (automated scraping)**
 
-Third-party scraping services bypass the API limits using cloud-based browser automation. They support keyword filtering (e.g., "parking"), unlimited review counts, and export to CSV/JSON.
+Third-party scraping services bypass the API limits using cloud-based browser automation. We are using **Lobstr.io** for its automation capabilities — scheduled recurring scrapes ("Squids") that can run on a loop (e.g., weekly), with keyword filtering, language/date filters, and direct export to CSV, JSON, Google Sheets, or S3.
 
-| | Outscraper | Lobstr.io |
-|---|---|---|
-| **Best for** | Discovery — find businesses + scrape reviews in one go | Automation — scheduled recurring scrapes |
-| **Keyword filtering** | Yes — keyword queries + rating filters | Yes — keyword, language, date filters |
-| **Export formats** | CSV, XLSX, JSON, Parquet | CSV, JSON, Google Sheets, S3 |
-| **Free tier** | First 500 reviews free | 100–1,000 credits (varies) |
-| **Paid pricing** | $3 per 1,000 reviews | Starts at $10/mo (~10K credits) |
+| Feature | Lobstr.io |
+|---|---|
+| **Best for** | Automated, scheduled recurring scrapes |
+| **Keyword filtering** | Yes — keyword search, language, and date filters |
+| **Export formats** | CSV, JSON, Google Sheets, S3 |
+| **Free tier** | 100–1,000 credits (varies by signup) |
+| **Paid pricing** | Starts at $10/mo (~10K credits) |
+| **Automation** | Squid instances run on configurable schedules (daily, weekly, etc.) |
 
 **Legal note:** Public data scraping operates in a legal grey area, but US courts (hiQ v. LinkedIn) have ruled that scraping publicly available data is not a CFAA violation. Data is used for internal lead qualification only — no impersonation or GDPR violations.
 
@@ -62,7 +63,7 @@ This is the platform that ties everything together. The brief aggregates signals
 |---|---|---|
 | Property details (units, location, rent, occupancy) | ALN | Yes — full API access confirmed |
 | Property manager name + tenure | ALN | Yes — full API access confirmed |
-| Parking complaints + pain score | Outscraper reviews + GPT-4o | Built in Priority #1 |
+| Parking complaints + pain score | Lobstr.io reviews + GPT-4o | Built in Priority #1 |
 | Nearby event venues + distances | Google Maps API | Built in Priority #3 |
 | Upcoming events at nearby venues | Ticketmaster API (free) | Built in Priority #3 |
 | Nearby ParkM customers | Internal CRM | Needs CRM access |
@@ -153,7 +154,7 @@ Pick one metro. Scrape apartment complex reviews. Score them for parking pain. D
 | Component | Hours |
 |---|---|
 | **Priority #1: Google Reviews as Leads** | **25–27** |
-| Outscraper integration (keyword-filtered review scraping + property discovery) | 4–6 |
+| Lobstr.io integration (keyword-filtered review scraping + property discovery) | 4–6 |
 | GPT-4o parking classifier (prompt engineering, tuning, testing) | 8–10 |
 | Scoring algorithm (parking pain score 0–100) | 3–4 |
 | Output formatting (ranked lead list, CSV/JSON export) | 2–3 |
@@ -236,12 +237,11 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Item | Monthly Cost | Notes |
 |---|---|---|
-| Outscraper (review scraping) | ~$15–75 | Pay-as-you-go, $3/1K reviews. Free tier covers POC. |
-| Lobstr.io (automated recurring scans) | ~$10 | Optional — add when scaling to automated weekly scans |
+| Lobstr.io (automated review scraping) | ~$10–30/month | Starts at $10/mo (~10K credits). Scales with property count. |
 | Google Maps API | ~$5–20 | Distance calculations for venue proximity. Free tier covers most usage. |
 | Ticketmaster / SeatGeek API | $0 | Free tier sufficient for event data |
 | OpenAI GPT-4o | ~$20–50 | Classification, scoring, talking point generation |
-| **Subtotal — Third-Party Tools** | **~$50–155/month** | |
+| **Subtotal — Third-Party Tools** | **~$35–120/month** | |
 
 ### Hosting & Infrastructure Costs (Ongoing, Paid by Customer)
 
@@ -256,9 +256,9 @@ Build ALN API integration for automated PM change detection. Wire turnover signa
 
 | Category | Monthly Cost |
 |---|---|
-| Third-party tools | ~$50–155 |
+| Third-party tools | ~$35–120 |
 | Hosting & infrastructure | ~$6–45 |
-| **Total ongoing (excl. ALN)** | **~$56–200/month** |
+| **Total ongoing (excl. ALN)** | **~$41–165/month** |
 
 *Note: ALN subscription is an existing ParkM cost. ParkM currently has full API access with ~150 licenses.*
 
@@ -298,7 +298,7 @@ All 5 initiatives are low-risk (internal rep tooling):
 | How are target lists built today? | Manually — reps query ALN: 250+ units, 80%+ occupancy, built before 2025 |
 | How many states? | 33 currently, goal is all states |
 | Outbound tooling? | Klenty (quarterly contract, just stood up) |
-| Google Places API 5-review limit? | Hard-coded top 5, no filtering/pagination. Pivoting to Outscraper + Lobstr.io. |
+| Google Places API 5-review limit? | Hard-coded top 5, no filtering/pagination. Pivoting to Lobstr.io. |
 
 ### March 8, 2026 — Priority Reordering & SOW Scoping
 

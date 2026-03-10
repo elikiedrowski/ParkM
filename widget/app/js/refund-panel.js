@@ -341,26 +341,42 @@ var RefundPanel = (function () {
       ticket_id: ticketId
     };
 
-    fetch(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error("API error: " + res.status);
-        return res.json();
+    // Read move_out_date from Zoho custom fields before sending
+    function _doProcess() {
+      fetch(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       })
-      .then(function (data) {
-        _renderProcessResult(data, permit, resultDiv);
-      })
-      .catch(function (err) {
-        if (processBtn) {
-          processBtn.disabled = false;
-          processBtn.textContent = "Cancel & Forward to Accounting";
-        }
-        resultDiv.insertAdjacentHTML("beforeend",
-          '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
+        .then(function (res) {
+          if (!res.ok) throw new Error("API error: " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          _renderProcessResult(data, permit, resultDiv);
+        })
+        .catch(function (err) {
+          if (processBtn) {
+            processBtn.disabled = false;
+            processBtn.textContent = "Cancel & Forward to Accounting";
+          }
+          resultDiv.insertAdjacentHTML("beforeend",
+            '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
+        });
+    }
+
+    if (typeof ZOHODESK !== "undefined") {
+      ZOHODESK.get("ticket.cf").then(function (cfResp) {
+        var cf = cfResp["ticket.cf"] || {};
+        var moveOut = cf[ParkMConfig.FIELDS.MOVE_OUT_DATE];
+        if (moveOut) body.move_out_date = moveOut;
+        _doProcess();
+      }).catch(function () {
+        _doProcess();
       });
+    } else {
+      _doProcess();
+    }
   }
 
   function _renderProcessResult(data, permit, resultDiv) {

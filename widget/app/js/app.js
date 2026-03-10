@@ -10,6 +10,7 @@ var ParkMApp = (function () {
   var customFields = {};
   var pollTimer = null;
   var POLL_INTERVAL = 5000;  // 5 seconds
+  var isLoadingTicket = false;  // guard against concurrent loadTicket calls
 
   /* ── Show / hide state panels ─────────────────────────────────────── */
 
@@ -238,32 +239,28 @@ var ParkMApp = (function () {
     console.log("Validation confirmed — ticket can be closed.");
   }
 
-  /* ── Initialize the app ───────────────────────────────────────────── */
+  /* ── Reset state for ticket switch ─────────────────────────────────── */
 
-  function init() {
+  function resetState() {
+    stopPolling();
+    currentWizards = [];
+    currentTags = [];
+    ticketId = null;
+    customFields = {};
+  }
+
+  /* ── Load ticket data (used by init and ticket change handler) ───── */
+
+  function loadTicket() {
+    if (isLoadingTicket) return;
+    isLoadingTicket = true;
+    resetState();
     showState("loading-state");
 
-    TemplatePanel.init();
-    ValidationModal.init();
-
-    document.getElementById("retry-btn").addEventListener("click", function () {
-      init();
-    });
-
-    if (typeof ZOHODESK === "undefined") {
-      showError("Zoho Desk SDK not loaded. Please refresh.");
-      return;
-    }
-
-    ZOHODESK.extension.onload().then(function (App) {
-      console.log("SDK loaded, fetching ticket data...");
-      // Resize immediately on load
-      resizeWidget();
-      return Promise.all([
-        ZOHODESK.get("ticket.id"),
-        ZOHODESK.get("ticket.cf")
-      ]);
-    }).then(function (results) {
+    Promise.all([
+      ZOHODESK.get("ticket.id"),
+      ZOHODESK.get("ticket.cf")
+    ]).then(function (results) {
       var idResponse = results[0];
       var cfResponse = results[1];
 
@@ -299,6 +296,64 @@ var ParkMApp = (function () {
 
       // Fetch and render stacked wizards
       loadWizardsForTags(activeTags);
+    }).catch(function (err) {
+      console.error("Load ticket failed:", err);
+      showError("Failed to load ticket: " + (err.message || String(err)));
+    }).finally(function () {
+      isLoadingTicket = false;
+    });
+  }
+
+  /* ── Initialize the app ───────────────────────────────────────────── */
+
+  function init() {
+    showState("loading-state");
+
+    TemplatePanel.init();
+    ValidationModal.init();
+
+    document.getElementById("retry-btn").addEventListener("click", function () {
+      loadTicket();
+    });
+
+    if (typeof ZOHODESK === "undefined") {
+      showError("Zoho Desk SDK not loaded. Please refresh.");
+      return;
+    }
+
+    ZOHODESK.extension.onload().then(function (App) {
+      console.log("SDK loaded, fetching ticket data...");
+      // Resize immediately on load
+      resizeWidget();
+
+      // Listen for ticket switches — try multiple event patterns
+      try {
+        ZOHODESK.on("ticket_detail.changed", function () {
+          console.log("ticket_detail.changed fired, reloading...");
+          loadTicket();
+        });
+      } catch (e) { console.log("ticket_detail.changed not supported"); }
+
+      try {
+        ZOHODESK.on("ticket.id.changed", function () {
+          console.log("ticket.id.changed fired, reloading...");
+          loadTicket();
+        });
+      } catch (e) { console.log("ticket.id.changed not supported"); }
+
+      // Fallback: poll for ticket ID changes every 2s
+      setInterval(function () {
+        ZOHODESK.get("ticket.id").then(function (resp) {
+          var newId = resp["ticket.id"];
+          if (newId && newId !== ticketId) {
+            console.log("Ticket ID changed from", ticketId, "to", newId, "— reloading...");
+            loadTicket();
+          }
+        }).catch(function () {});
+      }, 2000);
+
+      // Load the initial ticket
+      loadTicket();
     }).catch(function (err) {
       console.error("Initialization failed:", err);
       showError("Failed to initialize: " + (err.message || String(err)));

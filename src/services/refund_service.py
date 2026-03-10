@@ -12,6 +12,7 @@ Implements the refund/cancellation workflow from the ParkM process flow:
 This service is called from the widget or API endpoints to automate
 the manual steps CSRs currently perform.
 """
+import html
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -103,6 +104,7 @@ class RefundService:
         self,
         permit: Dict[str, Any],
         move_out_date: Optional[str] = None,
+        transactions: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Check if a permit qualifies for a refund per ParkM policy.
 
@@ -113,6 +115,7 @@ class RefundService:
         Args:
             permit: Permit summary from lookup_customer()
             move_out_date: ISO date string of when the customer moved out
+            transactions: Customer transaction list from lookup (used for last charge date)
 
         Returns:
             {
@@ -132,9 +135,23 @@ class RefundService:
                 "days_since_charge": None,
             }
 
-        # Determine last charge date from expiration or recurring date
-        # The most recent billing would be reflected in the permit dates
-        last_charge_str = permit.get("effective_date")
+        # Find the most recent transaction date for this permit.
+        # Fall back to effective_date if no transactions available.
+        last_charge_str = None
+        if transactions:
+            permit_txns = []
+            for txn in transactions:
+                txn_permit_id = txn.get("permitId") or txn.get("permit_id")
+                txn_date = txn.get("creationTime") or txn.get("transactionDate") or txn.get("date")
+                if txn_date and (not txn_permit_id or txn_permit_id == permit.get("id")):
+                    permit_txns.append(txn_date)
+            if permit_txns:
+                permit_txns.sort(reverse=True)
+                last_charge_str = permit_txns[0]
+
+        if not last_charge_str:
+            last_charge_str = permit.get("effective_date")
+
         if not last_charge_str:
             return {
                 "eligible": False,
@@ -168,16 +185,16 @@ class RefundService:
                 move_dt = datetime.fromisoformat(move_out_date.replace("Z", "+00:00"))
                 if move_dt.tzinfo is None:
                     move_dt = move_dt.replace(tzinfo=timezone.utc)
-                moved_before_charge = move_dt < last_charge
+                moved_before_charge = move_dt <= last_charge
             except (ValueError, TypeError):
-                pass  # If we can't parse, don't block on it
+                moved_before_charge = False  # Can't verify move-out — deny refund
 
-        # Determine refund amount
-        refund_amount = (
-            permit.get("recurring_price")
-            or permit.get("permit_price")
-            or permit.get("total_amount")
-        )
+        # Determine refund amount (use explicit None checks to handle 0 correctly)
+        refund_amount = permit.get("recurring_price")
+        if refund_amount is None:
+            refund_amount = permit.get("permit_price")
+        if refund_amount is None:
+            refund_amount = permit.get("total_amount")
 
         eligible = within_window and moved_before_charge
 
@@ -239,6 +256,13 @@ class RefundService:
         """
         amount_str = f"${refund_amount:.2f}" if refund_amount else "See ticket"
 
+        # HTML-escape all user-provided values to prevent XSS
+        safe_name = html.escape(customer_name)
+        safe_email = html.escape(customer_email)
+        safe_amount = html.escape(amount_str)
+        safe_permit = html.escape(permit_type)
+        safe_reason = html.escape(reason)
+
         subject = f"Refund Request - {customer_name}"
         if ticket_id:
             subject += f" (Ticket #{ticket_id})"
@@ -248,11 +272,11 @@ class RefundService:
 <p>Please process the following refund:</p>
 
 <ul>
-  <li><strong>Resident Email:</strong> {customer_email}</li>
-  <li><strong>Resident Name:</strong> {customer_name}</li>
-  <li><strong>Refund Amount:</strong> {amount_str}</li>
-  <li><strong>Permit Type:</strong> {permit_type}</li>
-  <li><strong>Reason:</strong> {reason}</li>
+  <li><strong>Resident Email:</strong> {safe_email}</li>
+  <li><strong>Resident Name:</strong> {safe_name}</li>
+  <li><strong>Refund Amount:</strong> {safe_amount}</li>
+  <li><strong>Permit Type:</strong> {safe_permit}</li>
+  <li><strong>Reason:</strong> {safe_reason}</li>
 </ul>
 
 <p>Please process via ParkM app: Transactions and Payments → Actions → Reverse Charge</p>
@@ -317,16 +341,17 @@ ParkM Support Team</p>"""
             }
 
         # Step 2: Evaluate eligibility
+        transactions = lookup.get("transactions", [])
         results = []
         for permit in active_permits:
             if permit_id and permit["id"] != permit_id:
                 continue
 
-            eligibility = self.evaluate_refund_eligibility(permit, move_out_date)
+            eligibility = self.evaluate_refund_eligibility(permit, move_out_date, transactions)
 
-            # Step 3: Auto-cancel if requested
+            # Step 3: Auto-cancel if requested AND eligible for refund
             cancel_result = None
-            if auto_cancel and not permit.get("is_cancelled"):
+            if auto_cancel and eligibility["eligible"] and not permit.get("is_cancelled"):
                 cancel_result = await self.cancel_permit(permit["id"])
 
             # Step 4: Build accounting email if eligible

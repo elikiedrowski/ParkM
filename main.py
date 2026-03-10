@@ -673,6 +673,24 @@ async def get_template(filename: str):
 
 # ── ParkM API / Refund Automation ──────────────────────────────────────
 
+import re as _re
+_PARKM_API_KEY = os.getenv("PARKM_API_KEY", "")
+
+async def require_parkm_auth(request: Request):
+    """Verify API key for destructive ParkM endpoints."""
+    if not _PARKM_API_KEY:
+        return  # No key configured — skip auth (dev/sandbox mode)
+    key = request.headers.get("X-API-Key") or request.query_params.get("api_key")
+    if key != _PARKM_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+def _validate_email(email: str) -> str:
+    """Basic email format validation. Returns cleaned email or raises 400."""
+    email = (email or "").strip()
+    if not email or not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        raise HTTPException(status_code=400, detail="Valid email address is required")
+    return email
+
 @app.get("/parkm/health")
 async def parkm_health():
     """Check ParkM API connectivity."""
@@ -685,22 +703,25 @@ async def parkm_health():
 
 
 @app.get("/parkm/customer")
-async def parkm_customer_lookup(email: str):
+async def parkm_customer_lookup(email: str, _auth=Depends(require_parkm_auth)):
     """Look up a customer in ParkM by email.
 
     Returns customer info, active permits, vehicles, and transactions.
     Usage: GET /parkm/customer?email=john@example.com
     """
     try:
+        email = _validate_email(email)
         result = await refund_service.lookup_customer(email)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Customer lookup failed for {email}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/parkm/refund/evaluate")
-async def parkm_evaluate_refund(request: Request):
+async def parkm_evaluate_refund(request: Request, _auth=Depends(require_parkm_auth)):
     """Evaluate refund eligibility for a customer.
 
     Request body:
@@ -718,8 +739,9 @@ async def parkm_evaluate_refund(request: Request):
     """
     try:
         data = await request.json()
+        email = _validate_email(data.get("customer_email", ""))
         result = await refund_service.process_refund_request(
-            customer_email=data.get("customer_email", ""),
+            customer_email=email,
             permit_id=data.get("permit_id"),
             move_out_date=data.get("move_out_date"),
             reason=data.get("reason", "Customer requested cancellation/refund"),
@@ -727,13 +749,15 @@ async def parkm_evaluate_refund(request: Request):
             auto_cancel=False,
         )
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Refund evaluation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/parkm/refund/process")
-async def parkm_process_refund(request: Request):
+async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_auth)):
     """Cancel permit and prepare accounting email.
 
     Request body:
@@ -752,9 +776,10 @@ async def parkm_process_refund(request: Request):
         permit_id = data.get("permit_id")
         if not permit_id:
             raise HTTPException(status_code=400, detail="permit_id is required")
+        email = _validate_email(data.get("customer_email", ""))
 
         result = await refund_service.process_refund_request(
-            customer_email=data.get("customer_email", ""),
+            customer_email=email,
             permit_id=permit_id,
             move_out_date=data.get("move_out_date"),
             reason=data.get("reason", "Customer requested cancellation/refund"),
@@ -782,7 +807,7 @@ async def parkm_process_refund(request: Request):
 
 
 @app.post("/parkm/permit/cancel")
-async def parkm_cancel_permit(request: Request):
+async def parkm_cancel_permit(request: Request, _auth=Depends(require_parkm_auth)):
     """Cancel a specific permit in ParkM.
 
     Request body:

@@ -215,6 +215,10 @@ var RefundPanel = (function () {
     var resultDiv = card.querySelector(".refund-permit-result");
     resultDiv.innerHTML = '<div class="refund-loading">Evaluating...</div>';
 
+    // Disable buttons during evaluation
+    var btns = card.querySelectorAll(".refund-action-btn");
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+
     var ticketId = (typeof ParkMApp !== "undefined" && ParkMApp.getTicketId)
       ? ParkMApp.getTicketId() : "";
 
@@ -241,6 +245,7 @@ var RefundPanel = (function () {
   }
 
   function _doEvaluate(body, permit, customer, resultDiv) {
+    var card = resultDiv.closest(".refund-permit-card");
     fetch(ParkMConfig.API_BASE_URL + "/parkm/refund/evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -256,6 +261,11 @@ var RefundPanel = (function () {
       .catch(function (err) {
         resultDiv.innerHTML =
           '<div class="refund-error">Evaluation failed: ' + _esc(err.message) + '</div>';
+        // Re-enable buttons on failure
+        if (card) {
+          var btns = card.querySelectorAll(".refund-action-btn");
+          for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
+        }
       });
   }
 
@@ -312,6 +322,9 @@ var RefundPanel = (function () {
   /* ── Process Refund (Cancel + Forward to Accounting) ────────────── */
 
   function _processRefund(permit, customer, resultDiv) {
+    if (!confirm("Cancel this permit and forward refund details to accounting@parkm.com?")) {
+      return;
+    }
     var processBtn = document.getElementById("process-refund-" + permit.id);
     if (processBtn) {
       processBtn.disabled = true;
@@ -403,6 +416,10 @@ var RefundPanel = (function () {
       return;
     }
 
+    // Disable all buttons on this card during cancel
+    var btns = card.querySelectorAll(".refund-action-btn");
+    for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+
     var resultDiv = card.querySelector(".refund-permit-result");
     resultDiv.innerHTML = '<div class="refund-loading">Cancelling...</div>';
 
@@ -439,7 +456,10 @@ var RefundPanel = (function () {
       ZOHODESK.invoke("INSERT", "ticket.replyEditor", { value: acctEmail.body_html });
     } catch (e) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(acctEmail.body_html);
+        // Strip HTML tags for plain-text clipboard fallback
+        var tmp = document.createElement("div");
+        tmp.innerHTML = acctEmail.body_html;
+        navigator.clipboard.writeText(tmp.textContent || tmp.innerText || "");
         alert("Email copied to clipboard (unable to insert directly).");
       }
     }

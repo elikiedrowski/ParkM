@@ -48,7 +48,7 @@ var ParkMApp = (function () {
         return res.json();
       })
       .then(function (data) {
-        return data.wizard;
+        return { wizard: data.wizard, contact_email: data.contact_email || "" };
       });
   }
 
@@ -62,12 +62,17 @@ var ParkMApp = (function () {
     });
 
     Promise.all(promises)
-      .then(function (wizards) {
-        currentWizards = wizards;
-        renderStackedWizards(tags, wizards);
+      .then(function (results) {
+        currentWizards = results.map(function (r) { return r.wizard; });
+        // Extract contact email from first wizard response that has one
+        var contactEmail = "";
+        for (var i = 0; i < results.length; i++) {
+          if (results[i].contact_email) { contactEmail = results[i].contact_email; break; }
+        }
+        renderStackedWizards(tags, currentWizards);
         // Initialize refund panel if tags are refund/cancellation-related
         if (typeof RefundPanel !== "undefined") {
-          RefundPanel.init(tags);
+          RefundPanel.init(tags, contactEmail);
         }
         showState("wizard-container");
         resizeWidget();

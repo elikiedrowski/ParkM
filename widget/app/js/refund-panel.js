@@ -27,7 +27,7 @@ var RefundPanel = (function () {
 
   /* ── Initialize / show the panel ────────────────────────────────── */
 
-  function init(tags) {
+  function init(tags, contactEmail) {
     var panel = document.getElementById("refund-panel");
     if (!shouldShow(tags)) {
       panel.style.display = "none";
@@ -37,13 +37,11 @@ var RefundPanel = (function () {
     panel.style.display = "block";
     _resetPanel();
 
-    // Try to get ticket email from Zoho
-    if (typeof ZOHODESK !== "undefined") {
-      ZOHODESK.get("ticket.email").then(function (resp) {
-        ticketEmail = resp["ticket.email"] || "";
-        var input = document.getElementById("refund-email-input");
-        if (input && ticketEmail) input.value = ticketEmail;
-      }).catch(function () {});
+    // Pre-populate email from wizard API response (reads from Zoho ticket server-side)
+    if (contactEmail) {
+      ticketEmail = contactEmail;
+      var input = document.getElementById("refund-email-input");
+      if (input) input.value = contactEmail;
     }
 
     // Attach event handlers

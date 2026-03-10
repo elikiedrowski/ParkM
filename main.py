@@ -635,10 +635,16 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
                     }
                 }
 
+        # Extract contact email from ticket for widget pre-population
+        contact_email = ""
+        if ticket_data:
+            contact_email = ticket_data.get("email", "") or ""
+
         wizard = get_wizard_for_intent(intent, classification)
         return {
             "intent": intent,
             "wizard": wizard,
+            "contact_email": contact_email,
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:

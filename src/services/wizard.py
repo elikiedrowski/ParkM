@@ -69,11 +69,14 @@ def get_wizard_for_intent(
     if classification:
         extracted = classification.get("key_entities") or classification.get("extracted_entities") or {}
         if extracted.get("license_plate"):
-            entities["license_plate"] = extracted["license_plate"]
+            val = extracted["license_plate"]
+            entities["license_plate"] = ", ".join(val) if isinstance(val, list) else str(val)
         if extracted.get("move_out_date"):
-            entities["move_out_date"] = extracted["move_out_date"]
+            val = extracted["move_out_date"]
+            entities["move_out_date"] = ", ".join(val) if isinstance(val, list) else str(val)
         if extracted.get("amount"):
-            entities["amount"] = str(extracted["amount"])
+            val = extracted["amount"]
+            entities["amount"] = ", ".join(str(v) for v in val) if isinstance(val, list) else str(val)
 
     # Substitute {{entity}} placeholders in step substeps
     for step in wizard.get("steps", []):

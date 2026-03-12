@@ -621,6 +621,7 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
     """
     try:
         classification = None
+        ticket_data = None
         if ticket_id:
             ticket_data = await zoho_client.get_ticket(ticket_id)
             if ticket_data:

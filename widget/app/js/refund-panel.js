@@ -77,11 +77,7 @@ var RefundPanel = (function () {
 
     var url = ParkMConfig.API_BASE_URL + "/parkm/customer?email=" + encodeURIComponent(email);
 
-    fetch(url)
-      .then(function (res) {
-        if (!res.ok) throw new Error("API error: " + res.status);
-        return res.json();
-      })
+    _fetchWithTimeout(url, null, 35000)
       .then(function (data) {
         btn.disabled = false;
         btn.textContent = "Lookup";
@@ -244,15 +240,11 @@ var RefundPanel = (function () {
 
   function _doEvaluate(body, permit, customer, resultDiv) {
     var card = resultDiv.closest(".refund-permit-card");
-    fetch(ParkMConfig.API_BASE_URL + "/parkm/refund/evaluate", {
+    _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     })
-      .then(function (res) {
-        if (!res.ok) throw new Error("API error: " + res.status);
-        return res.json();
-      })
       .then(function (data) {
         _renderEvalResult(data, permit, customer, resultDiv);
       })
@@ -341,15 +333,11 @@ var RefundPanel = (function () {
 
     // Read move_out_date from Zoho custom fields before sending
     function _doProcess() {
-      fetch(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
+      _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       })
-        .then(function (res) {
-          if (!res.ok) throw new Error("API error: " + res.status);
-          return res.json();
-        })
         .then(function (data) {
           _renderProcessResult(data, permit, resultDiv);
         })
@@ -398,6 +386,8 @@ var RefundPanel = (function () {
     // Zoho status update
     if (data.zoho_status_updated) {
       html += '<div class="refund-process-step step-ok">Ticket set to "Waiting on Accounting"</div>';
+    } else if (data.zoho_status_updated === false) {
+      html += '<div class="refund-process-step step-fail">Could not update ticket status — please set to "Waiting on Accounting" manually</div>';
     }
 
     // Accounting email preview
@@ -421,6 +411,11 @@ var RefundPanel = (function () {
         });
       }
     }
+
+    // Refresh permit list to reflect cancellation
+    if (cancelOk && customerData) {
+      _refreshPermits();
+    }
   }
 
   /* ── Cancel Permit (standalone, no refund) ──────────────────────── */
@@ -437,7 +432,7 @@ var RefundPanel = (function () {
     var resultDiv = card.querySelector(".refund-permit-result");
     resultDiv.innerHTML = '<div class="refund-loading">Cancelling...</div>';
 
-    fetch(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
+    _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -445,21 +440,21 @@ var RefundPanel = (function () {
         send_notice: true
       })
     })
-      .then(function (res) {
-        if (!res.ok) throw new Error("API error: " + res.status);
-        return res.json();
-      })
       .then(function (data) {
         if (data.success) {
           resultDiv.innerHTML = '<div class="refund-process-step step-ok">Permit cancelled successfully</div>';
-          // Grey out the card
           card.classList.add("refund-permit-card--cancelled");
+          _refreshPermits();
         } else {
           resultDiv.innerHTML = '<div class="refund-process-step step-fail">Cancel failed — try manually in ParkM</div>';
+          var btns = card.querySelectorAll(".refund-action-btn");
+          for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
         }
       })
       .catch(function (err) {
         resultDiv.innerHTML = '<div class="refund-error">Cancel failed: ' + _esc(err.message) + '</div>';
+        var btns = card.querySelectorAll(".refund-action-btn");
+        for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
       });
   }
 
@@ -477,6 +472,27 @@ var RefundPanel = (function () {
         alert("Email copied to clipboard (unable to insert directly).");
       }
     }
+  }
+
+  /* ── Refresh Permits After Cancel ──────────────────────────────── */
+
+  function _refreshPermits() {
+    if (!customerData || !customerData.customer) return;
+    var email = customerData.customer.email;
+    var url = ParkMConfig.API_BASE_URL + "/parkm/customer?email=" + encodeURIComponent(email);
+
+    fetch(url, { signal: AbortSignal.timeout(30000) })
+      .then(function (res) {
+        if (!res.ok) return;
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.found) {
+          customerData = data;
+          _renderPermits(data);
+        }
+      })
+      .catch(function () { /* best-effort refresh */ });
   }
 
   /* ── Not Found Actions ──────────────────────────────────────────── */
@@ -512,6 +528,27 @@ var RefundPanel = (function () {
     var div = document.createElement("div");
     div.textContent = str || "";
     return div.innerHTML;
+  }
+
+  function _fetchWithTimeout(url, opts, timeoutMs) {
+    timeoutMs = timeoutMs || 30000;
+    opts = opts || {};
+    opts.signal = AbortSignal.timeout(timeoutMs);
+    return fetch(url, opts).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          var detail = body.detail || "";
+          if (res.status === 401) throw new Error("Authentication failed — check API key configuration");
+          if (res.status === 400) throw new Error(detail || "Invalid request — check email format");
+          if (res.status === 503) throw new Error("ParkM API is unreachable — try again later");
+          throw new Error(detail || "Server error (" + res.status + ") — try again");
+        });
+      }
+      return res.json();
+    }).catch(function (err) {
+      if (err.name === "TimeoutError") throw new Error("Request timed out — ParkM API may be slow, try again");
+      throw err;
+    });
   }
 
   function _formatDate(isoStr) {

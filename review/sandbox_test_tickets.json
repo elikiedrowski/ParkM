@@ -1,0 +1,506 @@
+{
+  "created_at": "2026-03-12T17:10:32",
+  "sandbox_org": "856336669",
+  "department": "Testing",
+  "total": 62,
+  "success": 62,
+  "failed": 0,
+  "tickets": [
+    {
+      "type": "single",
+      "index": 1,
+      "label": "Customer Canceling a Permit and Refunding",
+      "ticket_id": "1004699000046942001",
+      "ticket_number": "71930",
+      "subject": "[Test 1/49] Cancel my parking permit - need refund"
+    },
+    {
+      "type": "single",
+      "index": 2,
+      "label": "Customer Inquiring for Grandfathered Permit",
+      "ticket_id": "1004699000046944001",
+      "ticket_number": "71931",
+      "subject": "[Test 2/49] Grandfathered permit question"
+    },
+    {
+      "type": "single",
+      "index": 3,
+      "label": "Customer Inquiring for Locked Down Permit",
+      "ticket_id": "1004699000046945001",
+      "ticket_number": "71932",
+      "subject": "[Test 3/49] Why is my permit locked?"
+    },
+    {
+      "type": "single",
+      "index": 4,
+      "label": "Customer Inquiring for Additional Permit",
+      "ticket_id": "1004699000046925010",
+      "ticket_number": "71933",
+      "subject": "[Test 4/49] Need a second parking permit"
+    },
+    {
+      "type": "single",
+      "index": 5,
+      "label": "Customer Rental Car",
+      "ticket_id": "1004699000046925115",
+      "ticket_number": "71934",
+      "subject": "[Test 5/49] Rental car temporary permit needed"
+    },
+    {
+      "type": "single",
+      "index": 6,
+      "label": "Customer Double Charged or Extra Charges",
+      "ticket_id": "1004699000046948001",
+      "ticket_number": "71935",
+      "subject": "[Test 6/49] Charged twice for my permit this month!"
+    },
+    {
+      "type": "single",
+      "index": 7,
+      "label": "Customer Guest Permit and Pricing Questions",
+      "ticket_id": "1004699000046944106",
+      "ticket_number": "71936",
+      "subject": "[Test 7/49] Guest parking permit info"
+    },
+    {
+      "type": "single",
+      "index": 8,
+      "label": "Customer Miscellaneous Questions",
+      "ticket_id": "1004699000046930126",
+      "ticket_number": "71937",
+      "subject": "[Test 8/49] General question about parking"
+    },
+    {
+      "type": "single",
+      "index": 9,
+      "label": "Customer Sending Money Order",
+      "ticket_id": "1004699000046950001",
+      "ticket_number": "71938",
+      "subject": "[Test 9/49] Sending money order for parking permit"
+    },
+    {
+      "type": "single",
+      "index": 10,
+      "label": "Customer Need help buying a permit",
+      "ticket_id": "1004699000046951001",
+      "ticket_number": "71939",
+      "subject": "[Test 10/49] How do I buy a parking permit?"
+    },
+    {
+      "type": "single",
+      "index": 11,
+      "label": "Customer Need Help Renewing Permit",
+      "ticket_id": "1004699000046935077",
+      "ticket_number": "71940",
+      "subject": "[Test 11/49] Permit renewal issue"
+    },
+    {
+      "type": "single",
+      "index": 12,
+      "label": "Customer Need Help Creating an Account",
+      "ticket_id": "1004699000046944247",
+      "ticket_number": "71941",
+      "subject": "[Test 12/49] Can't create my ParkM account"
+    },
+    {
+      "type": "single",
+      "index": 13,
+      "label": "Customer New Towing Legislation No Parking",
+      "ticket_id": "1004699000046952001",
+      "ticket_number": "71942",
+      "subject": "[Test 13/49] New towing law question"
+    },
+    {
+      "type": "single",
+      "index": 14,
+      "label": "Customer No Plate or Expired Tags",
+      "ticket_id": "1004699000046951106",
+      "ticket_number": "71943",
+      "subject": "[Test 14/49] My car has expired tags - will I get towed?"
+    },
+    {
+      "type": "single",
+      "index": 15,
+      "label": "Customer Someone is Parking in my Spot",
+      "ticket_id": "1004699000046953001",
+      "ticket_number": "71944",
+      "subject": "[Test 15/49] Someone keeps parking in my assigned spot!"
+    },
+    {
+      "type": "single",
+      "index": 16,
+      "label": "Customer Parking Space Not in Dropdown",
+      "ticket_id": "1004699000046942134",
+      "ticket_number": "71945",
+      "subject": "[Test 16/49] My parking space isn't listed"
+    },
+    {
+      "type": "single",
+      "index": 17,
+      "label": "Customer Password Reset",
+      "ticket_id": "1004699000046952106",
+      "ticket_number": "71946",
+      "subject": "[Test 17/49] Forgot my password"
+    },
+    {
+      "type": "single",
+      "index": 18,
+      "label": "Customer Towed Booted Ticketed",
+      "ticket_id": "1004699000046955001",
+      "ticket_number": "71947",
+      "subject": "[Test 18/49] MY CAR WAS TOWED!! HELP!!"
+    },
+    {
+      "type": "single",
+      "index": 19,
+      "label": "Customer Warned or Tagged",
+      "ticket_id": "1004699000046929069",
+      "ticket_number": "71948",
+      "subject": "[Test 19/49] Warning sticker on my car"
+    },
+    {
+      "type": "single",
+      "index": 20,
+      "label": "Customer Payment Help",
+      "ticket_id": "1004699000046944380",
+      "ticket_number": "71949",
+      "subject": "[Test 20/49] Payment not going through"
+    },
+    {
+      "type": "single",
+      "index": 21,
+      "label": "Customer Update Vehicle Info",
+      "ticket_id": "1004699000046949033",
+      "ticket_number": "71950",
+      "subject": "[Test 21/49] Need to update my license plate"
+    },
+    {
+      "type": "single",
+      "index": 22,
+      "label": "Customer Update Contact Info",
+      "ticket_id": "1004699000046952211",
+      "ticket_number": "71951",
+      "subject": "[Test 22/49] Update my phone number and email"
+    },
+    {
+      "type": "single",
+      "index": 23,
+      "label": "Property Changing Resident Type for Approved Permit",
+      "ticket_id": "1004699000046950106",
+      "ticket_number": "71952",
+      "subject": "[Test 23/49] Change resident type for unit 305"
+    },
+    {
+      "type": "single",
+      "index": 24,
+      "label": "Property Approving Grandfathered Permit",
+      "ticket_id": "1004699000046942239",
+      "ticket_number": "71953",
+      "subject": "[Test 24/49] Approve grandfathered permit - unit 412"
+    },
+    {
+      "type": "single",
+      "index": 25,
+      "label": "Property Approving Override Additional Permit",
+      "ticket_id": "1004699000046926146",
+      "ticket_number": "71954",
+      "subject": "[Test 25/49] Override approval for additional permit"
+    },
+    {
+      "type": "single",
+      "index": 26,
+      "label": "Property Extending Expiration Date on a Permit",
+      "ticket_id": "1004699000046953138",
+      "ticket_number": "71955",
+      "subject": "[Test 26/49] Extend permit expiration for resident"
+    },
+    {
+      "type": "single",
+      "index": 27,
+      "label": "Property Audits or Reports",
+      "ticket_id": "1004699000046935246",
+      "ticket_number": "71956",
+      "subject": "[Test 27/49] Monthly parking audit report needed"
+    },
+    {
+      "type": "single",
+      "index": 28,
+      "label": "Property Checking if a Vehicle is Permitted",
+      "ticket_id": "1004699000046951239",
+      "ticket_number": "71957",
+      "subject": "[Test 28/49] Is this vehicle permitted?"
+    },
+    {
+      "type": "single",
+      "index": 29,
+      "label": "Property Checking Who Has a Space Number",
+      "ticket_id": "1004699000046951344",
+      "ticket_number": "71958",
+      "subject": "[Test 29/49] Who is assigned to space #55?"
+    },
+    {
+      "type": "single",
+      "index": 30,
+      "label": "Property Checking Who is in a Unit",
+      "ticket_id": "1004699000046945106",
+      "ticket_number": "71959",
+      "subject": "[Test 30/49] Who is registered in unit 407?"
+    },
+    {
+      "type": "single",
+      "index": 31,
+      "label": "Property Inquiring about a Tow Boot Ticket",
+      "ticket_id": "1004699000046930291",
+      "ticket_number": "71960",
+      "subject": "[Test 31/49] Tow inquiry for our property"
+    },
+    {
+      "type": "single",
+      "index": 32,
+      "label": "Property Inquiring About a Warning Tag",
+      "ticket_id": "1004699000046950211",
+      "ticket_number": "71961",
+      "subject": "[Test 32/49] Warning tag placed on resident vehicle"
+    },
+    {
+      "type": "single",
+      "index": 33,
+      "label": "Property Monitor Request",
+      "ticket_id": "1004699000046952316",
+      "ticket_number": "71962",
+      "subject": "[Test 33/49] Request parking lot monitoring"
+    },
+    {
+      "type": "single",
+      "index": 34,
+      "label": "Property Leasing Staff Login",
+      "ticket_id": "1004699000046950316",
+      "ticket_number": "71963",
+      "subject": "[Test 34/49] New leasing agent needs access"
+    },
+    {
+      "type": "single",
+      "index": 35,
+      "label": "Property Miscellaneous Questions",
+      "ticket_id": "1004699000046944513",
+      "ticket_number": "71964",
+      "subject": "[Test 35/49] General parking questions for our property"
+    },
+    {
+      "type": "single",
+      "index": 36,
+      "label": "Property Sending Money Order",
+      "ticket_id": "1004699000046953243",
+      "ticket_number": "71965",
+      "subject": "[Test 36/49] Sending money order for resident permit"
+    },
+    {
+      "type": "single",
+      "index": 37,
+      "label": "Property Update or Register Employee Vehicles",
+      "ticket_id": "1004699000046951477",
+      "ticket_number": "71966",
+      "subject": "[Test 37/49] Register employee vehicles"
+    },
+    {
+      "type": "single",
+      "index": 38,
+      "label": "Property Update Resident Vehicle",
+      "ticket_id": "1004699000046948106",
+      "ticket_number": "71967",
+      "subject": "[Test 38/49] Update resident vehicle info"
+    },
+    {
+      "type": "single",
+      "index": 39,
+      "label": "Property Update Resident Contact Information",
+      "ticket_id": "1004699000046942344",
+      "ticket_number": "71968",
+      "subject": "[Test 39/49] Update resident contact info"
+    },
+    {
+      "type": "single",
+      "index": 40,
+      "label": "Property Update Resident Password",
+      "ticket_id": "1004699000046945211",
+      "ticket_number": "71969",
+      "subject": "[Test 40/49] Reset password for resident"
+    },
+    {
+      "type": "single",
+      "index": 41,
+      "label": "Property Register Resident Account for Them",
+      "ticket_id": "1004699000046955138",
+      "ticket_number": "71970",
+      "subject": "[Test 41/49] Create account for elderly resident"
+    },
+    {
+      "type": "single",
+      "index": 42,
+      "label": "Property Cancel Resident Account",
+      "ticket_id": "1004699000046953348",
+      "ticket_number": "71971",
+      "subject": "[Test 42/49] Cancel resident account - moved out"
+    },
+    {
+      "type": "single",
+      "index": 43,
+      "label": "Property Permitting PAID Resident Vehicle for Them",
+      "ticket_id": "1004699000046953453",
+      "ticket_number": "71972",
+      "subject": "[Test 43/49] Process paid permit for resident"
+    },
+    {
+      "type": "single",
+      "index": 44,
+      "label": "Property Resident Payment Help",
+      "ticket_id": "1004699000046944618",
+      "ticket_number": "71973",
+      "subject": "[Test 44/49] Resident having payment issues"
+    },
+    {
+      "type": "single",
+      "index": 45,
+      "label": "Property Guest Permits",
+      "ticket_id": "1004699000046948211",
+      "ticket_number": "71974",
+      "subject": "[Test 45/49] Guest permit policy for our community"
+    },
+    {
+      "type": "single",
+      "index": 46,
+      "label": "Property Potential Leads",
+      "ticket_id": "1004699000046952421",
+      "ticket_number": "71975",
+      "subject": "[Test 46/49] Interested in ParkM for our community"
+    },
+    {
+      "type": "single",
+      "index": 47,
+      "label": "Sales Rep Asking for a Vehicle to be Released",
+      "ticket_id": "1004699000046952526",
+      "ticket_number": "71976",
+      "subject": "[Test 47/49] Release vehicle from tow hold"
+    },
+    {
+      "type": "single",
+      "index": 48,
+      "label": "Sales Rep Asking for a Vehicle to be Grandfathered",
+      "ticket_id": "1004699000046955243",
+      "ticket_number": "71977",
+      "subject": "[Test 48/49] Grandfather this vehicle in"
+    },
+    {
+      "type": "single",
+      "index": 49,
+      "label": "Towing or Monitoring Leads",
+      "ticket_id": "1004699000046934037",
+      "ticket_number": "71978",
+      "subject": "[Test 49/49] Parking enforcement services inquiry"
+    },
+    {
+      "type": "single",
+      "index": 50,
+      "label": "The Law Asking for Information",
+      "ticket_id": "1004699000046949138",
+      "ticket_number": "71979",
+      "subject": "[Test 50/49] Law enforcement request for vehicle information"
+    },
+    {
+      "type": "multi",
+      "index": 1,
+      "label": "Cancel Permit + Refund + Password Reset",
+      "ticket_id": "1004699000046925308",
+      "ticket_number": "71980",
+      "subject": "[Multi 1/12] Cancel permit, get refund, and can't log in"
+    },
+    {
+      "type": "multi",
+      "index": 2,
+      "label": "Double Charged + Cancel Permit",
+      "ticket_id": "1004699000046948316",
+      "ticket_number": "71981",
+      "subject": "[Multi 2/12] Charged twice AND I'm moving out"
+    },
+    {
+      "type": "multi",
+      "index": 3,
+      "label": "Update Vehicle + Renew Permit",
+      "ticket_id": "1004699000046935351",
+      "ticket_number": "71982",
+      "subject": "[Multi 3/12] New car - need to update plate and renew"
+    },
+    {
+      "type": "multi",
+      "index": 4,
+      "label": "Towed + Refund Request",
+      "ticket_id": "1004699000046934142",
+      "ticket_number": "71983",
+      "subject": "[Multi 4/12] Car towed but I had a permit! I want a refund!"
+    },
+    {
+      "type": "multi",
+      "index": 5,
+      "label": "Property: Check Vehicle + Check Unit",
+      "ticket_id": "1004699000046956033",
+      "ticket_number": "71984",
+      "subject": "[Multi 5/12] Vehicle check and unit verification"
+    },
+    {
+      "type": "multi",
+      "index": 6,
+      "label": "Guest Permit + Someone in My Spot",
+      "ticket_id": "1004699000046929234",
+      "ticket_number": "71985",
+      "subject": "[Multi 6/12] Guest permit and someone in my spot"
+    },
+    {
+      "type": "multi",
+      "index": 7,
+      "label": "Property: Register Account + Permit Payment",
+      "ticket_id": "1004699000046944723",
+      "ticket_number": "71986",
+      "subject": "[Multi 7/12] New resident needs account and permit"
+    },
+    {
+      "type": "multi",
+      "index": 8,
+      "label": "Warning Tag + No Plate/Expired Tags",
+      "ticket_id": "1004699000046955348",
+      "ticket_number": "71987",
+      "subject": "[Multi 8/12] Got a warning but my tags are being renewed"
+    },
+    {
+      "type": "multi",
+      "index": 9,
+      "label": "Property: Employee Vehicles + Leasing Staff Login",
+      "ticket_id": "1004699000046951614",
+      "ticket_number": "71988",
+      "subject": "[Multi 9/12] New staff setup - vehicles and system access"
+    },
+    {
+      "type": "multi",
+      "index": 10,
+      "label": "Create Account + Buy Permit + Payment Help",
+      "ticket_id": "1004699000046953586",
+      "ticket_number": "71989",
+      "subject": "[Multi 10/12] New here - can't figure anything out"
+    },
+    {
+      "type": "multi",
+      "index": 11,
+      "label": "Property: Extend Permit + Change Resident Type",
+      "ticket_id": "1004699000046948421",
+      "ticket_number": "71990",
+      "subject": "[Multi 11/12] Lease renewal - extend permit and change type"
+    },
+    {
+      "type": "multi",
+      "index": 12,
+      "label": "Refund + Update Contact Info + Miscellaneous",
+      "ticket_id": "1004699000046945344",
+      "ticket_number": "71991",
+      "subject": "[Multi 12/12] Moving out - refund, update info, and questions"
+    }
+  ]
+}

@@ -23,7 +23,7 @@ from src.services.parkm_client import ParkMClient
 logger = logging.getLogger(__name__)
 
 REFUND_WINDOW_DAYS = 30
-ACCOUNTING_EMAIL = os.environ.get("ACCOUNTING_EMAIL", ACCOUNTING_EMAIL)
+ACCOUNTING_EMAIL = os.environ.get("ACCOUNTING_EMAIL", "accounting@parkm.com")
 
 
 class RefundService:

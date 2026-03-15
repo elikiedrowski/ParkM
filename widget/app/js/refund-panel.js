@@ -37,15 +37,16 @@ var RefundPanel = (function () {
     panel.style.display = "block";
     _resetPanel();
 
-    // Pre-populate email from wizard API response (reads from Zoho ticket server-side)
+    // Attach event handlers
+    document.getElementById("refund-lookup-btn").onclick = _onLookup;
+
+    // Pre-populate email and auto-lookup
     if (contactEmail) {
       ticketEmail = contactEmail;
       var input = document.getElementById("refund-email-input");
       if (input) input.value = contactEmail;
+      _onLookup();
     }
-
-    // Attach event handlers
-    document.getElementById("refund-lookup-btn").onclick = _onLookup;
   }
 
   function _resetPanel() {

@@ -14,6 +14,7 @@ the manual steps CSRs currently perform.
 """
 import html
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
@@ -22,6 +23,7 @@ from src.services.parkm_client import ParkMClient
 logger = logging.getLogger(__name__)
 
 REFUND_WINDOW_DAYS = 30
+ACCOUNTING_EMAIL = os.environ.get("ACCOUNTING_EMAIL", ACCOUNTING_EMAIL)
 
 
 class RefundService:
@@ -257,7 +259,7 @@ class RefundService:
 
         Returns:
             {
-                "to": "accounting@parkm.com",
+                "to": ACCOUNTING_EMAIL,
                 "subject": str,
                 "body_html": str,
             }
@@ -293,7 +295,7 @@ class RefundService:
 ParkM Support Team</p>"""
 
         return {
-            "to": "accounting@parkm.com",
+            "to": ACCOUNTING_EMAIL,
             "subject": subject,
             "body_html": body_html,
         }

@@ -124,8 +124,17 @@ var RefundPanel = (function () {
     list.innerHTML = "";
 
     var permits = data.permits || [];
-    var active = permits.filter(function (p) { return !p.is_cancelled; });
+    var now = new Date();
+    var active = permits.filter(function (p) {
+      if (p.is_cancelled) return false;
+      // Hide expired permits
+      if (p.expiration_date && new Date(p.expiration_date) < now) return false;
+      return true;
+    });
     var cancelled = permits.filter(function (p) { return p.is_cancelled; });
+    var expired = permits.filter(function (p) {
+      return !p.is_cancelled && p.expiration_date && new Date(p.expiration_date) < now;
+    });
 
     if (active.length === 0 && cancelled.length === 0) {
       section.style.display = "block";
@@ -140,11 +149,14 @@ var RefundPanel = (function () {
       list.appendChild(_buildPermitCard(permit, data.customer));
     });
 
-    // Show cancelled count
-    if (cancelled.length > 0) {
+    // Show hidden permit counts
+    var hiddenParts = [];
+    if (cancelled.length > 0) hiddenParts.push(cancelled.length + " cancelled");
+    if (expired.length > 0) hiddenParts.push(expired.length + " expired");
+    if (hiddenParts.length > 0) {
       var note = document.createElement("div");
       note.className = "refund-cancelled-note";
-      note.textContent = cancelled.length + " cancelled permit" + (cancelled.length > 1 ? "s" : "") + " (not shown)";
+      note.textContent = hiddenParts.join(", ") + " permit" + ((cancelled.length + expired.length) > 1 ? "s" : "") + " (not shown)";
       list.appendChild(note);
     }
   }

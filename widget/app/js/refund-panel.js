@@ -406,7 +406,7 @@ var RefundPanel = (function () {
     // Accounting email preview
     if (acctEmail) {
       html += '<div class="refund-accounting-email">';
-      html += '<div class="refund-accounting-label">Change the "To" field to <strong>' + _esc(acctEmail.to) + '</strong>, then insert:</div>';
+      html += '<div class="refund-accounting-label">Email to <strong>' + _esc(acctEmail.to) + '</strong>:</div>';
       html += '<div class="refund-accounting-preview">' + acctEmail.body_html + '</div>';
       html += '<button class="btn btn-primary refund-action-btn" id="insert-accounting-' + permit.id + '">Insert Email into Reply</button>';
       html += '</div>';
@@ -479,7 +479,14 @@ var RefundPanel = (function () {
 
   function _insertAccountingEmail(acctEmail) {
     try {
-      ZOHODESK.invoke("INSERT", "ticket.replyEditor", { value: acctEmail.body_html });
+      // Set the To field to accounting email, clear CC
+      ZOHODESK.set("ticket.replyEditorRecipients", {
+        to: [acctEmail.to],
+        cc: [],
+        bcc: []
+      });
+      // Insert the email body
+      ZOHODESK.invoke("INSERT", "ticket.replyEditor", { value: acctEmail.body_html, type: "replace" });
     } catch (e) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         // Strip HTML tags for plain-text clipboard fallback

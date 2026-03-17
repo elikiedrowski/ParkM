@@ -406,7 +406,7 @@ var RefundPanel = (function () {
     // Accounting email preview
     if (acctEmail) {
       html += '<div class="refund-accounting-email">';
-      html += '<div class="refund-accounting-label">Forward to accounting@parkm.com:</div>';
+      html += '<div class="refund-accounting-label">Change the "To" field to <strong>' + _esc(acctEmail.to) + '</strong>, then insert:</div>';
       html += '<div class="refund-accounting-preview">' + acctEmail.body_html + '</div>';
       html += '<button class="btn btn-primary refund-action-btn" id="insert-accounting-' + permit.id + '">Insert Email into Reply</button>';
       html += '</div>';
@@ -425,9 +425,13 @@ var RefundPanel = (function () {
       }
     }
 
-    // Refresh permit list to reflect cancellation
-    if (cancelOk && customerData) {
-      _refreshPermits();
+    // Update customerData in background but don't re-render (preserve result view)
+    if (cancelOk && customerData && customerData.customer) {
+      var url = ParkMConfig.API_BASE_URL + "/parkm/customer?email=" + encodeURIComponent(customerData.customer.email);
+      fetch(url, { signal: AbortSignal.timeout(30000) })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) { if (data && data.found) customerData = data; })
+        .catch(function () {});
     }
   }
 

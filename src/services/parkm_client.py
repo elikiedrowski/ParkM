@@ -117,7 +117,7 @@ class ParkMClient:
         try:
             data = await self._post(
                 "/api/services/app/PermitPortal/GetCustomerFromEmail",
-                body={"customerInput": {"primaryEmailAddress": email}},
+                body={"primaryEmailAddress": email},
             )
             result = data.get("result")
             if result and result.get("id"):

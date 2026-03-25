@@ -52,13 +52,9 @@ class RefundService:
         customer_id = customer["id"]
         name = f"{customer.get('firstName', '')} {customer.get('lastName', '')}".strip()
 
-        # Fetch permits (required) and vehicles/transactions (best-effort)
-        raw_permits = await self.parkm.get_customer_permits(customer_id)
-        try:
-            vehicles = await self.parkm.get_customer_vehicles(customer_id)
-        except Exception:
-            logger.warning(f"Could not fetch vehicles for {customer_id}")
-            vehicles = []
+        # Fetch permits via GetActiveCustomerVehicles (per Stephen's guidance)
+        # This returns vehicles with embedded active permits
+        raw_vehicles = await self.parkm.get_customer_permits(customer_id)
         try:
             transactions = await self.parkm.get_customer_transactions(customer_id)
         except Exception:
@@ -66,29 +62,36 @@ class RefundService:
             transactions = []
 
         permits = []
-        for item in raw_permits:
-            p = item.get("permit", {})
+        vehicles = []
+        for item in raw_vehicles:
+            v = item.get("vehicle", {})
+            p = item.get("activePermit", {})
+            if not p or not p.get("id"):
+                continue
+
+            vehicles.append(item)
             permit_summary = {
                 "id": p.get("id"),
-                "type_name": item.get("permitTypeName", "Unknown"),
+                "type_name": item.get("community", "Unknown"),
                 "effective_date": p.get("effectiveDate"),
                 "expiration_date": p.get("expirationDate"),
                 "is_cancelled": p.get("isCancelled", False),
                 "is_recurring": item.get("isRecurring", False),
                 "recurring_price": p.get("recurringPrice"),
-                "permit_price": p.get("permitPrice") or item.get("permitPrice"),
-                "total_amount": item.get("totalAmount"),
-                "stripe_id": item.get("stripeId"),
-                "subscription_id": item.get("subscriptionId"),
+                "permit_price": p.get("amountDue"),
+                "total_amount": p.get("amountDue"),
+                "stripe_id": None,
+                "subscription_id": None,
                 "vehicle": {
-                    "plate": item.get("licensePlate"),
+                    "plate": v.get("licensePlate"),
                     "make": item.get("vehicleMakeName"),
                     "model": item.get("vehicleModelName"),
                     "color": item.get("vehicleColorName"),
-                    "year": item.get("vehicleYear"),
+                    "year": v.get("year"),
                 },
-                "community": item.get("communityName"),
-                "balance_due": item.get("balanceDue", 0),
+                "community": item.get("community"),
+                "balance_due": p.get("amountDue", 0),
+                "permit_name": p.get("name"),
             }
             permits.append(permit_summary)
 

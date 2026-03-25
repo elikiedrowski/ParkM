@@ -173,14 +173,14 @@ class ParkMClient:
     # ── Permits ───────────────────────────────────────────────────────
 
     async def get_customer_permits(self, customer_id: str) -> List[Dict[str, Any]]:
-        """Get all permits for a customer."""
-        data = await self._get(
-            "/api/services/app/PermitPortal/GetAll",
-            params={"customerId": customer_id},
-            timeout=30,
-        )
-        items = data.get("result", {}).get("items", [])
-        return items
+        """Get active permits for a customer via GetActiveCustomerVehicles.
+
+        Per Stephen: GetAll requires body params (not query params) and may not
+        return portal-purchased permits. GetActiveCustomerVehicles returns
+        vehicles with their active permits embedded.
+        """
+        vehicles = await self.get_customer_vehicles(customer_id)
+        return vehicles
 
     async def get_permit_details(self, permit_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed permit info for editing/viewing."""

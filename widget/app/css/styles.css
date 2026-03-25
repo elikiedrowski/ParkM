@@ -352,6 +352,69 @@ body {
   opacity: 0.5;
 }
 
+/* ── V3 Wizard: Suggestions & Branches ────────────────────────────── */
+
+.step-suggestions {
+  list-style: disc;
+  margin: 4px 0 2px 26px;
+  padding-left: 16px;
+}
+
+.step-suggestions li {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.5;
+  padding: 1px 0;
+}
+
+.step-branches {
+  margin: 6px 0 2px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-branch {
+  border-left: 3px solid #1976d2;
+  padding: 6px 0 6px 10px;
+  background: #f8f9fa;
+  border-radius: 0 4px 4px 0;
+}
+
+.step-branch-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c0392b;
+  margin-bottom: 2px;
+}
+
+.step-branch-desc {
+  font-size: 12px;
+  color: #333;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.step-branch .step-suggestions {
+  margin-left: 0;
+}
+
+.step-branch .step-email-link {
+  margin-left: 0;
+  margin-top: 4px;
+}
+
+.step-common-causes {
+  margin: 6px 0 2px 26px;
+}
+
+.step-common-causes-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 2px;
+}
+
 /* ── Template Buttons ──────────────────────────────────────────────── */
 
 #template-buttons {

@@ -278,7 +278,83 @@ var WizardRenderer = (function () {
       row.appendChild(emailBtn);
     }
 
-    // Substep
+    // V3: Suggestions list (bullet tips under a step)
+    if (step.suggestions && step.suggestions.length > 0) {
+      var sugList = document.createElement("ul");
+      sugList.className = "step-suggestions";
+      step.suggestions.forEach(function (sug) {
+        var li = document.createElement("li");
+        li.textContent = sug;
+        sugList.appendChild(li);
+      });
+      row.appendChild(sugList);
+    }
+
+    // V3: Branches (conditional paths like Active/Cancelled, Yes/No)
+    if (step.branches && step.branches.length > 0) {
+      var branchContainer = document.createElement("div");
+      branchContainer.className = "step-branches";
+      step.branches.forEach(function (branch) {
+        var branchDiv = document.createElement("div");
+        branchDiv.className = "step-branch";
+
+        var branchHeader = document.createElement("div");
+        branchHeader.className = "step-branch-label";
+        branchHeader.textContent = branch.label + ":";
+        branchDiv.appendChild(branchHeader);
+
+        if (branch.description) {
+          var descDiv = document.createElement("div");
+          descDiv.className = "step-branch-desc";
+          descDiv.textContent = branch.description;
+          branchDiv.appendChild(descDiv);
+        }
+
+        if (branch.suggestions && branch.suggestions.length > 0) {
+          var bSugList = document.createElement("ul");
+          bSugList.className = "step-suggestions";
+          branch.suggestions.forEach(function (sug) {
+            var li = document.createElement("li");
+            li.textContent = sug;
+            bSugList.appendChild(li);
+          });
+          branchDiv.appendChild(bSugList);
+        }
+
+        if (branch.email_link) {
+          var bEmailBtn = document.createElement("a");
+          bEmailBtn.href = branch.email_link;
+          bEmailBtn.className = "step-email-link";
+          bEmailBtn.textContent = branch.email_link.replace("mailto:", "");
+          bEmailBtn.target = "_blank";
+          branchDiv.appendChild(bEmailBtn);
+        }
+
+        branchContainer.appendChild(branchDiv);
+      });
+      row.appendChild(branchContainer);
+    }
+
+    // V3: Common causes list
+    if (step.common_causes && step.common_causes.length > 0) {
+      var causesDiv = document.createElement("div");
+      causesDiv.className = "step-common-causes";
+      var causesLabel = document.createElement("div");
+      causesLabel.className = "step-common-causes-label";
+      causesLabel.textContent = "Common causes:";
+      causesDiv.appendChild(causesLabel);
+      var causesList = document.createElement("ul");
+      causesList.className = "step-suggestions";
+      step.common_causes.forEach(function (cause) {
+        var li = document.createElement("li");
+        li.textContent = cause;
+        causesList.appendChild(li);
+      });
+      causesDiv.appendChild(causesList);
+      row.appendChild(causesDiv);
+    }
+
+    // V2: Substep (legacy — still supported for non-converted tags)
     if (step.substep) {
       var substepDiv = document.createElement("div");
       substepDiv.className = "step-substep";

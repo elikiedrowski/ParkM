@@ -78,10 +78,21 @@ def get_wizard_for_intent(
             val = extracted["amount"]
             entities["amount"] = ", ".join(str(v) for v in val) if isinstance(val, list) else str(val)
 
-    # Substitute {{entity}} placeholders in step substeps
+    # Substitute {{entity}} placeholders in step content
     for step in wizard.get("steps", []):
+        # V2: substep string
         if "substep" in step:
             step["substep"] = _fill_placeholders(step["substep"], entities)
+        # V3: suggestions list
+        if "suggestions" in step:
+            step["suggestions"] = [_fill_placeholders(s, entities) for s in step["suggestions"]]
+        # V3: branches
+        for branch in step.get("branches", []):
+            if "description" in branch:
+                branch["description"] = _fill_placeholders(branch["description"], entities)
+            if "suggestions" in branch:
+                branch["suggestions"] = [_fill_placeholders(s, entities) for s in branch["suggestions"]]
+        # Entity field tracking
         entity_field = step.get("entity_field")
         if entity_field:
             step["entity_value"] = entities.get(entity_field)

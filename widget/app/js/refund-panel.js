@@ -228,7 +228,6 @@ var RefundPanel = (function () {
     card.innerHTML =
       '<div class="refund-permit-header">' +
         '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
-        (permit.community ? '<div class="refund-permit-community">' + _esc(permit.community) + '</div>' : '') +
       '</div>' +
       '<div class="refund-permit-details">' +
         (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +

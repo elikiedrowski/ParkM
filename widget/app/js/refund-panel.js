@@ -179,7 +179,9 @@ var RefundPanel = (function () {
     var vehicle = permit.vehicle || {};
     var vehicleStr = [vehicle.year, vehicle.make, vehicle.model, vehicle.color]
       .filter(Boolean).join(" ");
-    var plateStr = vehicle.plate ? " — " + vehicle.plate : "";
+    var plateStr = vehicle.plate || "";
+    // Show "make model — plate" or just plate if no make/model
+    var vehicleLine = vehicleStr ? vehicleStr + (plateStr ? " — " + plateStr : "") : plateStr;
 
     var effDate = permit.effective_date ? _formatDate(permit.effective_date) : "N/A";
     var expDate = permit.expiration_date ? _formatDate(permit.expiration_date) : "N/A";
@@ -197,7 +199,8 @@ var RefundPanel = (function () {
         '<span class="refund-inactive-badge">' + statusLabel + '</span>' +
       '</div>' +
       '<div class="refund-permit-details">' +
-        (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
+        (permit.permit_name ? '<div class="refund-permit-detail"><span class="refund-detail-label">Permit:</span> ' + _esc(permit.permit_name) + '</div>' : '') +
+        (vehicleLine ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleLine) + '</div>' : '') +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Effective:</span> ' + effDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Last Charge:</span> ' + lastCharge + '</div>' +

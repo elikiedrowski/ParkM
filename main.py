@@ -709,6 +709,28 @@ async def parkm_health():
         return JSONResponse(status_code=503, content={"status": "disconnected", "error": str(e)})
 
 
+@app.get("/parkm/debug/apis")
+async def parkm_debug_apis(email: str):
+    """Temporary debug endpoint to test ParkM API responses."""
+    try:
+        customer = await parkm_client.get_customer_by_email(email)
+        if not customer:
+            return {"error": "customer not found"}
+        cid = customer["id"]
+        balance = await parkm_client.get_customer_balance(cid)
+        txns = await parkm_client.get_customer_transactions(cid)
+        subs = await parkm_client.get_customer_subscriptions(cid)
+        return {
+            "customer_id": cid,
+            "balance_permits": balance,
+            "transactions_count": len(txns),
+            "transactions_sample": txns[:5],
+            "subscriptions": subs,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/parkm/customer")
 async def parkm_customer_lookup(email: str, _auth=Depends(require_parkm_auth)):
     """Look up a customer in ParkM by email.

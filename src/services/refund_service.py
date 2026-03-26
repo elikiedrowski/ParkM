@@ -134,11 +134,21 @@ class RefundService:
         active_permit_ids: set,
         transactions: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
-        """Find inactive permits that were charged within the last 30 days.
+        """Find inactive permits with activity within the last 30 days.
 
-        Uses transaction history to identify permit IDs with recent charges
-        that aren't in the active set, then fetches details via GetPermitForView.
+        Uses Permits/GetAll (per Stephen's guidance) to get all permits
+        including cancelled/expired, then filters to those not in the active
+        set and within the 30-day window based on last charge or effective date.
         """
+        try:
+            all_permits_raw = await self.parkm.get_all_permits(customer_id)
+        except Exception:
+            logger.warning(f"Could not fetch all permits for {customer_id}")
+            return []
+
+        if not all_permits_raw:
+            return []
+
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(days=REFUND_WINDOW_DAYS)
 
@@ -156,29 +166,57 @@ class RefundService:
             except (ValueError, TypeError):
                 continue
 
-        # Find permit IDs charged within 30 days that aren't active
-        inactive_ids = {
-            pid: dt for pid, dt in txn_dates.items()
-            if pid not in active_permit_ids and dt >= cutoff
-        }
-
-        if not inactive_ids:
-            return []
-
-        # Fetch details for each inactive permit via GetPermitForView
         inactive_permits = []
-        for permit_id, last_charge_dt in inactive_ids.items():
-            try:
-                details = await self.parkm.get_permit_details(permit_id)
-                if not details:
-                    continue
-                permit = details.get("permit", details)
-                summary = self._build_permit_summary(permit, details)
-                summary["last_charge_date"] = last_charge_dt.isoformat()
-                inactive_permits.append(summary)
-            except Exception:
-                logger.warning(f"Could not fetch details for inactive permit {permit_id}")
+        for raw in all_permits_raw:
+            permit_data = raw.get("permit", raw)
+            permit_id = permit_data.get("id")
+            if not permit_id or permit_id in active_permit_ids:
                 continue
+
+            # Check status — use permit.status field ("Cancelled", "Expired", etc.)
+            status = permit_data.get("status", "")
+            if status == "Active":
+                continue
+
+            # Determine the reference date for the 30-day filter:
+            # prefer last transaction date, fall back to effective date
+            ref_date = txn_dates.get(permit_id)
+            if not ref_date:
+                eff_str = permit_data.get("effectiveDate")
+                if eff_str:
+                    try:
+                        ref_date = datetime.fromisoformat(eff_str.replace("Z", "+00:00"))
+                    except (ValueError, TypeError):
+                        continue
+
+            if not ref_date or ref_date < cutoff:
+                continue
+
+            # Build summary from the GetAll data structure
+            summary = {
+                "id": permit_id,
+                "type_name": raw.get("permitTypeName") or raw.get("communityName") or "Unknown",
+                "effective_date": permit_data.get("effectiveDate"),
+                "expiration_date": permit_data.get("expirationDate"),
+                "is_cancelled": status == "Cancelled",
+                "status": status,
+                "is_recurring": raw.get("isRecurring", False),
+                "recurring_price": permit_data.get("recurringPrice"),
+                "permit_price": permit_data.get("permitPrice") or raw.get("permitPrice"),
+                "total_amount": raw.get("totalAmount"),
+                "vehicle": {
+                    "plate": raw.get("licensePlate"),
+                    "make": raw.get("vehicleMakeName"),
+                    "model": raw.get("vehicleModelName"),
+                    "color": raw.get("vehicleColorName"),
+                    "year": raw.get("vehicleYear"),
+                },
+                "community": raw.get("communityName"),
+                "balance_due": raw.get("balanceDue", 0),
+                "permit_name": permit_data.get("name"),
+                "last_charge_date": ref_date.isoformat(),
+            }
+            inactive_permits.append(summary)
 
         return inactive_permits
 

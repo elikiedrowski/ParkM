@@ -56,6 +56,8 @@ var RefundPanel = (function () {
     document.getElementById("refund-customer-info").innerHTML = "";
     document.getElementById("refund-permits-list").innerHTML = "";
     document.getElementById("refund-permits-section").style.display = "none";
+    document.getElementById("refund-inactive-list").innerHTML = "";
+    document.getElementById("refund-inactive-section").style.display = "none";
     document.getElementById("refund-lookup-error").style.display = "none";
     document.getElementById("refund-lookup-error").textContent = "";
     document.getElementById("refund-lookup-btn").disabled = false;
@@ -136,29 +138,73 @@ var RefundPanel = (function () {
       return !p.is_cancelled && p.expiration_date && new Date(p.expiration_date) < now;
     });
 
-    if (active.length === 0 && cancelled.length === 0) {
+    var inactivePermits = data.inactive_permits || [];
+    var inactiveSection = document.getElementById("refund-inactive-section");
+    var inactiveList = document.getElementById("refund-inactive-list");
+    inactiveList.innerHTML = "";
+
+    if (active.length === 0 && inactivePermits.length === 0) {
       section.style.display = "block";
       list.innerHTML = '<div class="refund-no-permits">No permits found</div>';
+      inactiveSection.style.display = "none";
       return;
     }
 
-    section.style.display = "block";
-
-    // Render active permits first
-    active.forEach(function (permit) {
-      list.appendChild(_buildPermitCard(permit, data.customer));
-    });
-
-    // Show hidden permit counts
-    var hiddenParts = [];
-    if (cancelled.length > 0) hiddenParts.push(cancelled.length + " cancelled");
-    if (expired.length > 0) hiddenParts.push(expired.length + " expired");
-    if (hiddenParts.length > 0) {
-      var note = document.createElement("div");
-      note.className = "refund-cancelled-note";
-      note.textContent = hiddenParts.join(", ") + " permit" + ((cancelled.length + expired.length) > 1 ? "s" : "") + " (not shown)";
-      list.appendChild(note);
+    // Render active permits
+    if (active.length > 0) {
+      section.style.display = "block";
+      active.forEach(function (permit) {
+        list.appendChild(_buildPermitCard(permit, data.customer));
+      });
+    } else {
+      section.style.display = "block";
+      list.innerHTML = '<div class="refund-no-permits">No active permits</div>';
     }
+
+    // Render inactive permits (display-only, no action buttons)
+    if (inactivePermits.length > 0) {
+      inactiveSection.style.display = "block";
+      inactivePermits.forEach(function (permit) {
+        inactiveList.appendChild(_buildInactivePermitCard(permit));
+      });
+    } else {
+      inactiveSection.style.display = "none";
+    }
+  }
+
+  function _buildInactivePermitCard(permit) {
+    var card = document.createElement("div");
+    card.className = "refund-permit-card refund-permit-card--inactive";
+
+    var vehicle = permit.vehicle || {};
+    var vehicleStr = [vehicle.year, vehicle.make, vehicle.model, vehicle.color]
+      .filter(Boolean).join(" ");
+    var plateStr = vehicle.plate ? " — " + vehicle.plate : "";
+
+    var effDate = permit.effective_date ? _formatDate(permit.effective_date) : "N/A";
+    var expDate = permit.expiration_date ? _formatDate(permit.expiration_date) : "N/A";
+    var lastCharge = permit.last_charge_date ? _formatDate(permit.last_charge_date) : "N/A";
+
+    var price = permit.recurring_price || permit.permit_price || permit.total_amount;
+    var priceStr = price ? "$" + parseFloat(price).toFixed(2) : "N/A";
+    var recurStr = permit.is_recurring ? " /mo" : " one-time";
+
+    var statusLabel = permit.is_cancelled ? "Cancelled" : "Expired";
+
+    card.innerHTML =
+      '<div class="refund-permit-header">' +
+        '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
+        '<span class="refund-inactive-badge">' + statusLabel + '</span>' +
+      '</div>' +
+      '<div class="refund-permit-details">' +
+        (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
+        '<div class="refund-permit-detail"><span class="refund-detail-label">Effective:</span> ' + effDate + '</div>' +
+        '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
+        '<div class="refund-permit-detail"><span class="refund-detail-label">Last Charge:</span> ' + lastCharge + '</div>' +
+        '<div class="refund-permit-detail"><span class="refund-detail-label">Price:</span> ' + priceStr + recurStr + '</div>' +
+      '</div>';
+
+    return card;
   }
 
   function _buildPermitCard(permit, customer) {

@@ -182,6 +182,23 @@ class ParkMClient:
         vehicles = await self.get_customer_vehicles(customer_id)
         return vehicles
 
+    async def get_all_customer_permits(self, customer_id: str) -> List[Dict[str, Any]]:
+        """Get ALL permits (active + inactive) for a customer via GetAll.
+
+        Note: Per Stephen, GetAll requires body params and may not return
+        portal-purchased permits. Use get_customer_permits() for active permits
+        and this method only for finding inactive/cancelled permits.
+        """
+        try:
+            data = await self._post(
+                "/api/services/app/PermitPortal/GetAll",
+                body={"customerId": customer_id},
+            )
+            return data.get("result", {}).get("items", [])
+        except Exception as e:
+            logger.warning(f"GetAll permits failed for {customer_id}: {e}")
+            return []
+
     async def get_permit_details(self, permit_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed permit info for editing/viewing."""
         try:

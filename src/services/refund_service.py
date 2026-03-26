@@ -41,13 +41,14 @@ class RefundService:
             {
                 "found": bool,
                 "customer": { id, name, email, ... } or None,
-                "permits": [ permit summaries ],
+                "permits": [ active permit summaries ],
+                "inactive_permits": [ inactive permits charged within 30 days ],
                 "vehicles": [ vehicle summaries ],
             }
         """
         customer = await self.parkm.get_customer_by_email(email)
         if not customer:
-            return {"found": False, "customer": None, "permits": [], "vehicles": []}
+            return {"found": False, "customer": None, "permits": [], "inactive_permits": [], "vehicles": []}
 
         customer_id = customer["id"]
         name = f"{customer.get('firstName', '')} {customer.get('lastName', '')}".strip()
@@ -63,6 +64,7 @@ class RefundService:
 
         permits = []
         vehicles = []
+        active_permit_ids = set()
         for item in raw_vehicles:
             v = item.get("vehicle", {})
             p = item.get("activePermit", {})
@@ -70,30 +72,14 @@ class RefundService:
                 continue
 
             vehicles.append(item)
-            permit_summary = {
-                "id": p.get("id"),
-                "type_name": item.get("community", "Unknown"),
-                "effective_date": p.get("effectiveDate"),
-                "expiration_date": p.get("expirationDate"),
-                "is_cancelled": p.get("isCancelled", False),
-                "is_recurring": item.get("isRecurring", False),
-                "recurring_price": p.get("recurringPrice"),
-                "permit_price": p.get("amountDue"),
-                "total_amount": p.get("amountDue"),
-                "stripe_id": None,
-                "subscription_id": None,
-                "vehicle": {
-                    "plate": v.get("licensePlate"),
-                    "make": item.get("vehicleMakeName"),
-                    "model": item.get("vehicleModelName"),
-                    "color": item.get("vehicleColorName"),
-                    "year": v.get("year"),
-                },
-                "community": item.get("community"),
-                "balance_due": p.get("amountDue", 0),
-                "permit_name": p.get("name"),
-            }
+            active_permit_ids.add(p.get("id"))
+            permit_summary = self._build_permit_summary(p, item, v)
             permits.append(permit_summary)
+
+        # Fetch all permits (active + inactive) to find recently-charged inactive ones
+        inactive_permits = await self._get_inactive_permits(
+            customer_id, active_permit_ids, transactions
+        )
 
         return {
             "found": True,
@@ -107,9 +93,93 @@ class RefundService:
                 "created": customer.get("creationTime"),
             },
             "permits": permits,
+            "inactive_permits": inactive_permits,
             "vehicles": vehicles,
             "transactions": transactions,
         }
+
+    def _build_permit_summary(
+        self, p: Dict[str, Any], item: Dict[str, Any], v: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Build a normalized permit summary dict from raw API data."""
+        if v is None:
+            v = item.get("vehicle", {})
+        return {
+            "id": p.get("id"),
+            "type_name": item.get("community") or p.get("communityName") or "Unknown",
+            "effective_date": p.get("effectiveDate"),
+            "expiration_date": p.get("expirationDate"),
+            "is_cancelled": p.get("isCancelled", False),
+            "is_recurring": item.get("isRecurring", p.get("isRecurring", False)),
+            "recurring_price": p.get("recurringPrice"),
+            "permit_price": p.get("amountDue") or p.get("price"),
+            "total_amount": p.get("amountDue") or p.get("price"),
+            "stripe_id": None,
+            "subscription_id": None,
+            "vehicle": {
+                "plate": v.get("licensePlate"),
+                "make": item.get("vehicleMakeName") or v.get("makeName"),
+                "model": item.get("vehicleModelName") or v.get("modelName"),
+                "color": item.get("vehicleColorName") or v.get("colorName"),
+                "year": v.get("year"),
+            },
+            "community": item.get("community") or p.get("communityName"),
+            "balance_due": p.get("amountDue", 0),
+            "permit_name": p.get("name"),
+        }
+
+    async def _get_inactive_permits(
+        self,
+        customer_id: str,
+        active_permit_ids: set,
+        transactions: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Find inactive permits that were charged within the last 30 days.
+
+        Uses GetAll to fetch all permits, then filters out active ones and
+        keeps only those with a recent charge based on transaction history.
+        """
+        try:
+            all_permits_raw = await self.parkm.get_all_customer_permits(customer_id)
+        except Exception:
+            logger.warning(f"Could not fetch all permits for {customer_id}")
+            return []
+
+        if not all_permits_raw:
+            return []
+
+        # Build a map of permit_id -> most recent transaction date
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=REFUND_WINDOW_DAYS)
+        txn_dates: Dict[str, datetime] = {}
+        for txn in transactions:
+            permit_id = txn.get("permitId") or txn.get("permit_id")
+            txn_date_str = txn.get("creationTime") or txn.get("transactionDate") or txn.get("date")
+            if not permit_id or not txn_date_str:
+                continue
+            try:
+                txn_dt = datetime.fromisoformat(txn_date_str.replace("Z", "+00:00"))
+                if permit_id not in txn_dates or txn_dt > txn_dates[permit_id]:
+                    txn_dates[permit_id] = txn_dt
+            except (ValueError, TypeError):
+                continue
+
+        inactive_permits = []
+        for raw in all_permits_raw:
+            # GetAll may return nested structures — adapt to what we get
+            permit = raw.get("permit", raw)
+            permit_id = permit.get("id")
+            if not permit_id or permit_id in active_permit_ids:
+                continue
+
+            # Check if this permit was charged within the last 30 days
+            last_charge = txn_dates.get(permit_id)
+            if last_charge and last_charge >= cutoff:
+                summary = self._build_permit_summary(permit, raw)
+                summary["last_charge_date"] = last_charge.isoformat()
+                inactive_permits.append(summary)
+
+        return inactive_permits
 
     # ── Step 2: Evaluate Refund Eligibility ───────────────────────────
 

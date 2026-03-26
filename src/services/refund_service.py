@@ -136,21 +136,13 @@ class RefundService:
     ) -> List[Dict[str, Any]]:
         """Find inactive permits that were charged within the last 30 days.
 
-        Uses GetAll to fetch all permits, then filters out active ones and
-        keeps only those with a recent charge based on transaction history.
+        Uses transaction history to identify permit IDs with recent charges
+        that aren't in the active set, then fetches details via GetPermitForView.
         """
-        try:
-            all_permits_raw = await self.parkm.get_all_customer_permits(customer_id)
-        except Exception:
-            logger.warning(f"Could not fetch all permits for {customer_id}")
-            return []
-
-        if not all_permits_raw:
-            return []
-
-        # Build a map of permit_id -> most recent transaction date
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(days=REFUND_WINDOW_DAYS)
+
+        # Build a map of permit_id -> most recent transaction date
         txn_dates: Dict[str, datetime] = {}
         for txn in transactions:
             permit_id = txn.get("permitId") or txn.get("permit_id")
@@ -164,20 +156,29 @@ class RefundService:
             except (ValueError, TypeError):
                 continue
 
-        inactive_permits = []
-        for raw in all_permits_raw:
-            # GetAll may return nested structures — adapt to what we get
-            permit = raw.get("permit", raw)
-            permit_id = permit.get("id")
-            if not permit_id or permit_id in active_permit_ids:
-                continue
+        # Find permit IDs charged within 30 days that aren't active
+        inactive_ids = {
+            pid: dt for pid, dt in txn_dates.items()
+            if pid not in active_permit_ids and dt >= cutoff
+        }
 
-            # Check if this permit was charged within the last 30 days
-            last_charge = txn_dates.get(permit_id)
-            if last_charge and last_charge >= cutoff:
-                summary = self._build_permit_summary(permit, raw)
-                summary["last_charge_date"] = last_charge.isoformat()
+        if not inactive_ids:
+            return []
+
+        # Fetch details for each inactive permit via GetPermitForView
+        inactive_permits = []
+        for permit_id, last_charge_dt in inactive_ids.items():
+            try:
+                details = await self.parkm.get_permit_details(permit_id)
+                if not details:
+                    continue
+                permit = details.get("permit", details)
+                summary = self._build_permit_summary(permit, details)
+                summary["last_charge_date"] = last_charge_dt.isoformat()
                 inactive_permits.append(summary)
+            except Exception:
+                logger.warning(f"Could not fetch details for inactive permit {permit_id}")
+                continue
 
         return inactive_permits
 

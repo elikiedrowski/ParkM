@@ -720,7 +720,10 @@ async def parkm_debug_apis(email: str):
         balance = await parkm_client.get_customer_balance(cid)
         txns = await parkm_client.get_customer_transactions(cid)
         subs = await parkm_client.get_customer_subscriptions(cid)
-        all_permits = await parkm_client.get_all_permits(cid)
+        try:
+            all_permits = await parkm_client.get_all_permits(cid)
+        except Exception as ap_err:
+            all_permits = {"error": str(ap_err)}
         return {
             "customer_id": cid,
             "balance_permits": balance,
@@ -730,7 +733,8 @@ async def parkm_debug_apis(email: str):
             "all_permits": all_permits,
         }
     except Exception as e:
-        return {"error": str(e)}
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
 
 
 @app.get("/parkm/customer")

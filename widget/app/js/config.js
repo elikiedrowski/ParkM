@@ -15,7 +15,6 @@ var ParkMConfig = {
     REQUIRES_REFUND:       "cf_requires_refund",
     REQUIRES_HUMAN_REVIEW: "cf_requires_human_review",
     LICENSE_PLATE:         "cf_license_plate",
-    MOVE_OUT_DATE:         "cf_move_out_date",
     ROUTING_QUEUE:         "cf_routing_queue",
     AGENT_CORRECTED_TAGS:  "cf_agent_corrected_tags"
   },

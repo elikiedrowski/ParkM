@@ -116,18 +116,16 @@ class RefundService:
     def evaluate_refund_eligibility(
         self,
         permit: Dict[str, Any],
-        move_out_date: Optional[str] = None,
         transactions: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """Check if a permit qualifies for a refund per ParkM policy.
 
-        Rules (from process flow):
-        - Customer must have moved out before the last charge
+        Rules:
+        - Guest permits are never eligible for refund
         - Last charge must be within 30 days
 
         Args:
             permit: Permit summary from lookup_customer()
-            move_out_date: ISO date string of when the customer moved out
             transactions: Customer transaction list from lookup (used for last charge date)
 
         Returns:
@@ -139,6 +137,17 @@ class RefundService:
                 "days_since_charge": int or None,
             }
         """
+        # Guest permits are never eligible for refund
+        permit_name = (permit.get("permit_name") or permit.get("type_name") or "").lower()
+        if "guest" in permit_name:
+            return {
+                "eligible": False,
+                "reason": "Guest permits are not eligible for refund",
+                "refund_amount": None,
+                "last_charge_date": None,
+                "days_since_charge": None,
+            }
+
         if permit.get("is_cancelled"):
             return {
                 "eligible": False,
@@ -191,17 +200,6 @@ class RefundService:
         # Check 30-day window
         within_window = days_since <= REFUND_WINDOW_DAYS
 
-        # Check move-out date if provided
-        moved_before_charge = True
-        if move_out_date:
-            try:
-                move_dt = datetime.fromisoformat(move_out_date.replace("Z", "+00:00"))
-                if move_dt.tzinfo is None:
-                    move_dt = move_dt.replace(tzinfo=timezone.utc)
-                moved_before_charge = move_dt <= last_charge
-            except (ValueError, TypeError):
-                moved_before_charge = False  # Can't verify move-out — deny refund
-
         # Determine refund amount (use explicit None checks to handle 0 correctly)
         refund_amount = permit.get("recurring_price")
         if refund_amount is None:
@@ -209,14 +207,12 @@ class RefundService:
         if refund_amount is None:
             refund_amount = permit.get("total_amount")
 
-        eligible = within_window and moved_before_charge
+        eligible = within_window
 
         if not within_window:
             reason = f"Last charge was {days_since} days ago (exceeds {REFUND_WINDOW_DAYS}-day window)"
-        elif not moved_before_charge:
-            reason = "Customer had not moved out before the last charge date"
         else:
-            reason = "Eligible — within 30-day window and moved out before last charge"
+            reason = "Eligible — within 30-day refund window"
 
         return {
             "eligible": eligible,
@@ -309,7 +305,6 @@ ParkM Support Team</p>"""
         self,
         customer_email: str,
         permit_id: Optional[str] = None,
-        move_out_date: Optional[str] = None,
         reason: str = "Customer requested cancellation/refund",
         ticket_id: str = "",
         auto_cancel: bool = False,
@@ -322,7 +317,6 @@ ParkM Support Team</p>"""
         Args:
             customer_email: Customer's email address
             permit_id: Specific permit to evaluate (optional; if None, returns all)
-            move_out_date: When customer moved out (ISO date, optional)
             reason: Reason for the refund request
             ticket_id: Zoho ticket ID for reference
             auto_cancel: If True, cancel the permit automatically
@@ -360,7 +354,7 @@ ParkM Support Team</p>"""
             if permit_id and permit["id"] != permit_id:
                 continue
 
-            eligibility = self.evaluate_refund_eligibility(permit, move_out_date, transactions)
+            eligibility = self.evaluate_refund_eligibility(permit, transactions)
 
             # Step 3: Auto-cancel if requested AND eligible for refund
             cancel_result = None

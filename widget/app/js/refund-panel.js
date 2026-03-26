@@ -236,19 +236,7 @@ var RefundPanel = (function () {
       ticket_id: ticketId
     };
 
-    // Check if move-out date is available from ticket custom fields
-    if (typeof ZOHODESK !== "undefined") {
-      ZOHODESK.get("ticket.cf").then(function (cfResp) {
-        var cf = cfResp["ticket.cf"] || {};
-        var moveOut = cf[ParkMConfig.FIELDS.MOVE_OUT_DATE];
-        if (moveOut) body.move_out_date = moveOut;
-        _doEvaluate(body, permit, customer, resultDiv);
-      }).catch(function () {
-        _doEvaluate(body, permit, customer, resultDiv);
-      });
-    } else {
-      _doEvaluate(body, permit, customer, resultDiv);
-    }
+    _doEvaluate(body, permit, customer, resultDiv);
   }
 
   function _doEvaluate(body, permit, customer, resultDiv) {
@@ -344,38 +332,22 @@ var RefundPanel = (function () {
       ticket_id: ticketId
     };
 
-    // Read move_out_date from Zoho custom fields before sending
-    function _doProcess() {
-      _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+    _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+      .then(function (data) {
+        _renderProcessResult(data, permit, resultDiv);
       })
-        .then(function (data) {
-          _renderProcessResult(data, permit, resultDiv);
-        })
-        .catch(function (err) {
-          if (processBtn) {
-            processBtn.disabled = false;
-            processBtn.textContent = "Cancel & Forward to Accounting";
-          }
-          resultDiv.insertAdjacentHTML("beforeend",
-            '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
-        });
-    }
-
-    if (typeof ZOHODESK !== "undefined") {
-      ZOHODESK.get("ticket.cf").then(function (cfResp) {
-        var cf = cfResp["ticket.cf"] || {};
-        var moveOut = cf[ParkMConfig.FIELDS.MOVE_OUT_DATE];
-        if (moveOut) body.move_out_date = moveOut;
-        _doProcess();
-      }).catch(function () {
-        _doProcess();
+      .catch(function (err) {
+        if (processBtn) {
+          processBtn.disabled = false;
+          processBtn.textContent = "Cancel & Forward to Accounting";
+        }
+        resultDiv.insertAdjacentHTML("beforeend",
+          '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
       });
-    } else {
-      _doProcess();
-    }
   }
 
   function _renderProcessResult(data, permit, resultDiv) {

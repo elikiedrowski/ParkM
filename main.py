@@ -735,7 +735,6 @@ async def parkm_evaluate_refund(request: Request, _auth=Depends(require_parkm_au
     {
         "customer_email": "john@example.com",
         "permit_id": "optional-uuid",
-        "move_out_date": "2026-02-15",
         "reason": "Customer moved out",
         "ticket_id": "12345"
     }
@@ -750,7 +749,6 @@ async def parkm_evaluate_refund(request: Request, _auth=Depends(require_parkm_au
         result = await refund_service.process_refund_request(
             customer_email=email,
             permit_id=data.get("permit_id"),
-            move_out_date=data.get("move_out_date"),
             reason=data.get("reason", "Customer requested cancellation/refund"),
             ticket_id=data.get("ticket_id", ""),
             auto_cancel=False,
@@ -771,7 +769,6 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
     {
         "customer_email": "john@example.com",
         "permit_id": "uuid-of-permit-to-cancel",
-        "move_out_date": "2026-02-15",
         "reason": "Customer moved out",
         "ticket_id": "12345"
     }
@@ -788,7 +785,6 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
         result = await refund_service.process_refund_request(
             customer_email=email,
             permit_id=permit_id,
-            move_out_date=data.get("move_out_date"),
             reason=data.get("reason", "Customer requested cancellation/refund"),
             ticket_id=data.get("ticket_id", ""),
             auto_cancel=True,

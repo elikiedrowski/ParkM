@@ -720,12 +720,14 @@ async def parkm_debug_apis(email: str):
         balance = await parkm_client.get_customer_balance(cid)
         txns = await parkm_client.get_customer_transactions(cid)
         subs = await parkm_client.get_customer_subscriptions(cid)
+        all_permits = await parkm_client.get_all_permits(cid)
         return {
             "customer_id": cid,
             "balance_permits": balance,
             "transactions_count": len(txns),
             "transactions_sample": txns[:5],
             "subscriptions": subs,
+            "all_permits": all_permits,
         }
     except Exception as e:
         return {"error": str(e)}

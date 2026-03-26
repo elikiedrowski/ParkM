@@ -182,6 +182,17 @@ class ParkMClient:
         vehicles = await self.get_customer_vehicles(customer_id)
         return vehicles
 
+    async def get_all_permits(self, customer_id: str) -> List[Dict[str, Any]]:
+        """Get ALL permits (active + cancelled + expired) for a customer.
+
+        Uses Permits/GetAll with CustomerIdFilter per Stephen's guidance.
+        """
+        data = await self._get(
+            "/api/services/app/Permits/GetAll",
+            params={"CustomerIdFilter": customer_id},
+        )
+        return data.get("result", {}).get("items", [])
+
     async def get_permit_details(self, permit_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed permit info for editing/viewing."""
         try:

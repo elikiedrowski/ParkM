@@ -62,4 +62,16 @@
 
 ---
 
+### Hours Summary
+
+| Project Task | SOW Hours | Billable Hours |
+|---|---|---|
+| 1 - AI Email Classification & Auto Tagging | 35.00 | 31.00 |
+| 2 - In-Workflow Guidance System | 30.00 | 28.00 |
+| 3 - Refund Automation + ParkM.app API | 50.00 | 43.00 |
+| 4 - Unified Agent Desktop | 55.00 | 0.00 |
+| 5 - Progressive Automation | 35.00 | 0.00 |
+
+---
+
 **Phase 4 (Future):** Full integrated parkm.app desktop wizard — expanding account lookup from refunds-only to all wizard steps.

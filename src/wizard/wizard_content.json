@@ -1,7 +1,7 @@
 {
   "_comment": "Wizard step definitions for each AI tag. Loaded by the CSR wizard widget.",
   "_version": "3.0",
-  "_last_updated": "2026-03-24",
+  "_last_updated": "2026-03-30",
   "_source": "Sadie Hardy — New Wizard Step Flow doc (Mar 2026)",
   "needs_tag": {
     "label": "Needs Tag",
@@ -12,24 +12,22 @@
     "steps": [
       {
         "id": 1,
-        "text": "Read the full email carefully and determine the customer's actual need",
-        "required": true
+        "text": "Read the full email carefully and determine the customer's actual need"
       },
       {
         "id": 2,
-        "text": "Search parkm.app by customer email for context",
-        "required": false
+        "text": "Search parkm.app by customer email for context"
       },
       {
         "id": 3,
         "text": "Classify manually: What does this customer actually need?",
-        "substep": "Set the 'Agent Corrected Tags' field to the correct classification so the AI can learn from this case.",
-        "required": true
+        "suggestions": [
+          "Set the 'Agent Corrected Tags' field to the correct classification so the AI can learn from this case."
+        ]
       },
       {
         "id": 4,
-        "text": "Follow the appropriate process for the correct tag type",
-        "required": true
+        "text": "Follow the appropriate process for the correct tag type"
       }
     ],
     "validation_on_close": [
@@ -41,7 +39,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "customer_canceling_a_permit_and_refunding": {
     "label": "Cancel Permit + Refund",
@@ -1683,31 +1682,32 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
         "text": "Confirm which resident type the property is requesting",
-        "substep": "Check the property notes in Zoho CRM. Example: at some properties, residents need to be 'Resident X' to get carport/garage permits.",
-        "required": true
+        "suggestions": [
+          "Check the property notes in Zoho CRM. Example: at some properties, residents need to be 'Resident X' to get carport/garage permits."
+        ]
       },
       {
         "id": 3,
         "text": "Change the resident type",
-        "substep": "Go to the resident's account > Edit > Change 'Customer Classification' to the requested type > Save.",
-        "required": true
+        "suggestions": [
+          "Go to the resident's account > Edit > Change 'Customer Classification' to the requested type > Save."
+        ]
       },
       {
         "id": 4,
         "text": "Notify the property that the change has been made",
-        "substep": "Let them know the resident can now purchase the approved permit type.",
-        "required": true
+        "suggestions": [
+          "Let them know the resident can now purchase the approved permit type."
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1723,7 +1723,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_approving_grandfathered_permit": {
     "label": "Property: Approve Grandfathered Permit",
@@ -1733,31 +1734,30 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name (from property's email)",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name (from property's email)"
       },
       {
         "id": 2,
         "text": "Get the vehicle details from the property's email",
-        "substep": "Need: license plate, make, model, year, color, state. If missing, ask the property.",
-        "required": true
+        "suggestions": [
+          "Need: license plate, make, model, year, color, state. If missing, ask the property."
+        ]
       },
       {
         "id": 3,
         "text": "Issue a free grandfathered permit",
-        "substep": "Actions > Sale Permit > Select community > Toggle 'Issue Free Permit' ON > Set expiration to the date provided by property (if none given, default to 1 year and adjust later). Label permit 'Grandfathered'. Do NOT enter a Next Recurring Date.",
-        "required": true
+        "suggestions": [
+          "Actions > Sale Permit > Select community > Toggle 'Issue Free Permit' ON > Set expiration to the date provided by property (if none given, default to 1 year and adjust later). Label permit 'Grandfathered'. Do NOT enter a Next Recurring Date."
+        ]
       },
       {
         "id": 4,
         "text": "Confirm with the property that the permit has been issued",
-        "template": "grandfathered_permit_issued.html",
-        "required": true
+        "template": "grandfathered_permit_issued.html"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1769,7 +1769,8 @@
         "label": "Grandfathered Permit Issued",
         "file": "grandfathered_permit_issued.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_approving_override_additional_permit": {
     "label": "Property: Approve Override/Additional Permit",
@@ -1779,30 +1780,32 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
         "text": "Open up permits or change resident type as needed",
-        "substep": "Depending on the property setup, you may need to:\n- Change the resident's customer classification\n- Do an override to allow additional permits\n- Open up a specific permit type",
-        "required": true
+        "suggestions": [
+          "Depending on the property setup, you may need to:",
+          "- Change the resident's customer classification",
+          "- Do an override to allow additional permits",
+          "- Open up a specific permit type"
+        ]
       },
       {
         "id": 3,
         "text": "Help the resident purchase or issue the permit",
-        "substep": "Either guide the resident to purchase online, or purchase/issue on the backend via Actions > Sale Permit.",
-        "required": true
+        "suggestions": [
+          "Either guide the resident to purchase online, or purchase/issue on the backend via Actions > Sale Permit."
+        ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property",
-        "required": true
+        "text": "Confirm with the property"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1818,7 +1821,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_extending_expiration_date_on_a_permit": {
     "label": "Property: Extend Permit Expiration",
@@ -1828,35 +1832,34 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
-        "text": "Locate the permit to extend",
-        "required": true
+        "text": "Locate the permit to extend"
       },
       {
         "id": 3,
         "text": "Determine the permit type and use the correct method",
-        "substep": "RECURRING PAID permits: The 'Extend Expiration Date' button does NOT work on these. Use 'Move Next Recurring Date' instead.\nFREE or ONE-TIME permits: Use either 'Extend Expiration Date' or 'Delay Cancellation' - both work.",
-        "required": true
+        "suggestions": [
+          "RECURRING PAID permits: The 'Extend Expiration Date' button does NOT work on these. Use 'Move Next Recurring Date' instead.",
+          "FREE or ONE-TIME permits: Use either 'Extend Expiration Date' or 'Delay Cancellation' - both work."
+        ]
       },
       {
         "id": 4,
         "text": "Extend the permit",
-        "substep": "Actions > Extend Expiration Date (or Move Next Recurring Date for recurring). Set the new date as requested by the property.",
-        "required": true
+        "suggestions": [
+          "Actions > Extend Expiration Date (or Move Next Recurring Date for recurring). Set the new date as requested by the property."
+        ]
       },
       {
         "id": 5,
-        "text": "Confirm with the property",
-        "required": true
+        "text": "Confirm with the property"
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1872,7 +1875,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_audits_or_reports": {
     "label": "Property: Audit / Report Request",
@@ -1883,31 +1887,32 @@
       {
         "id": 1,
         "text": "Identify what type of report the property needs",
-        "substep": "Common requests: permit list, vehicle list, payment history, space assignments, monitoring activity.",
-        "required": true
+        "suggestions": [
+          "Common requests: permit list, vehicle list, payment history, space assignments, monitoring activity."
+        ]
       },
       {
         "id": 2,
         "text": "Check if the report can be generated from parkm.app",
-        "substep": "Some reports can be pulled from the admin side. Check the property's data in .app.",
-        "required": true
+        "suggestions": [
+          "Some reports can be pulled from the admin side. Check the property's data in .app."
+        ]
       },
       {
         "id": 3,
         "text": "If you cannot generate the report: Forward to Internal Managers",
-        "substep": "Email internalmanagers@parkm.com with the property's request details.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": true
+        "suggestions": [
+          "Email internalmanagers@parkm.com with the property's request details."
+        ]
       },
       {
         "id": 4,
-        "text": "Send the report or let the property know it's being prepared",
-        "required": true
+        "text": "Send the report or let the property know it's being prepared"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1918,7 +1923,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_checking_if_a_vehicle_is_permitted": {
     "label": "Property: Check Vehicle Permit",
@@ -1929,32 +1935,37 @@
       {
         "id": 1,
         "text": "Search parkm.app by the license plate provided",
-        "substep": "Extracted plate: {{license_plate}}",
         "entity_field": "license_plate",
-        "required": true
+        "suggestions": [
+          "Extracted plate: {{license_plate}}"
+        ]
       },
       {
         "id": 2,
         "text": "Check permit status and gather full details",
-        "substep": "DO NOT just say 'yes'. Include ALL of:\n- The date the permit became active on that plate\n- The specific community the permit is for\n- The type of permit (carport, garage, 1st car, open lot, etc.)\n- Current status (active, expired, canceled)",
-        "required": true
+        "suggestions": [
+          "DO NOT just say 'yes'. Include ALL of:",
+          "- The date the permit became active on that plate",
+          "- The specific community the permit is for",
+          "- The type of permit (carport, garage, 1st car, open lot, etc.)",
+          "- Current status (active, expired, canceled)"
+        ]
       },
       {
         "id": 3,
         "text": "Understand the context",
-        "substep": "Properties often ask because a vehicle was tagged, booted, towed, or ticketed. A simple 'yes' can cause confusion - they may think the tow company made a mistake when the resident actually just updated their plate recently.",
-        "required": true
+        "suggestions": [
+          "Properties often ask because a vehicle was tagged, booted, towed, or ticketed. A simple 'yes' can cause confusion - they may think the tow company made a mistake when the resident actually just updated their plate recently."
+        ]
       },
       {
         "id": 4,
         "text": "Send detailed response to the property",
-        "template": "vehicle_permit_status.html",
-        "required": true
+        "template": "vehicle_permit_status.html"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -1970,7 +1981,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_checking_who_has_a_space_number": {
     "label": "Property: Who Has This Space?",
@@ -1981,24 +1993,22 @@
       {
         "id": 1,
         "text": "Search parkm.app for the space number at the property",
-        "substep": "Go to the property > check space assignments. Extracted space: {{space_number}}",
         "entity_field": "space_number",
-        "required": true
+        "suggestions": [
+          "Go to the property > check space assignments. Extracted space: {{space_number}}"
+        ]
       },
       {
         "id": 2,
-        "text": "Find who has a permit with that space number",
-        "required": true
+        "text": "Find who has a permit with that space number"
       },
       {
         "id": 3,
-        "text": "Respond with the resident's name and vehicle info for that space",
-        "required": true
+        "text": "Respond with the resident's name and vehicle info for that space"
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2009,7 +2019,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_checking_who_is_in_a_unit": {
     "label": "Property: Who is in This Unit?",
@@ -2020,24 +2031,22 @@
       {
         "id": 1,
         "text": "Search parkm.app by unit number at the property",
-        "substep": "Extracted unit: {{unit_number}}",
         "entity_field": "unit_number",
-        "required": true
+        "suggestions": [
+          "Extracted unit: {{unit_number}}"
+        ]
       },
       {
         "id": 2,
-        "text": "Find residents registered for that unit",
-        "required": true
+        "text": "Find residents registered for that unit"
       },
       {
         "id": 3,
-        "text": "Respond with the resident name(s) and vehicle info for the unit",
-        "required": true
+        "text": "Respond with the resident name(s) and vehicle info for the unit"
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2048,7 +2057,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_inquiring_about_a_tow_boot_ticket": {
     "label": "Property: Tow/Boot/Ticket Inquiry",
@@ -2059,39 +2069,43 @@
       {
         "id": 1,
         "text": "Search parkm.app for the vehicle/plate in question",
-        "substep": "Extracted plate: {{license_plate}}",
         "entity_field": "license_plate",
-        "required": true
+        "suggestions": [
+          "Extracted plate: {{license_plate}}"
+        ]
       },
       {
         "id": 2,
         "text": "Check permit status and tow history",
-        "substep": "Click on the vehicle > scroll down to 'Tow History'. Also check the account 'Overview' tab for tow incidents.",
-        "required": true
+        "suggestions": [
+          "Click on the vehicle > scroll down to 'Tow History'. Also check the account 'Overview' tab for tow incidents."
+        ]
       },
       {
         "id": 3,
         "text": "Provide the property with the vehicle's permit status",
-        "substep": "Include: permit active date, community, permit type, and any violations/tow history logged.",
-        "required": true
+        "suggestions": [
+          "Include: permit active date, community, permit type, and any violations/tow history logged."
+        ]
       },
       {
         "id": 4,
         "text": "If property wants a tow/boot refunded: Forward to Internal Managers",
-        "substep": "Tow/boot/ticket refunds are only handled by Internal Managers. Forward the thread to internalmanagers@parkm.com with a summary.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": false
+        "suggestions": [
+          "Tow/boot/ticket refunds are only handled by Internal Managers. Forward the thread to internalmanagers@parkm.com with a summary."
+        ]
       },
       {
         "id": 5,
         "text": "Direct the property to their towing company for tow-specific questions",
-        "substep": "Check Zoho CRM or .app for the property's enforcement company. Share the tow company contact info with the property.",
-        "required": true
+        "suggestions": [
+          "Check Zoho CRM or .app for the property's enforcement company. Share the tow company contact info with the property."
+        ]
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2107,7 +2121,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_inquiring_about_a_warning_tag": {
     "label": "Property: Warning/Tag Inquiry",
@@ -2118,37 +2133,39 @@
       {
         "id": 1,
         "text": "Check if ParkM monitors this property",
-        "substep": "Check Zoho CRM for 'ParkM Monitoring' checkmark. In Colorado, ParkM monitoring uses ORANGE tags.",
-        "required": true
+        "suggestions": [
+          "Check Zoho CRM for 'ParkM Monitoring' checkmark. In Colorado, ParkM monitoring uses ORANGE tags."
+        ]
       },
       {
         "id": 2,
         "text": "Search parkm.app for the vehicle/plate in question",
-        "substep": "Check violations/tow history on the vehicle.",
-        "required": true
+        "suggestions": [
+          "Check violations/tow history on the vehicle."
+        ]
       },
       {
         "id": 3,
         "text": "If ParkM monitors: Explain why the vehicle was tagged",
-        "substep": "Check the violation log. Common reasons: no permit, expired permit, fire lane, handicap without placard, wrong spot, expired vehicle tags.",
-        "required": true
+        "suggestions": [
+          "Check the violation log. Common reasons: no permit, expired permit, fire lane, handicap without placard, wrong spot, expired vehicle tags."
+        ]
       },
       {
         "id": 4,
         "text": "If ParkM does NOT monitor: Direct to their monitoring company",
-        "substep": "Let them know ParkM did not place the tag. They should contact their monitoring/enforcement company.",
-        "required": true
+        "suggestions": [
+          "Let them know ParkM did not place the tag. They should contact their monitoring/enforcement company."
+        ]
       },
       {
         "id": 5,
         "text": "If something seems incorrect about the tag: Report to Brian McDonough and Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com",
-        "required": false
+        "email_link": "mailto:internalmanagers@parkm.com"
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2160,7 +2177,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_monitor_request": {
     "label": "Property: Monitor Request",
@@ -2171,25 +2189,32 @@
       {
         "id": 1,
         "text": "Determine the type of monitoring request",
-        "substep": "Is this a request to:\n- Tag/warn a specific vehicle\n- Start monitoring their lot\n- Report an issue with current monitoring",
-        "required": true
+        "suggestions": [
+          "Is this a request to:",
+          "- Tag/warn a specific vehicle",
+          "- Start monitoring their lot",
+          "- Report an issue with current monitoring"
+        ]
       },
       {
         "id": 2,
         "text": "If requesting a specific vehicle to be tagged/warned",
-        "substep": "Check if ParkM monitors the property (Zoho CRM 'ParkM Monitoring' checkmark).\nIF WE MONITOR: Tell property we'll let our monitors know, then forward thread to Brian McDonough.\nIF WE DON'T MONITOR: Direct them to their monitoring/towing company.",
-        "required": true
+        "suggestions": [
+          "Check if ParkM monitors the property (Zoho CRM 'ParkM Monitoring' checkmark).",
+          "IF WE MONITOR: Tell property we'll let our monitors know, then forward thread to Brian McDonough.",
+          "IF WE DON'T MONITOR: Direct them to their monitoring/towing company."
+        ]
       },
       {
         "id": 3,
         "text": "If requesting to set up monitoring: CC the sales rep",
-        "substep": "CC the property's ParkM sales rep and let them handle the monitoring setup discussion.",
-        "required": true
+        "suggestions": [
+          "CC the property's ParkM sales rep and let them handle the monitoring setup discussion."
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2201,7 +2226,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_leasing_staff_login": {
     "label": "Property: Leasing Staff Login",
@@ -2212,46 +2238,42 @@
       {
         "id": 1,
         "text": "Determine if this is a new setup or a password reset",
-        "decision_point": true,
-        "options": [
+        "branches": [
           {
             "label": "New PM/leasing agent setup",
-            "action": "new_setup"
+            "description": "Forward to Internal Managers for new setup."
           },
           {
             "label": "Password reset for existing user",
-            "action": "reset"
+            "description": "Find the user in Administration and reset their password."
           }
-        ],
-        "required": true
+        ]
       },
       {
         "id": 2,
         "text": "If password reset: Find the user in Administration",
-        "substep": "Go to Administration > Users > Paste their email > Toggle 'Show Tenant Users' ON. Click Actions > Reset Password (to send reset email) or Edit (to manually set password to 'Parking').",
-        "required": true,
-        "show_for_action": "reset",
-        "depends_on": 1
+        "suggestions": [
+          "Go to Administration > Users > Paste their email > Toggle 'Show Tenant Users' ON. Click Actions > Reset Password (to send reset email) or Edit (to manually set password to 'Parking')."
+        ]
       },
       {
         "id": 3,
         "text": "If new setup: Forward to Internal Managers",
-        "substep": "New Property Manager portal setups should be handled by Internal Managers. Forward the request to internalmanagers@parkm.com.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": true,
-        "show_for_action": "new_setup",
-        "depends_on": 1
+        "suggestions": [
+          "New Property Manager portal setups should be handled by Internal Managers. Forward the request to internalmanagers@parkm.com."
+        ]
       },
       {
         "id": 4,
         "text": "Send login credentials if reset",
-        "substep": "Format:\nUsername: [their email]\nPassword: Parking\nPortal: [Property Manager Portal URL]",
-        "required": true
+        "suggestions": [
+          "Format:\nUsername: [their email]\nPassword: Parking\nPortal: [Property Manager Portal URL]"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2266,7 +2288,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_miscellaneous_questions": {
     "label": "Property: Misc Question",
@@ -2276,32 +2299,31 @@
     "steps": [
       {
         "id": 1,
-        "text": "Read the full email carefully",
-        "required": true
+        "text": "Read the full email carefully"
       },
       {
         "id": 2,
-        "text": "Check Zoho CRM for property notes and sales rep info",
-        "required": true
+        "text": "Check Zoho CRM for property notes and sales rep info"
       },
       {
         "id": 3,
         "text": "If unsure: Email Internal Managers for guidance",
-        "substep": "Email internalmanagers@parkm.com with the thread and a summary. They will reply with guidance.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": false
+        "suggestions": [
+          "Email internalmanagers@parkm.com with the thread and a summary. They will reply with guidance."
+        ]
       },
       {
         "id": 4,
         "text": "Compose a clear, helpful response",
-        "substep": "Be extra helpful with property managers. Give thorough, informative answers.",
-        "template": "general_inquiry_response.html",
-        "required": true
+        "suggestions": [
+          "Be extra helpful with property managers. Give thorough, informative answers."
+        ],
+        "template": "general_inquiry_response.html"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2312,7 +2334,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_sending_money_order": {
     "label": "Property: Money Order",
@@ -2322,25 +2345,23 @@
     "steps": [
       {
         "id": 1,
-        "text": "Get the resident's account info and vehicle details",
-        "required": true
+        "text": "Get the resident's account info and vehicle details"
       },
       {
         "id": 2,
         "text": "Issue a free permit for the paid duration",
-        "substep": "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to match the paid period.",
-        "required": true
+        "suggestions": [
+          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to match the paid period."
+        ]
       },
       {
         "id": 3,
         "text": "Confirm with the property",
-        "template": "money_order_received.html",
-        "required": true
+        "template": "money_order_received.html"
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2351,7 +2372,8 @@
         "label": "Money Order Received",
         "file": "money_order_received.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_update_or_register_employee_vehicles": {
     "label": "Property: Employee Vehicles",
@@ -2362,29 +2384,28 @@
       {
         "id": 1,
         "text": "Get the employee vehicle details from the property",
-        "substep": "Need: license plate, make, model, year, color, state, and employee name/email.",
-        "required": true
+        "suggestions": [
+          "Need: license plate, make, model, year, color, state, and employee name/email."
+        ]
       },
       {
         "id": 2,
-        "text": "Search for the employee in parkm.app or create an account if needed",
-        "required": true
+        "text": "Search for the employee in parkm.app or create an account if needed"
       },
       {
         "id": 3,
         "text": "Issue a free permit for life",
-        "substep": "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to year 2055. You can also add the vehicle to the property's 'Employee Car' list.",
-        "required": true
+        "suggestions": [
+          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to year 2055. You can also add the vehicle to the property's 'Employee Car' list."
+        ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property",
-        "required": true
+        "text": "Confirm with the property"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2400,7 +2421,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_update_resident_vehicle": {
     "label": "Property: Update Resident Vehicle",
@@ -2410,30 +2432,28 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
-        "text": "Locate the vehicle to update",
-        "required": true
+        "text": "Locate the vehicle to update"
       },
       {
         "id": 3,
         "text": "Make the update",
-        "substep": "LICENSE PLATE: Actions > Modify License Plate > Enter new plate > Transfer All Active Permits > Save\nOTHER: Actions > Edit Vehicle > Update fields > Save",
-        "required": true
+        "suggestions": [
+          "LICENSE PLATE: Actions > Modify License Plate > Enter new plate > Transfer All Active Permits > Save",
+          "OTHER: Actions > Edit Vehicle > Update fields > Save"
+        ]
       },
       {
         "id": 4,
         "text": "Confirm with the property",
-        "template": "vehicle_update_confirmed.html",
-        "required": true
+        "template": "vehicle_update_confirmed.html"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2445,7 +2465,8 @@
         "label": "Vehicle Update Confirmed",
         "file": "vehicle_update_confirmed.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_update_resident_contact_information": {
     "label": "Property: Update Resident Contact Info",
@@ -2455,25 +2476,23 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's current email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's current email or name"
       },
       {
         "id": 2,
         "text": "Update the contact information as requested",
-        "substep": "Go to the account > Manage User or Edit to update email, phone, or unit number.",
-        "required": true
+        "suggestions": [
+          "Go to the account > Manage User or Edit to update email, phone, or unit number."
+        ]
       },
       {
         "id": 3,
         "text": "Confirm with the property",
-        "template": "account_update_confirmed.html",
-        "required": true
+        "template": "account_update_confirmed.html"
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2484,7 +2503,8 @@
         "label": "Account Update Confirmed",
         "file": "account_update_confirmed.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_update_resident_password": {
     "label": "Property: Reset Resident Password",
@@ -2494,25 +2514,27 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email",
-        "required": true
+        "text": "Search parkm.app by the resident's email"
       },
       {
         "id": 2,
         "text": "Reset the password",
-        "substep": "Option 1: Click 'Reset Password' button on the account\nOption 2: Manage User > change password to 'Parking'\nOption 3: Administration > Users > search email > Toggle 'Show Tenant Users' > Actions > Reset Password",
-        "required": true
+        "suggestions": [
+          "Option 1: Click 'Reset Password' button on the account",
+          "Option 2: Manage User > change password to 'Parking'",
+          "Option 3: Administration > Users > search email > Toggle 'Show Tenant Users' > Actions > Reset Password"
+        ]
       },
       {
         "id": 3,
         "text": "Reply to the property with the resident's login info",
-        "substep": "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community",
-        "required": true
+        "suggestions": [
+          "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community"
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2523,7 +2545,8 @@
         "label": "Password Reset Sent",
         "file": "password_reset_sent.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_register_resident_account_for_them": {
     "label": "Property: Register Resident Account",
@@ -2534,30 +2557,31 @@
       {
         "id": 1,
         "text": "Get the resident's info from the property",
-        "substep": "Need: name, email, phone, unit number, and vehicle details (plate, make, model, year, color, state).",
-        "required": true
+        "suggestions": [
+          "Need: name, email, phone, unit number, and vehicle details (plate, make, model, year, color, state)."
+        ]
       },
       {
         "id": 2,
-        "text": "Check if an account already exists for this email",
-        "required": true
+        "text": "Check if an account already exists for this email"
       },
       {
         "id": 3,
         "text": "If no account: Create one in parkm.app",
-        "substep": "Create the account with the resident's info and add their vehicle.",
-        "required": true
+        "suggestions": [
+          "Create the account with the resident's info and add their vehicle."
+        ]
       },
       {
         "id": 4,
         "text": "Confirm with the property and provide login credentials",
-        "substep": "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community",
-        "required": true
+        "suggestions": [
+          "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2572,7 +2596,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_cancel_resident_account": {
     "label": "Property: Cancel Resident Account",
@@ -2582,37 +2607,35 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
-        "text": "Locate the active permit(s)",
-        "required": true
+        "text": "Locate the active permit(s)"
       },
       {
         "id": 3,
         "text": "Set the permit to Delay Cancel (1 week out)",
-        "substep": "Do NOT cancel immediately. Use Actions > Cancel > Delay Cancellation > set to 1 week. Delete the 'Next Recurring Date' so they are not charged again.",
-        "required": true
+        "suggestions": [
+          "Do NOT cancel immediately. Use Actions > Cancel > Delay Cancellation > set to 1 week. Delete the 'Next Recurring Date' so they are not charged again."
+        ]
       },
       {
         "id": 4,
         "text": "If the property/resident also wants a refund: Follow refund process",
-        "substep": "Forward to accounting@parkm.com with the required info.",
         "email_link": "mailto:accounting@parkm.com",
-        "required": false
+        "suggestions": [
+          "Forward to accounting@parkm.com with the required info."
+        ]
       },
       {
         "id": 5,
         "text": "Confirm with the property",
-        "template": "cancellation_confirmed.html",
-        "required": true
+        "template": "cancellation_confirmed.html"
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2625,7 +2648,8 @@
         "label": "Cancellation Confirmed",
         "file": "cancellation_confirmed.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_permitting_paid_resident_vehicle_for_them": {
     "label": "Property: Permit Paid Vehicle for Resident",
@@ -2635,36 +2659,36 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email",
-        "required": true
+        "text": "Search parkm.app by the resident's email"
       },
       {
         "id": 2,
         "text": "Verify the resident has a payment method on file",
-        "substep": "Go to Payments & Transactions tab. If no payment method, the resident will need to add one at https://parkm.app/account/login first.",
-        "required": true
+        "suggestions": [
+          "Go to Payments & Transactions tab. If no payment method, the resident will need to add one at https://parkm.app/account/login first."
+        ]
       },
       {
         "id": 3,
         "text": "Confirm you have permission to charge the payment method",
-        "substep": "The property or resident must explicitly give permission before you charge.",
-        "required": true
+        "suggestions": [
+          "The property or resident must explicitly give permission before you charge."
+        ]
       },
       {
         "id": 4,
         "text": "Purchase the permit on the backend",
-        "substep": "Actions > Sale Permit > Select community and permit type > Toggle OFF 'Issue Free Permit' > Select vehicle > Select payment method (credit card) > Toggle OFF 'Do not send email receipt' (so resident gets receipt) > Save.",
-        "required": true
+        "suggestions": [
+          "Actions > Sale Permit > Select community and permit type > Toggle OFF 'Issue Free Permit' > Select vehicle > Select payment method (credit card) > Toggle OFF 'Do not send email receipt' (so resident gets receipt) > Save."
+        ]
       },
       {
         "id": 5,
-        "text": "Confirm with the property",
-        "required": true
+        "text": "Confirm with the property"
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2681,7 +2705,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_resident_payment_help": {
     "label": "Property: Resident Payment Help",
@@ -2691,36 +2716,36 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email",
-        "required": true
+        "text": "Search parkm.app by the resident's email"
       },
       {
         "id": 2,
         "text": "Check Payments & Transactions tab for issues",
-        "substep": "Look for: failed payments, expired cards, missing payment methods, duplicate charges.",
-        "required": true
+        "suggestions": [
+          "Look for: failed payments, expired cards, missing payment methods, duplicate charges."
+        ]
       },
       {
         "id": 3,
         "text": "Identify and resolve the payment issue",
-        "substep": "For card updates: Resident needs to update at https://parkm.app/account/login\nFor billing disputes: Check if charge is legitimate or needs refund\nFor failed payments: Check card expiry",
-        "required": true
+        "suggestions": [
+          "For card updates: Resident needs to update at https://parkm.app/account/login",
+          "For billing disputes: Check if charge is legitimate or needs refund",
+          "For failed payments: Check card expiry"
+        ]
       },
       {
         "id": 4,
         "text": "If refund needed: Forward to accounting@parkm.com",
-        "email_link": "mailto:accounting@parkm.com",
-        "required": false
+        "email_link": "mailto:accounting@parkm.com"
       },
       {
         "id": 5,
-        "text": "Respond to the property with resolution",
-        "required": true
+        "text": "Respond to the property with resolution"
       },
       {
         "id": 6,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2735,7 +2760,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_guest_permits": {
     "label": "Property: Guest Permits",
@@ -2746,25 +2772,31 @@
       {
         "id": 1,
         "text": "Check the property's guest permit setup in parkm.app",
-        "substep": "Go to the property > check guest permit types, pricing, duration limits, and restrictions.",
-        "required": true
+        "suggestions": [
+          "Go to the property > check guest permit types, pricing, duration limits, and restrictions."
+        ]
       },
       {
         "id": 2,
         "text": "Answer the property's question",
-        "substep": "Key info:\n- Guest permits are purchased by the RESIDENT for their guest\n- Some properties have limits on guest permits\n- Guests can pre-purchase and extend permits\n- Guest permits vs resident permits are different permit types",
-        "required": true
+        "suggestions": [
+          "Key info:",
+          "- Guest permits are purchased by the RESIDENT for their guest",
+          "- Some properties have limits on guest permits",
+          "- Guests can pre-purchase and extend permits",
+          "- Guest permits vs resident permits are different permit types"
+        ]
       },
       {
         "id": 3,
         "text": "If the property wants to change guest permit settings: CC the sales rep",
-        "substep": "CC the property's ParkM sales rep for configuration changes.",
-        "required": false
+        "suggestions": [
+          "CC the property's ParkM sales rep for configuration changes."
+        ]
       },
       {
         "id": 4,
-        "text": "Send response and close ticket",
-        "required": true
+        "text": "Send response and close ticket"
       }
     ],
     "validation_on_close": [
@@ -2779,7 +2811,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "property_potential_leads": {
     "label": "Property: Potential Lead",
@@ -2790,26 +2823,28 @@
       {
         "id": 1,
         "text": "Gather the lead information",
-        "substep": "Note: property name, contact name, email, phone, and what they're interested in.",
-        "required": true
+        "suggestions": [
+          "Note: property name, contact name, email, phone, and what they're interested in."
+        ]
       },
       {
         "id": 2,
         "text": "Forward the thread to the sales team",
-        "substep": "Forward to the appropriate sales channel. Check Zoho CRM for the territory/region.",
-        "required": true
+        "suggestions": [
+          "Forward to the appropriate sales channel. Check Zoho CRM for the territory/region."
+        ]
       },
       {
         "id": 3,
         "text": "Acknowledge the inquiry to the property",
-        "substep": "Let them know a sales representative will be in touch shortly.",
-        "template": "lead_acknowledged.html",
-        "required": true
+        "suggestions": [
+          "Let them know a sales representative will be in touch shortly."
+        ],
+        "template": "lead_acknowledged.html"
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2825,7 +2860,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "sales_rep_asking_for_a_vehicle_to_be_released": {
     "label": "Sales Rep: Vehicle Release Request",
@@ -2835,25 +2871,23 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app for the vehicle in question",
-        "required": true
+        "text": "Search parkm.app for the vehicle in question"
       },
       {
         "id": 2,
-        "text": "Check the vehicle's permit status at the time of the incident",
-        "required": true
+        "text": "Check the vehicle's permit status at the time of the incident"
       },
       {
         "id": 3,
         "text": "Forward to Internal Managers for review",
-        "substep": "Let the sales rep know you'll send it to a manager to review. Forward the thread to internalmanagers@parkm.com with a summary.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": true
+        "suggestions": [
+          "Let the sales rep know you'll send it to a manager to review. Forward the thread to internalmanagers@parkm.com with a summary."
+        ]
       },
       {
         "id": 4,
-        "text": "Set ticket to waiting and close when resolved",
-        "required": true
+        "text": "Set ticket to waiting and close when resolved"
       }
     ],
     "validation_on_close": [
@@ -2865,7 +2899,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "sales_rep_asking_for_a_vehicle_to_be_grandfathered": {
     "label": "Sales Rep: Grandfather Request",
@@ -2875,31 +2910,30 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name",
-        "required": true
+        "text": "Search parkm.app by the resident's email or name"
       },
       {
         "id": 2,
         "text": "Get vehicle details",
-        "substep": "Need: license plate, make, model, year, color, state.",
-        "required": true
+        "suggestions": [
+          "Need: license plate, make, model, year, color, state."
+        ]
       },
       {
         "id": 3,
         "text": "Issue a free grandfathered permit",
-        "substep": "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration (1 year default, or as specified). Label 'Grandfathered'. No Next Recurring Date.",
-        "required": true
+        "suggestions": [
+          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration (1 year default, or as specified). Label 'Grandfathered'. No Next Recurring Date."
+        ]
       },
       {
         "id": 4,
         "text": "Confirm with the sales rep",
-        "template": "grandfathered_permit_issued.html",
-        "required": true
+        "template": "grandfathered_permit_issued.html"
       },
       {
         "id": 5,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2911,7 +2945,8 @@
         "label": "Grandfathered Permit Issued",
         "file": "grandfathered_permit_issued.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "towing_or_monitoring_leads": {
     "label": "Towing/Monitoring Lead",
@@ -2922,25 +2957,27 @@
       {
         "id": 1,
         "text": "Determine the nature of the inquiry",
-        "substep": "Is this a tow company wanting to get set up? A property asking about getting a tow company? Questions about ParkM's towing/monitoring integration?",
-        "required": true
+        "suggestions": [
+          "Is this a tow company wanting to get set up? A property asking about getting a tow company? Questions about ParkM's towing/monitoring integration?"
+        ]
       },
       {
         "id": 2,
         "text": "Forward to Brian McDonough",
-        "substep": "Brian is our Enforcement Manager. He handles setting up tow/boot/ticket/monitoring companies on ParkM. Forward the thread to Brian.",
-        "required": true
+        "suggestions": [
+          "Brian is our Enforcement Manager. He handles setting up tow/boot/ticket/monitoring companies on ParkM. Forward the thread to Brian."
+        ]
       },
       {
         "id": 3,
         "text": "If a property is asking about getting a tow company: CC the sales rep",
-        "substep": "CC the property's sales rep and say: 'I've cc'd your ParkM sales representative, [Name], to assist in selecting a towing, booting, or ticketing company for your community.'",
-        "required": false
+        "suggestions": [
+          "CC the property's sales rep and say: 'I've cc'd your ParkM sales representative, [Name], to assist in selecting a towing, booting, or ticketing company for your community.'"
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket",
-        "required": true
+        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2951,7 +2988,8 @@
         "label": "General Inquiry Response",
         "file": "general_inquiry_response.html"
       }
-    ]
+    ],
+    "wizard_version": "v3"
   },
   "the_law_asking_for_information": {
     "label": "Law Enforcement Request",
@@ -2962,26 +3000,28 @@
       {
         "id": 1,
         "text": "Do NOT respond directly to law enforcement",
-        "substep": "These requests must be handled by management.",
-        "required": true
+        "suggestions": [
+          "These requests must be handled by management."
+        ]
       },
       {
         "id": 2,
         "text": "Forward immediately to Internal Managers",
-        "substep": "Forward the entire thread to internalmanagers@parkm.com with 'Law Enforcement Request' in the subject/summary.",
         "email_link": "mailto:internalmanagers@parkm.com",
-        "required": true
+        "suggestions": [
+          "Forward the entire thread to internalmanagers@parkm.com with 'Law Enforcement Request' in the subject/summary."
+        ]
       },
       {
         "id": 3,
-        "text": "Set ticket status to Escalated/Waiting",
-        "required": true
+        "text": "Set ticket status to Escalated/Waiting"
       }
     ],
     "validation_on_close": [
       "Did you forward to Internal Managers?",
       "Did you NOT respond directly to law enforcement?"
     ],
-    "quick_templates": []
+    "quick_templates": [],
+    "wizard_version": "v3"
   }
 }

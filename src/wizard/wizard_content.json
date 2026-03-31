@@ -1,7 +1,7 @@
 {
   "_comment": "Wizard step definitions for each AI tag. Loaded by the CSR wizard widget.",
   "_version": "3.0",
-  "_last_updated": "2026-03-30",
+  "_last_updated": "2026-03-31",
   "_source": "Sadie Hardy — New Wizard Step Flow doc (Mar 2026)",
   "needs_tag": {
     "label": "Needs Tag",
@@ -1678,36 +1678,77 @@
     "label": "Property: Change Resident Type",
     "icon": "B",
     "color": "#8e44ad",
-    "intro": "Property manager is requesting a resident type change so a resident can purchase a specific permit type (e.g., carport, garage).",
+    "intro": "Property is requesting a resident type change so a resident can purchase a specific permit type.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed.",
+          "Request the resident's info from the property if it wasn't given",
+          "Note the current resident type (Locate resident account > Communities tab > Classification)"
+        ]
       },
       {
         "id": 2,
-        "text": "Confirm which resident type the property is requesting",
+        "text": "Read the property notes in Zoho CRM",
         "suggestions": [
-          "Check the property notes in Zoho CRM. Example: at some properties, residents need to be 'Resident X' to get carport/garage permits."
+          "Look for: Special resident types (e.g., 'Resident X'), Permit restrictions (who can/cannot get certain permits). This is critical because rules vary by property."
         ]
       },
       {
         "id": 3,
-        "text": "Change the resident type",
+        "text": "Identify why (or even IF) the resident type needs to be changed",
         "suggestions": [
-          "Go to the resident's account > Edit > Change 'Customer Classification' to the requested type > Save."
+          "Common reasons:",
+          "Registered incorrectly (visitor instead of resident)",
+          "Approved for a restricted permit (e.g., carport/garage)",
+          "Property-specific rule (like 'Resident X' requirement)"
         ]
       },
       {
         "id": 4,
-        "text": "Notify the property that the change has been made",
+        "text": "Confirm what the correct resident type should be",
         "suggestions": [
-          "Let them know the resident can now purchase the approved permit type."
+          "Before making changes:",
+          "Confirm the resident is approved for the permit (if applicable)",
+          "Ensure the request is authorized (property manager approval, notes, or documentation)",
+          "Double-check that changing the resident type aligns with the properties parking policies and permit availability"
         ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Change the Resident Type",
+        "suggestions": [
+          "Update the user's customer classification / resident type in the system (Locate resident account > Communities tab > Actions button > Edit > Filter between Customer Classifications)"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Verify the change saved correctly",
+        "suggestions": [
+          "Refresh the page and confirm the update is reflected correctly",
+          "Login as the resident and confirm they can now access the correct permit type",
+          "Double check that they do not have access to restricted permit types they shouldn't have"
+        ]
+      },
+      {
+        "id": 7,
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of the resident's classification type/what permits they can now access",
+          "Screenshot of account preview",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 8,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1730,34 +1771,76 @@
     "label": "Property: Approve Grandfathered Permit",
     "icon": "#",
     "color": "#8e44ad",
-    "intro": "Property is approving a grandfathered (free) permit for a resident. Issue a free permit.",
+    "intro": "Property is approving a grandfathered (free) permit for a resident.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name (from property's email)"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed.",
+          "Request the resident's account info from the property if it wasn't given"
+        ]
       },
       {
         "id": 2,
-        "text": "Get the vehicle details from the property's email",
+        "text": "Locate the vehicle/permit in question",
+        "entity_field": "license_plate",
         "suggestions": [
-          "Need: license plate, make, model, year, color, state. If missing, ask the property."
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'",
+          "Does the vehicle already have a permit on it? Is it a paid permit? Grandfathered permit?"
         ]
       },
       {
         "id": 3,
-        "text": "Issue a free grandfathered permit",
-        "suggestions": [
-          "Actions > Sale Permit > Select community > Toggle 'Issue Free Permit' ON > Set expiration to the date provided by property (if none given, default to 1 year and adjust later). Label permit 'Grandfathered'. Do NOT enter a Next Recurring Date."
+        "text": "Do they currently have a permit on the vehicle in question?",
+        "branches": [
+          {
+            "label": "Paid permit?",
+            "description": "Convert it to a free grandfathered permit. *Note that this is only an option on recurring monthly permits — not one time fee permits or free permits.",
+            "suggestions": [
+              "Navigate to the permit > Click 'actions' > 'Convert to free' > Set the expiration date to 1 year if an end date was not provided by the property > Press 'SAVE'"
+            ]
+          },
+          {
+            "label": "No permit?",
+            "description": "Issue the free grandfathered permit.",
+            "suggestions": [
+              "Actions > Sale Permit > Select community > Select permit type > Toggle 'Issue Free Permit' ON > Set expiration to the date provided by property (if none given, default to 1 year) > Choose the vehicle you need permitted or press 'add' to create a whole new vehicle > review the details of the permit > Leave 'Do not send an email receipt to a customer' toggled on > name it 'grandfathered' > Press SAVE"
+            ]
+          },
+          {
+            "label": "Already have a grandfathered permit?",
+            "description": "Check the expiration date and confirm vehicle information is correct. If it expires soon, the property probably wants to extend it."
+          }
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property that the permit has been issued",
-        "template": "grandfathered_permit_issued.html"
+        "text": "Double check your work",
+        "suggestions": [
+          "Is the license plate number correct?",
+          "Is the expiration date correct?",
+          "Does anything else need to be clarified with the property or resident?"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of permit (grandfathered permit + expiration date)",
+          "Screenshot of account preview",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "Waiting on Customer Response (if additional information/confirmation is needed from the resident or the complex).",
+          "Closed (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1780,32 +1863,67 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Open up permits or change resident type as needed",
+        "text": "Confirm the properties permit setup details",
         "suggestions": [
-          "Depending on the property setup, you may need to:",
-          "- Change the resident's customer classification",
-          "- Do an override to allow additional permits",
-          "- Open up a specific permit type"
+          "Locate the property in .APP to confirm the current permit types offered",
+          "Go to Zoho CRM and view the property notes",
+          "Some properties cap the number of permits per leaseholder, per unit or per permit type."
         ]
       },
       {
         "id": 3,
-        "text": "Help the resident purchase or issue the permit",
-        "suggestions": [
-          "Either guide the resident to purchase online, or purchase/issue on the backend via Actions > Sale Permit."
+        "text": "Determine what needs to be done",
+        "branches": [
+          {
+            "label": "'Sold out' permit? (locked down property wide)",
+            "description": "Email Internalmanagers@parkm.com",
+            "email_link": "mailto:internalmanagers@parkm.com"
+          },
+          {
+            "label": "Override per account? (Permit limit reached)",
+            "description": "Actions > Overrides > Add new override > Confirm the community is correct > Select the permit type > Set the end date one year out > increase the 'purchase limit' by 1 (or by however many extra permits the property is approving) > Press 'SAVE'."
+          },
+          {
+            "label": "Override per unit? (Unit limit reached)",
+            "description": "Check Zoho CRM and verify what the unit limit is > Check the unit in .APP to see how many permits are already purchased in that unit > Confirm (from the property) which resident under the unit # needs the new extra permit > Locate resident account > Actions > Overrides > Add new override > Confirm the community is correct > Select the permit type > Set the end date one year out > increase the 'purchase limit' to the TOTAL APPROVED NUMBER OF PERMITS for that unit > Press 'SAVE'."
+          }
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property"
+        "text": "Verify the override saved correctly",
+        "suggestions": [
+          "Refresh the page and confirm the update is reflected correctly",
+          "Login as the resident and confirm they can now access the permit"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of the resident's account/how many permits (and what type) they can now access",
+          "Screenshot of account preview",
+          "Inform the property to tell the resident about this update if the resident is not on the thread",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1832,34 +1950,63 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
-      },
-      {
-        "id": 2,
-        "text": "Locate the permit to extend"
-      },
-      {
-        "id": 3,
-        "text": "Determine the permit type and use the correct method",
+        "text": "Locate resident account in .APP",
         "suggestions": [
-          "RECURRING PAID permits: The 'Extend Expiration Date' button does NOT work on these. Use 'Move Next Recurring Date' instead.",
-          "FREE or ONE-TIME permits: Use either 'Extend Expiration Date' or 'Delay Cancellation' - both work."
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
         ]
       },
       {
-        "id": 4,
-        "text": "Extend the permit",
+        "id": 2,
+        "text": "Locate the vehicle/permit in question",
+        "entity_field": "license_plate",
         "suggestions": [
-          "Actions > Extend Expiration Date (or Move Next Recurring Date for recurring). Set the new date as requested by the property."
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'"
+        ]
+      },
+      {
+        "id": 3,
+        "text": "Confirm the exact expiration date"
+      },
+      {
+        "id": 4,
+        "text": "Determine the correct path/method",
+        "branches": [
+          {
+            "label": "Recurring Paid Permits",
+            "description": "The 'Extend Expiration Date' button does NOT work on these. Use 'Move Next Recurring Date' instead."
+          },
+          {
+            "label": "FREE or Annual permits",
+            "description": "Use 'Extend Expiration Date' or you can use 'Delay Cancellation' if you are wanting the permit to expire in a few days."
+          }
         ]
       },
       {
         "id": 5,
-        "text": "Confirm with the property"
+        "text": "Verify the change saved correctly",
+        "suggestions": [
+          "Refresh the page and confirm the update is reflected correctly",
+          "Confirm everything in the 'Account Preview' looks correct"
+        ]
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Screenshot of the resident's permit highlighting the new expiration date",
+          "Inform the property to tell the resident about this update if the resident is not on the thread",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 7,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1882,37 +2029,51 @@
     "label": "Property: Audit / Report Request",
     "icon": "R",
     "color": "#34495e",
-    "intro": "Property is requesting an audit, report, or parking statistics.",
+    "intro": "Property is requesting an audit or report.",
     "steps": [
       {
         "id": 1,
-        "text": "Identify what type of report the property needs",
+        "text": "Identify the property/ who is sending the request",
         "suggestions": [
-          "Common requests: permit list, vehicle list, payment history, space assignments, monitoring activity."
+          "Leasing Agent or PM?"
         ]
       },
       {
         "id": 2,
-        "text": "Check if the report can be generated from parkm.app",
-        "suggestions": [
-          "Some reports can be pulled from the admin side. Check the property's data in .app."
-        ]
+        "text": "Locate the properties Sales Rep/ Account Manager in Zoho CRM"
       },
       {
         "id": 3,
-        "text": "If you cannot generate the report: Forward to Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com",
-        "suggestions": [
-          "Email internalmanagers@parkm.com with the property's request details."
+        "text": "Identify the request",
+        "branches": [
+          {
+            "label": "Audit",
+            "description": "CC the Sales Rep/Account Manager. You can use this template: \"Thank you for contacting ParkM! Your ParkM rep will be able to help you with this and will be able to submit an audit request on your behalf. I have added in your ParkM rep in case you have any questions. _______ (ParkM rep), please submit an audit request for this in CRM.\""
+          },
+          {
+            "label": "Report",
+            "description": "Forward the request to Internalmanagers@parkm.com",
+            "email_link": "mailto:internalmanagers@parkm.com"
+          }
         ]
       },
       {
         "id": 4,
-        "text": "Send the report or let the property know it's being prepared"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Response with the Sales rep CC'd",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)",
+          "Any additional questions or information needed from the property"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'On Hold' if you're waiting on a report from Internal Managers",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1930,42 +2091,53 @@
     "label": "Property: Check Vehicle Permit",
     "icon": "?",
     "color": "#2980b9",
-    "intro": "Property is asking if a specific vehicle/plate is permitted. Provide COMPLETE information - not just 'yes' or 'no'.",
+    "intro": "Property is asking if a specific vehicle/plate is permitted.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the license plate provided",
+        "text": "Locate the vehicle in .APP",
         "entity_field": "license_plate",
         "suggestions": [
-          "Extracted plate: {{license_plate}}"
+          "Search by license plate number, year, make, model, color",
+          "Try filtering the search by community if needed."
         ]
       },
       {
         "id": 2,
         "text": "Check permit status and gather full details",
         "suggestions": [
-          "DO NOT just say 'yes'. Include ALL of:",
-          "- The date the permit became active on that plate",
-          "- The specific community the permit is for",
-          "- The type of permit (carport, garage, 1st car, open lot, etc.)",
-          "- Current status (active, expired, canceled)"
+          "When did this permit start?",
+          "What community is the permit for?",
+          "What type of permit is it (carport, garage, 1st car, open lot, etc.)",
+          "What is the current status (active, expired, canceled)"
         ]
       },
       {
         "id": 3,
         "text": "Understand the context",
         "suggestions": [
-          "Properties often ask because a vehicle was tagged, booted, towed, or ticketed. A simple 'yes' can cause confusion - they may think the tow company made a mistake when the resident actually just updated their plate recently."
+          "Properties often ask because the vehicle was tagged, booted, towed, or ticketed. Responding with a simple 'yes they are permitted' can cause confusion — they may think the tow company made a mistake when the resident actually just updated their plate recently."
         ]
       },
       {
         "id": 4,
         "text": "Send detailed response to the property",
-        "template": "vehicle_permit_status.html"
+        "suggestions": [
+          "DO NOT just say 'yes'. Include ALL relevant information:",
+          "Start date",
+          "Community",
+          "The type of permit (carport, garage, 1st car, open lot, etc.)",
+          "Current status (active, expired, canceled or no permit)",
+          "Vehicle not permitted if you cannot locate it in .APP"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -1992,23 +2164,27 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app for the space number at the property",
-        "entity_field": "space_number",
+        "text": "Search for the space # at the property in .APP",
         "suggestions": [
-          "Go to the property > check space assignments. Extracted space: {{space_number}}"
+          "Properties > Property name > Spaces > Space # > Click on Permit number attached to space number > view resident account information"
         ]
       },
       {
         "id": 2,
-        "text": "Find who has a permit with that space number"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Which resident(s) assigned to the space number",
+          "Screenshot of the residents account preview",
+          "Any additional questions or information needed from the property"
+        ]
       },
       {
         "id": 3,
-        "text": "Respond with the resident's name and vehicle info for that space"
-      },
-      {
-        "id": 4,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2030,23 +2206,27 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by unit number at the property",
-        "entity_field": "unit_number",
+        "text": "Search for the Unit # at the property in .APP",
         "suggestions": [
-          "Extracted unit: {{unit_number}}"
+          "Properties > Property name > Unit > Search Unit # > Click on the Unit number > Scroll to view all current residents attached to that unit #"
         ]
       },
       {
         "id": 2,
-        "text": "Find residents registered for that unit"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Which resident(s) are attached to the unit number",
+          "Screenshot of the resident(s) account preview",
+          "Any additional questions or information needed from the property"
+        ]
       },
       {
         "id": 3,
-        "text": "Respond with the resident name(s) and vehicle info for the unit"
-      },
-      {
-        "id": 4,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2064,48 +2244,87 @@
     "label": "Property: Tow/Boot/Ticket Inquiry",
     "icon": "!",
     "color": "#c0392b",
-    "intro": "Property is asking about a tow, boot, or ticket at their community. ParkM does NOT tow/boot/ticket. Be helpful but stay within our means.",
+    "intro": "Property is asking about a tow, boot, or ticket at their community.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app for the vehicle/plate in question",
-        "entity_field": "license_plate",
+        "text": "Locate resident account in .APP",
         "suggestions": [
-          "Extracted plate: {{license_plate}}"
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
         ]
       },
       {
         "id": 2,
-        "text": "Check permit status and tow history",
+        "text": "Verify the vehicle license plate number",
+        "entity_field": "license_plate",
         "suggestions": [
-          "Click on the vehicle > scroll down to 'Tow History'. Also check the account 'Overview' tab for tow incidents."
+          "Is the resident's vehicle in question properly permitted?",
+          "Does the license plate number provided by the property match the plate number on the permit?",
+          "Note any updates made to the vehicle recently",
+          "Note the vehicle details (VIN, year, make, model, color)",
+          "Review the other vehicles / permits in the account (are their duplicates?)"
         ]
       },
       {
         "id": 3,
-        "text": "Provide the property with the vehicle's permit status",
+        "text": "Understand what happened",
         "suggestions": [
-          "Include: permit active date, community, permit type, and any violations/tow history logged."
+          "Review the 'Tow Incidents' section in the resident's account. Click on it > View the 'Incident Detail' report showing pictures/details of the tow.",
+          "Review past email communication with the resident. Read the previous thread history and search in Zoho Desk for other email threads with information. (Try searching by resident name, email address and license plate number.)",
+          "Review the 'Communication' section in the residents account (were they sent notices?)",
+          "Review the 'Notes & Activity' section",
+          "Were they previously warned? (If so, why?)",
+          "Check if the property they were towed from matches the property their permit is for.",
+          "Is ParkM at fault?"
         ]
       },
       {
         "id": 4,
-        "text": "If property wants a tow/boot refunded: Forward to Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com",
+        "text": "Determine if a proof of permit is applicable",
         "suggestions": [
-          "Tow/boot/ticket refunds are only handled by Internal Managers. Forward the thread to internalmanagers@parkm.com with a summary."
+          "Only provide proof of permit if the vehicle appeared to have a permit at/around the time of the incident.",
+          "Proof of permits cover the last 72 hours (3 days) only. If the incident was more than 72 hours ago, you cannot generate a proof of permit."
         ]
       },
       {
         "id": 5,
-        "text": "Direct the property to their towing company for tow-specific questions",
+        "text": "Remember that ParkM is NOT the tow company",
         "suggestions": [
-          "Check Zoho CRM or .app for the property's enforcement company. Share the tow company contact info with the property."
+          "ParkM simply sells parking permits. We do not tow, boot, or ticket vehicles."
         ]
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "NEVER promise or mention a refund or release of the vehicle",
+        "suggestions": [
+          "Tow/boot refunds are EXTREMELY rare and require Internal Manager approval. If the resident continues to email and persist, forward to internalmanagers@parkm.com for any assistance."
+        ],
+        "email_link": "mailto:internalmanagers@parkm.com"
+      },
+      {
+        "id": 7,
+        "text": "Respond to the Property with all necessary information",
+        "suggestions": [
+          "Synopsis of what happened/ why the vehicle was towed, booted or ticketed",
+          "Are we in contact with the resident as well? If so, fill in the property",
+          "Status of vehicle/permit in question",
+          "Screenshot of account preview",
+          "Proof of permit (if applicable)",
+          "Tow company info (if applicable)",
+          "Any additional questions or information needed from the property",
+          "Any other relevant screenshots (sent notices, etc)",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
+      },
+      {
+        "id": 8,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2132,40 +2351,70 @@
     "steps": [
       {
         "id": 1,
-        "text": "Check if ParkM monitors this property",
+        "text": "Locate resident account in .APP",
         "suggestions": [
-          "Check Zoho CRM for 'ParkM Monitoring' checkmark. In Colorado, ParkM monitoring uses ORANGE tags."
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
         ]
       },
       {
         "id": 2,
-        "text": "Search parkm.app for the vehicle/plate in question",
+        "text": "Locate the vehicle in question",
+        "entity_field": "license_plate",
         "suggestions": [
-          "Check violations/tow history on the vehicle."
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'",
+          "Confirm if the vehicle is properly permitted (is the license plate correct?)"
         ]
       },
       {
         "id": 3,
-        "text": "If ParkM monitors: Explain why the vehicle was tagged",
+        "text": "Locate the warning notice (this helps identify the reason for the tag and who placed it).",
         "suggestions": [
-          "Check the violation log. Common reasons: no permit, expired permit, fire lane, handicap without placard, wrong spot, expired vehicle tags."
+          "Review the incident detail report in the 'History' or 'Tow Incidents' sections",
+          "ParkM Monitoring tags are Orange. Other colors = not us",
+          "Ask the property to send a picture of the warning notice if necessary"
         ]
       },
       {
         "id": 4,
-        "text": "If ParkM does NOT monitor: Direct to their monitoring company",
+        "text": "Why were they warned?",
         "suggestions": [
-          "Let them know ParkM did not place the tag. They should contact their monitoring/enforcement company."
+          "Common reasons: no ParkM permit, expired permit, wrong plate on permit, parked in fire lane, parked in handicap spot without placard, parked in someone's assigned spot, expired vehicle tags, etc."
         ]
       },
       {
         "id": 5,
-        "text": "If something seems incorrect about the tag: Report to Brian McDonough and Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com"
+        "text": "Resolve the issue",
+        "suggestions": [
+          "If not permitted: ask if you can help the resident get a permit",
+          "If plate was wrong: Ask for the correct plate and update the plate",
+          "If other violation: explain and advise",
+          "If incorrectly warned: email Brian@parkm.com, mscherer@parkm.com and Internalmanagers@parkm.com letting them know. (You should always assume that the monitoring is correct. Before jumping the gun, make sure you look into WHY they were tagged and WHAT PLATE was tagged vs. what shows on ParkM as permitted or not.)",
+          "*Note: sticker removal is the customer's responsibility - ParkM cannot remove it."
+        ]
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of vehicle/permit in question",
+          "Screenshot of account preview/ warning",
+          "Instructions/screenshots on how the resident can purchase a permit (if needed)",
+          "Updated plate if applicable",
+          "Explanation of violation",
+          "Any additional questions or information needed from the resident/property",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
+      },
+      {
+        "id": 7,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2181,40 +2430,37 @@
     "wizard_version": "v3"
   },
   "property_monitor_request": {
-    "label": "Property: Monitor Request",
+    "label": "Property: Do Not Tow List",
     "icon": "!",
-    "color": "#34495e",
-    "intro": "Property is requesting monitoring, tagging, or patrol of their lot. This could be a request to tag/warn a specific vehicle, start monitoring their lot, or report an issue with current monitoring.",
+    "color": "#c0392b",
+    "intro": "Property is requesting a Do Not Tow list update.",
     "steps": [
       {
         "id": 1,
-        "text": "Determine the type of monitoring request",
-        "suggestions": [
-          "Is this a request to:",
-          "- Tag/warn a specific vehicle",
-          "- Start monitoring their lot",
-          "- Report an issue with current monitoring"
-        ]
+        "text": "ParkM does not manage, maintain, or coordinate DNT lists for towing, booting, or ticketing"
       },
       {
         "id": 2,
-        "text": "If requesting a specific vehicle to be tagged/warned",
-        "suggestions": [
-          "Check if ParkM monitors the property (Zoho CRM 'ParkM Monitoring' checkmark).",
-          "IF WE MONITOR: Tell property we'll let our monitors know, then forward thread to Brian McDonough.",
-          "IF WE DON'T MONITOR: Direct them to their monitoring/towing company."
-        ]
+        "text": "Never recommend that anyone contact a tow company to be added to a DNT list"
       },
       {
         "id": 3,
-        "text": "If requesting to set up monitoring: CC the sales rep",
-        "suggestions": [
-          "CC the property's ParkM sales rep and let them handle the monitoring setup discussion."
-        ]
+        "text": "ParkM's only support in these cases: offer a complimentary temporary permit (if appropriate)"
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "If a leasing office or PM reaches out requesting that a vehicle be exempt from enforcement, you may use the following response:",
+        "suggestions": [
+          "\"Hello,\n\nThank you for contacting ParkM Support. Please note that ParkM does not manage enforcement exception lists. For questions related to towing, booting, or ticketing enforcement decisions, we recommend contacting your enforcement vendor directly.\n\nIf needed, we are happy to assist by issuing a complimentary temporary permit for the vehicle to ensure it is properly registered in the system.\n\nPlease let us know if you would like us to issue a temporary permit.\""
+        ]
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2237,43 +2483,39 @@
     "steps": [
       {
         "id": 1,
-        "text": "Determine if this is a new setup or a password reset",
+        "text": "Determine if this is a new account setup or if they already have an account",
         "branches": [
           {
-            "label": "New PM/leasing agent setup",
-            "description": "Forward to Internal Managers for new setup."
+            "label": "No account/New set up",
+            "description": "Forward to Internalmanagers@parkm.com (Properties > Search for property > Employees > Search email address > User pops up = has an account > No user = no account).",
+            "email_link": "mailto:internalmanagers@parkm.com"
           },
           {
-            "label": "Password reset for existing user",
-            "description": "Find the user in Administration and reset their password."
+            "label": "Already have an account",
+            "description": "Do a manual password reset and send them their new login credentials. (Copy the email address of their account > Administration > Users > 'Property Admins' tab > Paste email address > Actions > Edit > Copy username > Reset password to 'Parking' > Save > Send new login credentials with the PM side link > Always CC the Sales Rep/account manager)."
           }
         ]
       },
       {
         "id": 2,
-        "text": "If password reset: Find the user in Administration",
+        "text": "Respond to the property with all necessary information",
         "suggestions": [
-          "Go to Administration > Users > Paste their email > Toggle 'Show Tenant Users' ON. Click Actions > Reset Password (to send reset email) or Edit (to manually set password to 'Parking')."
+          "CC sales rep/account manager and send login credentials if you did a password reset:",
+          "Username:",
+          "Password: Parking",
+          "https://pm.parkm.app/account/login",
+          "Any additional questions or information needed from the resident/property",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
         ]
       },
       {
         "id": 3,
-        "text": "If new setup: Forward to Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com",
+        "text": "Update ticket status",
         "suggestions": [
-          "New Property Manager portal setups should be handled by Internal Managers. Forward the request to internalmanagers@parkm.com."
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
         ]
-      },
-      {
-        "id": 4,
-        "text": "Send login credentials if reset",
-        "suggestions": [
-          "Format:\nUsername: [their email]\nPassword: Parking\nPortal: [Property Manager Portal URL]"
-        ]
-      },
-      {
-        "id": 5,
-        "text": "Close ticket"
       }
     ],
     "validation_on_close": [
@@ -2295,35 +2537,48 @@
     "label": "Property: Misc Question",
     "icon": "?",
     "color": "#2c3e50",
-    "intro": "General question from a property manager that doesn't fit other categories.",
+    "intro": "General question from a property manager.",
     "steps": [
       {
         "id": 1,
-        "text": "Read the full email carefully"
-      },
-      {
-        "id": 2,
-        "text": "Check Zoho CRM for property notes and sales rep info"
-      },
-      {
-        "id": 3,
-        "text": "If unsure: Email Internal Managers for guidance",
-        "email_link": "mailto:internalmanagers@parkm.com",
+        "text": "Read the full email carefully",
         "suggestions": [
-          "Email internalmanagers@parkm.com with the thread and a summary. They will reply with guidance."
+          "Determine what they need assistance with",
+          "Can you help them or do you need to CC their sales rep/account manager?"
         ]
       },
       {
-        "id": 4,
-        "text": "Compose a clear, helpful response",
+        "id": 2,
+        "text": "Check .APP and Zoho CRM for property notes and sales rep/account manager info",
         "suggestions": [
-          "Be extra helpful with property managers. Give thorough, informative answers."
-        ],
-        "template": "general_inquiry_response.html"
+          "Look at permit types",
+          "Pricing",
+          "Any notes left by the sales rep/account managers"
+        ]
+      },
+      {
+        "id": 3,
+        "text": "If unsure how to respond: Forward email to Internalmanagers@parkm.com and CC the correct sales rep/account manager for guidance",
+        "email_link": "mailto:internalmanagers@parkm.com"
+      },
+      {
+        "id": 4,
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Compose a clear, helpful response. Be extra helpful with property managers. Give thorough, informative answers.",
+          "Any additional questions or information needed from the property",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)",
+          "\"I have CC'd your sales rep/account manager [NAME]. They will be able to assist you with [XYZ]. [Sales rep name] will you please assist ......\""
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property or sales rep/account manager).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2345,23 +2600,64 @@
     "steps": [
       {
         "id": 1,
-        "text": "Get the resident's account info and vehicle details"
+        "text": "Confirm the resident has a ParkM account",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Issue a free permit for the paid duration",
+        "text": "Confirm the Vehicle information and how long they are permitting the permit for",
         "suggestions": [
-          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to match the paid period."
+          "Must be at least 6 months"
         ]
       },
       {
         "id": 3,
-        "text": "Confirm with the property",
-        "template": "money_order_received.html"
+        "text": "Issue a Money Order permit from the backend",
+        "suggestions": [
+          "Actions > Sale Permit > Select the 'Check/Money Order' option > Confirm the Community is correct and that they are set up as a resident and not Guest/Visitor > Select the correct permit type > Edit the Expiration Date (and the time) and double check that the permit price is correct > Select (or add) the correct vehicle > TRIPLE check that all of the information is correct > Toggle 'ON' 'do not send an email receipt to customer' and title it 'Money Order' > Press SAVE > Go back to the permit on the admin side and press EDIT > Delete the 'Next Recurring' Date > Go to the resident's 'account preview' and double check that everything is correct.",
+          "There should be an expiration date (not a renewal date) and it should say 'Money Order'."
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "Send the property/resident the 'Money Order' instructions",
+        "suggestions": [
+          "Payment Requirements: If you want to pay by money order, you are required to purchase permits for a minimum of 6 months and a maximum of one year.",
+          "Payment Instructions: Send a money order payable to ParkM to: ParkM, F2-247, 4950 S. Yosemite St, Greenwood Village, CO 80111. Do not submit payments to your leasing office.",
+          "Information Needed: Include with your money order a slip of paper stating your ParkM account name, complex name, and the license plate number(s) for which the payment applies.",
+          "Cancellation Policy: Failure to submit the required payment may result in cancellation of your permit(s).",
+          "Notification Requirement: Before sending a money order, email support@parkm.com to confirm the permit pricing and notify us of your intent to pay by money order."
+        ]
+      },
+      {
+        "id": 5,
+        "text": "Inform internalmanagers@parkm.com that a Money Order is coming",
+        "suggestions": [
+          "Who it is for",
+          "How much it is for",
+          "How long it is for"
+        ],
+        "email_link": "mailto:internalmanagers@parkm.com"
+      },
+      {
+        "id": 6,
+        "text": "Respond to the property/resident with all necessary information",
+        "suggestions": [
+          "Screenshot of account preview showing their 'Money Order' permit, highlighting the expiration date.",
+          "Inform the property/resident that they will get expiration notices in their ParkM account and in their email when their permits are close to expiring. If they wish to renew their permits by money order again, they will have to email support@parkm.com.",
+          "Any additional questions or information needed from the property/resident"
+        ]
+      },
+      {
+        "id": 7,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property/resident).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2379,33 +2675,54 @@
     "label": "Property: Employee Vehicles",
     "icon": "E",
     "color": "#16a085",
-    "intro": "Property wants to add or update employee vehicles. Employee vehicles get free permits for life (set expiration to 2055).",
+    "intro": "Property wants to add, edit, deactivate, or reactivate employee vehicles.",
     "steps": [
       {
         "id": 1,
-        "text": "Get the employee vehicle details from the property",
+        "text": "Confirm the request is coming from the Leasing Office/ PM",
         "suggestions": [
-          "Need: license plate, make, model, year, color, state, and employee name/email."
+          "Any requests from a personal email will be denied.",
+          "All requests must come from a work email/Leasing Agent/PM"
         ]
       },
       {
         "id": 2,
-        "text": "Search for the employee in parkm.app or create an account if needed"
+        "text": "Make the necessary changes",
+        "branches": [
+          {
+            "label": "To add an employee vehicle",
+            "description": "Go to 'properties,' > Search the complex > 'Employee Vehicles' > 'Add vehicle.' > Add the employee's vehicle info > Save."
+          },
+          {
+            "label": "To edit a current employee's vehicle info",
+            "description": "Go to 'properties,' > Search the complex > 'Employee Vehicles' > Search plate # > Actions > Edit > Edit necessary info > Save."
+          },
+          {
+            "label": "To deactivate an employee vehicle",
+            "description": "Go to 'properties,' > Search the complex > 'Employee Vehicles' > Search plate # > Actions > Edit > Deactivate > Yes."
+          },
+          {
+            "label": "To reactivate an employee vehicle",
+            "description": "Go to 'properties,' > Search the complex > 'Employee Vehicles' > Scroll down to 'Deleted Vehicles' > Locate plate # > Actions > Edit > Reactivate > Yes."
+          }
+        ]
       },
       {
         "id": 3,
-        "text": "Issue a free permit for life",
+        "text": "Respond to the property with all necessary information",
         "suggestions": [
-          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration to year 2055. You can also add the vehicle to the property's 'Employee Car' list."
+          "Any additional questions or information needed from the property",
+          "Screenshot of employee vehicle on the list",
+          "If the employee lives at a complex different from where they work, they would need to purchase a permit for the complex they live at (or they will need to get permission from their leasing office of where they live to see if they qualify for a free permit)."
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property"
-      },
-      {
-        "id": 5,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property)",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2432,28 +2749,53 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Locate the vehicle to update"
+        "text": "Locate the vehicle in question",
+        "entity_field": "license_plate",
+        "suggestions": [
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'",
+          "Confirm the vehicle is properly permitted"
+        ]
       },
       {
         "id": 3,
-        "text": "Make the update",
+        "text": "Determine what needs to be updated",
         "suggestions": [
-          "LICENSE PLATE: Actions > Modify License Plate > Enter new plate > Transfer All Active Permits > Save",
-          "OTHER: Actions > Edit Vehicle > Update fields > Save"
+          "License plate number: Actions > Modify License Plate > Enter new plate > Toggle 'Transfer All Active Permits' > Save",
+          "All other changes (make, model, VIN, color): Actions > Edit Vehicle > Make changes > Save"
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property",
-        "template": "vehicle_update_confirmed.html"
+        "text": "Verify the change saved correctly",
+        "suggestions": [
+          "Refresh the page and confirm the update is reflected correctly",
+          "Go to their 'Account Preview' and confirm the update is correct"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of vehicle/permit in question/screenshot of account preview",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2472,27 +2814,53 @@
     "label": "Property: Update Resident Contact Info",
     "icon": "E",
     "color": "#2980b9",
-    "intro": "Property is requesting a contact info update for a resident (email, phone, unit).",
+    "intro": "Property is requesting a contact info update for a resident.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's current email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Update the contact information as requested",
+        "text": "Identify what needs to be updated",
         "suggestions": [
-          "Go to the account > Manage User or Edit to update email, phone, or unit number."
+          "Common updates: email address, phone number, unit number, apartment complex"
         ]
       },
       {
         "id": 3,
-        "text": "Confirm with the property",
-        "template": "account_update_confirmed.html"
+        "text": "Update the info",
+        "suggestions": [
+          "Go to the residents account > Edit to update > Primary email address > Mobile phone > Unit > Save (DO NOT use Manage user)"
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "Verify the change saved correctly",
+        "suggestions": [
+          "Refresh the page and confirm the update is reflected correctly"
+        ]
+      },
+      {
+        "id": 5,
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of vehicle/permit in question/screenshot of account preview",
+          "Screenshot of updated information",
+          "Any additional questions or information needed from the property"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2514,27 +2882,53 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Reset the password",
+        "text": "Verify the account exists and the email matches",
         "suggestions": [
-          "Option 1: Click 'Reset Password' button on the account",
-          "Option 2: Manage User > change password to 'Parking'",
-          "Option 3: Administration > Users > search email > Toggle 'Show Tenant Users' > Actions > Reset Password"
+          "Does the email address on the ParkM account match the email address given by the property to support?",
+          "Does the resident have multiple ParkM accounts? Forward to Internalmanagers@parkm.com to merge accounts if needed.",
+          "Confirm the correct email address if necessary."
         ]
       },
       {
         "id": 3,
-        "text": "Reply to the property with the resident's login info",
+        "text": "Reset password using one of these methods",
         "suggestions": [
-          "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community"
+          "Option 1: Direct them to https://parkm.app/account/login > 'Forgot Password'",
+          "Option 2: Find their correct account > click 'Reset Password' button",
+          "Option 3: Manual reset via Manage User > change password to 'Parking' > Send login credentials >",
+          "Username: [their email]",
+          "Password: Parking",
+          "https://parkm.app/permit/community"
         ]
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "Respond to the resident with all necessary information",
+        "suggestions": [
+          "Status of account/password reset",
+          "Email address the password reset was sent to",
+          "Screenshot of account preview",
+          "Any additional questions or information needed from the resident",
+          "Any other relevant instructions/screenshots",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2552,36 +2946,63 @@
     "label": "Property: Register Resident Account",
     "icon": "+",
     "color": "#27ae60",
-    "intro": "Property wants us to create a ParkM account for a resident.",
+    "intro": "Property wants us to create or set up a ParkM account for a resident.",
     "steps": [
       {
         "id": 1,
-        "text": "Get the resident's info from the property",
+        "text": "Check if an account already exists",
         "suggestions": [
-          "Need: name, email, phone, unit number, and vehicle details (plate, make, model, year, color, state)."
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed.",
+          "The customer may already have an account and not realize it."
         ]
       },
       {
         "id": 2,
-        "text": "Check if an account already exists for this email"
+        "text": "If account exists:",
+        "suggestions": [
+          "Confirm it is their account and that the email address on file is correct",
+          "Once they confirm — Send a password reset: Click 'Reset Password' button on their account if the email address on file is correct OR manually reset it by clicking 'Manage User' > Copy username > Change password to 'Parking' > send the new login details is this layout:",
+          "Username: *Paste username*",
+          "Password: Parking",
+          "https://parkm.app/permit/community"
+        ]
       },
       {
         "id": 3,
-        "text": "If no account: Create one in parkm.app",
+        "text": "If account does not exist:",
         "suggestions": [
-          "Create the account with the resident's info and add their vehicle."
+          "Send them instructions/screenshots on how to create one"
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the property and provide login credentials",
+        "text": "Error/issue causing them to not be able to create an account?",
         "suggestions": [
-          "Format:\nUsername: [resident email]\nPassword: Parking\nhttps://parkm.app/permit/community"
+          "Identify the error/issue (ask for screenshots).",
+          "Attempt to create an account as the resident to try and replicate the error/troubleshoot/solve it",
+          "Forward to Internalmanagers@parkm.com if you are unable to resolve the error and issue a free temp permit for 1 week if able"
         ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of permit/account set up",
+          "Screenshot of account preview (if applicable) and/or any other relevant screenshots",
+          "Any additional questions or information needed from the property",
+          "Instructions/ screenshots of how to create an account or resolve the error/issue",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2607,35 +3028,71 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Locate the active permit(s)"
+        "text": "Confirm if the residents permit(s) are active or cancelled",
+        "branches": [
+          {
+            "label": "Active",
+            "description": "Set them to delay cancel in 1 week.",
+            "suggestions": [
+              "Actions > Cancel > Delay Cancellation and set it to 1 week out.",
+              "Actions > Edit > Delete the 'Next Recurring Date' so they are not charged again.",
+              "CONFIRM this with the property"
+            ]
+          },
+          {
+            "label": "Cancelled",
+            "description": "Are they still being charged?",
+            "suggestions": [
+              "Check the 'Payment/Transaction' tab",
+              "Check the 'Stripe' tab for any active subscriptions that need to be cancelled.",
+              "Email Internalmanagers@parkm.com if the Stripe subscription needs to be cancelled."
+            ]
+          }
+        ]
       },
       {
         "id": 3,
-        "text": "Set the permit to Delay Cancel (1 week out)",
+        "text": "Does the resident qualify for a refund?",
         "suggestions": [
-          "Do NOT cancel immediately. Use Actions > Cancel > Delay Cancellation > set to 1 week. Delete the 'Next Recurring Date' so they are not charged again."
+          "Do not offer a refund. Only proceed if it was requested and the resident qualifies",
+          "Open 'Payments/Transactions' tab to locate the charge",
+          "If the charge was made within the last 30 days, send a refund request to accounting.",
+          "If the charge was made over 30 days ago, they do not qualify for a refund. Send the terms and conditions link to the resident."
         ]
       },
       {
         "id": 4,
-        "text": "If the property/resident also wants a refund: Follow refund process",
-        "email_link": "mailto:accounting@parkm.com",
+        "text": "Respond to the property with all necessary information",
         "suggestions": [
-          "Forward to accounting@parkm.com with the required info."
+          "Status of permit(s)",
+          "Screenshot of account preview",
+          "Eligibility of refund (approved or denied — send terms and conditions link if needed)",
+          "Any additional questions or information needed from the resident",
+          "Confirmation that the resident does not have any active permits and will not be charged moving forward."
         ]
       },
       {
         "id": 5,
-        "text": "Confirm with the property",
-        "template": "cancellation_confirmed.html"
+        "text": "Forward to Internalmanagers@parkm.com if the property insists on the residents account being deleted/cancelled",
+        "email_link": "mailto:internalmanagers@parkm.com"
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "Waiting on accounting (if a refund request was sent to accounting).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "Waiting on Customer Response (if additional information is needed).",
+          "Closed (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2655,40 +3112,63 @@
     "label": "Property: Permit Paid Vehicle for Resident",
     "icon": "P",
     "color": "#27ae60",
-    "intro": "Property wants us to purchase a PAID permit on behalf of a resident. Must have a payment method on file and permission to charge.",
+    "intro": "Property wants us to purchase a PAID permit on behalf of a resident.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email"
+        "text": "Confirm the resident has a ParkM account",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Verify the resident has a payment method on file",
+        "text": "If no account: Direct them to create one",
         "suggestions": [
-          "Go to Payments & Transactions tab. If no payment method, the resident will need to add one at https://parkm.app/account/login first."
+          "https://parkm.app/permit/community?forceChange=true"
         ]
       },
       {
         "id": 3,
-        "text": "Confirm you have permission to charge the payment method",
+        "text": "Verify the resident has a payment method on file",
         "suggestions": [
-          "The property or resident must explicitly give permission before you charge."
+          "'Payments & Transactions' tab > Scroll down to 'Payment Methods' > If there is no payment method, the resident will need to add one at https://parkm.app/account/login first."
         ]
       },
       {
         "id": 4,
-        "text": "Purchase the permit on the backend",
+        "text": "Confirm you have permission to charge the payment method on file",
         "suggestions": [
-          "Actions > Sale Permit > Select community and permit type > Toggle OFF 'Issue Free Permit' > Select vehicle > Select payment method (credit card) > Toggle OFF 'Do not send email receipt' (so resident gets receipt) > Save."
+          "The property or resident must explicitly give permission before you charge the payment method on file/purchase a permit"
         ]
       },
       {
         "id": 5,
-        "text": "Confirm with the property"
+        "text": "Purchase the permit on the backend/or login as the resident to purchase the permit IF PERMISSION IS GIVEN:",
+        "suggestions": [
+          "Actions > Sale Permit. Make sure they have a payment method on file and you have permission to charge it. Toggle OFF 'Issue Free Permit' and select their payment method."
+        ]
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of permit/account",
+          "Screenshot of account preview and/or any other relevant screenshots",
+          "Any additional questions or information needed from the property",
+          "Instructions/ screenshots",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
+      },
+      {
+        "id": 7,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2716,36 +3196,61 @@
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Check Payments & Transactions tab for issues",
+        "text": "Review the 'Stripe' & 'Payments & Transactions' tabs",
         "suggestions": [
-          "Look for: failed payments, expired cards, missing payment methods, duplicate charges."
+          "Check for failed payments, expired cards, or missing payment methods, duplicate/inactive stripe subscriptions"
         ]
       },
       {
         "id": 3,
-        "text": "Identify and resolve the payment issue",
+        "text": "Identify the payment issue",
         "suggestions": [
-          "For card updates: Resident needs to update at https://parkm.app/account/login",
-          "For billing disputes: Check if charge is legitimate or needs refund",
-          "For failed payments: Check card expiry"
+          "Common issues:",
+          "Credit/debit card expired or declined",
+          "No payment method on file",
+          "Wrong payment method set as default",
+          "Wants to change payment method",
+          "Bank account issues",
+          "Convenience fee questions"
         ]
       },
       {
         "id": 4,
-        "text": "If refund needed: Forward to accounting@parkm.com",
-        "email_link": "mailto:accounting@parkm.com"
+        "text": "Resolve the payment issue and respond to the property",
+        "suggestions": [
+          "Inform them to direct the resident to https://parkm.app/account/login to update their payment method.",
+          "Delete the old method on the backend for them: Payments tab > delete old card.",
+          "Issue a free temporary permit"
+        ]
       },
       {
         "id": 5,
-        "text": "Respond to the property with resolution"
+        "text": "Respond to the property with all necessary information",
+        "suggestions": [
+          "Status of vehicle/permit in question/screenshot of account preview",
+          "Instructions/screenshots on how to update their payment method/ remove it",
+          "Explanation of fees",
+          "Screenshot of CC Decline notices/ instructions on how to pay their due balance (if applicable)",
+          "Any additional questions or information needed from the property",
+          "\"We are looking into this and will respond shortly\" (if Internal is involved)"
+        ]
       },
       {
         "id": 6,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2767,36 +3272,46 @@
     "label": "Property: Guest Permits",
     "icon": "P",
     "color": "#2980b9",
-    "intro": "Property is asking about guest permit process, limits, or pricing.",
+    "intro": "Property is asking about guest permits.",
     "steps": [
       {
         "id": 1,
-        "text": "Check the property's guest permit setup in parkm.app",
+        "text": "Check the property's guest permit setup in .APP",
         "suggestions": [
-          "Go to the property > check guest permit types, pricing, duration limits, and restrictions."
+          "Go to the property > permit types > guest permits"
         ]
       },
       {
         "id": 2,
-        "text": "Answer the property's question",
-        "suggestions": [
-          "Key info:",
-          "- Guest permits are purchased by the RESIDENT for their guest",
-          "- Some properties have limits on guest permits",
-          "- Guests can pre-purchase and extend permits",
-          "- Guest permits vs resident permits are different permit types"
-        ]
+        "text": "Check the property notes on guest permits in Zoho CRM"
       },
       {
         "id": 3,
-        "text": "If the property wants to change guest permit settings: CC the sales rep",
+        "text": "Respond to the property with all necessary information",
         "suggestions": [
-          "CC the property's ParkM sales rep for configuration changes."
+          "The answer(s) to the properties question(s) about guest permits",
+          "Pricing",
+          "Pre-purchasing",
+          "Extending",
+          "Property limits on guest permits",
+          "Any relevant screenshots",
+          "Any additional questions or information needed from the property"
         ]
       },
       {
         "id": 4,
-        "text": "Send response and close ticket"
+        "text": "If the property wants to change any guest permit info/settings",
+        "suggestions": [
+          "CC the sales rep/account manager"
+        ]
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2818,33 +3333,36 @@
     "label": "Property: Potential Lead",
     "icon": "L",
     "color": "#f39c12",
-    "intro": "A new property or complex is interested in ParkM services. Forward to the sales team.",
+    "intro": "A property is inquiring about ParkM services.",
     "steps": [
       {
         "id": 1,
         "text": "Gather the lead information",
         "suggestions": [
-          "Note: property name, contact name, email, phone, and what they're interested in."
+          "Property name, contact name, email, phone, and what they're interested in."
         ]
       },
       {
         "id": 2,
-        "text": "Forward the thread to the sales team",
+        "text": "Forward the lead along",
         "suggestions": [
-          "Forward to the appropriate sales channel. Check Zoho CRM for the territory/region."
+          "Forward the thread to Chad Craven and CC gabby@parkm.com and stuart@parkm.com"
         ]
       },
       {
         "id": 3,
         "text": "Acknowledge the inquiry to the property",
         "suggestions": [
-          "Let them know a sales representative will be in touch shortly."
-        ],
-        "template": "lead_acknowledged.html"
+          "Let them know someone will be in touch shortly."
+        ]
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the property).",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2867,27 +3385,49 @@
     "label": "Sales Rep: Vehicle Release Request",
     "icon": "!",
     "color": "#d35400",
-    "intro": "Sales rep is asking for a vehicle to be released from a tow/boot. Tow/boot refunds and releases require Internal Manager approval.",
+    "intro": "Sales rep is asking for a vehicle to be released from tow/boot.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app for the vehicle in question"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed."
+        ]
       },
       {
         "id": 2,
-        "text": "Check the vehicle's permit status at the time of the incident"
+        "text": "Locate the vehicle in question",
+        "entity_field": "license_plate",
+        "suggestions": [
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'",
+          "Confirm the vehicle is properly permitted"
+        ]
       },
       {
         "id": 3,
-        "text": "Forward to Internal Managers for review",
-        "email_link": "mailto:internalmanagers@parkm.com",
+        "text": "Check the vehicle's permit status at the time of the incident",
         "suggestions": [
-          "Let the sales rep know you'll send it to a manager to review. Forward the thread to internalmanagers@parkm.com with a summary."
+          "Review all details and let the sales rep know you'll send it to a manager to review and confirm the details."
         ]
       },
       {
         "id": 4,
-        "text": "Set ticket to waiting and close when resolved"
+        "text": "Forward to Internalmanagers@parkm.com for review",
+        "suggestions": [
+          "Include a detailed synopsis of the request and your understanding of the situation"
+        ],
+        "email_link": "mailto:internalmanagers@parkm.com"
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the resident or the property).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2906,34 +3446,76 @@
     "label": "Sales Rep: Grandfather Request",
     "icon": "#",
     "color": "#8e44ad",
-    "intro": "Sales rep is requesting a grandfathered (free) permit for a vehicle.",
+    "intro": "Sales rep is asking for a vehicle to be grandfathered.",
     "steps": [
       {
         "id": 1,
-        "text": "Search parkm.app by the resident's email or name"
+        "text": "Locate resident account in .APP",
+        "suggestions": [
+          "Search by email address, name, license plate number, unit number or space number.",
+          "Try filtering the search by community if needed.",
+          "Request the resident's account info from the sales rep if it wasn't given"
+        ]
       },
       {
         "id": 2,
-        "text": "Get vehicle details",
+        "text": "Locate the vehicle/permit in question",
+        "entity_field": "license_plate",
         "suggestions": [
-          "Need: license plate, make, model, year, color, state."
+          "Check the 'Vehicles/Permits' tab",
+          "Check the 'Relationships' section in 'Overview'",
+          "Does the vehicle already have a permit on it? Is it a paid permit? Grandfathered permit?"
         ]
       },
       {
         "id": 3,
-        "text": "Issue a free grandfathered permit",
-        "suggestions": [
-          "Actions > Sale Permit > Toggle 'Issue Free Permit' ON > Set expiration (1 year default, or as specified). Label 'Grandfathered'. No Next Recurring Date."
+        "text": "Do they currently have a permit on the vehicle in question?",
+        "branches": [
+          {
+            "label": "Paid permit?",
+            "description": "Convert it to a free grandfathered permit. *Note that this is only an option on recurring monthly permits — not one time fee permits or free permits.",
+            "suggestions": [
+              "Navigate to the permit > Click 'actions' > 'Convert to free' > Set the expiration date to 1 year if an end date was not provided by the property > Press 'SAVE'"
+            ]
+          },
+          {
+            "label": "No permit?",
+            "description": "Issue the free grandfathered permit.",
+            "suggestions": [
+              "Actions > Sale Permit > Select community > Select permit type > Toggle 'Issue Free Permit' ON > Set expiration to the date provided by property (if none given, default to 1 year) > Choose the vehicle you need permitted or press 'add' to create a whole new vehicle > review the details of the permit > Leave 'Do not send an email receipt to a customer' toggled on > name it 'grandfathered' > Press SAVE"
+            ]
+          },
+          {
+            "label": "Already have a grandfathered permit?",
+            "description": "Check the expiration date and confirm vehicle information is correct. If it expires soon, the property probably wants to extend it."
+          }
         ]
       },
       {
         "id": 4,
-        "text": "Confirm with the sales rep",
-        "template": "grandfathered_permit_issued.html"
+        "text": "Double check your work",
+        "suggestions": [
+          "Is the license plate number correct?",
+          "Is the expiration date correct?",
+          "Does anything else need to be clarified with the property or resident?"
+        ]
       },
       {
         "id": 5,
-        "text": "Close ticket"
+        "text": "Respond to the sales rep with all necessary information",
+        "suggestions": [
+          "Status of permit (grandfathered permit + expiration date)",
+          "Screenshot of account preview",
+          "Any additional questions or information needed from the sales rep"
+        ]
+      },
+      {
+        "id": 6,
+        "text": "Update ticket status",
+        "suggestions": [
+          "Waiting on Customer Response (if additional information/confirmation is needed from the resident or the complex).",
+          "Closed (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2952,32 +3534,46 @@
     "label": "Towing/Monitoring Lead",
     "icon": "L",
     "color": "#f39c12",
-    "intro": "A towing, booting, ticketing, or monitoring company is reaching out. Forward to Brian McDonough (Enforcement Manager).",
+    "intro": "Inquiry about ParkM's towing/monitoring services.",
     "steps": [
       {
         "id": 1,
         "text": "Determine the nature of the inquiry",
         "suggestions": [
-          "Is this a tow company wanting to get set up? A property asking about getting a tow company? Questions about ParkM's towing/monitoring integration?"
+          "Is this a tow company wanting to get set up?",
+          "Questions about ParkM's towing/monitoring integration?"
         ]
       },
       {
         "id": 2,
-        "text": "Forward to Brian McDonough",
+        "text": "Forward to Brian McDonough and CC Mark Scherer (If applicable)",
         "suggestions": [
-          "Brian is our Enforcement Manager. He handles setting up tow/boot/ticket/monitoring companies on ParkM. Forward the thread to Brian."
+          "Brian is our Enforcement Manager. He handles setting up tow/boot/ticket/monitoring companies with ParkM and Mark is our monitoring manager (under Brian). Please only include Mark in any emails sent to Brian about monitoring. (brian@parkm.com & mscherer@parkm.com)"
         ]
       },
       {
         "id": 3,
-        "text": "If a property is asking about getting a tow company: CC the sales rep",
+        "text": "If a property is asking about getting a tow company: CC the sales rep/account manager",
         "suggestions": [
           "CC the property's sales rep and say: 'I've cc'd your ParkM sales representative, [Name], to assist in selecting a towing, booting, or ticketing company for your community.'"
         ]
       },
       {
         "id": 4,
-        "text": "Close ticket"
+        "text": "Send to Internal Managers if unsure",
+        "suggestions": [
+          "If the request is unclear and you are unsure if you should be sending it to Brian, Mark or the Sales Rep/Account Manager please forward it to Internalmanagers@parkm.com FIRST for clarification/assistance"
+        ],
+        "email_link": "mailto:internalmanagers@parkm.com"
+      },
+      {
+        "id": 5,
+        "text": "Update ticket status",
+        "suggestions": [
+          "'Waiting on Customer Response' (if additional information is needed from the customer).",
+          "'On Hold' if you're waiting on a response from Internal Managers for assistance.",
+          "'Closed' (All necessary parties have been contacted and nothing else needs to be done on our end)."
+        ]
       }
     ],
     "validation_on_close": [
@@ -2995,7 +3591,7 @@
     "label": "Law Enforcement Request",
     "icon": "!",
     "color": "#34495e",
-    "intro": "Law enforcement is requesting information. Escalate to Internal Managers immediately.",
+    "intro": "Law enforcement is requesting information.",
     "steps": [
       {
         "id": 1,
@@ -3006,15 +3602,15 @@
       },
       {
         "id": 2,
-        "text": "Forward immediately to Internal Managers",
-        "email_link": "mailto:internalmanagers@parkm.com",
-        "suggestions": [
-          "Forward the entire thread to internalmanagers@parkm.com with 'Law Enforcement Request' in the subject/summary."
-        ]
+        "text": "Forward immediately to Internalmanagers@parkm.com",
+        "email_link": "mailto:internalmanagers@parkm.com"
       },
       {
         "id": 3,
-        "text": "Set ticket status to Escalated/Waiting"
+        "text": "Update ticket status",
+        "suggestions": [
+          "'On Hold' because you're waiting on a response from Internal Managers for assistance."
+        ]
       }
     ],
     "validation_on_close": [

@@ -755,6 +755,38 @@ async def parkm_customer_lookup(email: str, _auth=Depends(require_parkm_auth)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/parkm/customer/search")
+async def parkm_customer_search(q: str, _auth=Depends(require_parkm_auth)):
+    """Search for customers in ParkM by name or email.
+
+    Returns a list of matching customers with basic info.
+    Usage: GET /parkm/customer/search?q=John+Smith
+    """
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Search query must be at least 2 characters")
+
+    try:
+        from src.services.parkm_client import ParkMClient
+        parkm = ParkMClient()
+        customers = await parkm.search_customers(q.strip(), max_results=10)
+        results = []
+        for c in customers:
+            results.append({
+                "id": c.get("id"),
+                "name": f'{c.get("firstName", "")} {c.get("lastName", "")}'.strip(),
+                "email": c.get("primaryEmailAddress", ""),
+                "phone": c.get("mobilePhone") or c.get("homePhone") or "",
+                "unit_number": c.get("unitNumber", ""),
+                "account_id": c.get("accountId", ""),
+            })
+        return {"query": q, "count": len(results), "results": results}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Customer search failed for '{q}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/parkm/refund/evaluate")
 async def parkm_evaluate_refund(request: Request, _auth=Depends(require_parkm_auth)):
     """Evaluate refund eligibility for a customer.

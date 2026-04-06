@@ -52,6 +52,7 @@
       {
         "id": 1,
         "text": "Locate resident account in .APP",
+        "interactive": "account_lookup",
         "suggestions": [
           "Search by email address, name, license plate number, unit number or space number.",
           "Try filtering the search by community if needed."
@@ -93,6 +94,7 @@
       {
         "id": 4,
         "text": "Does the resident qualify for a refund?",
+        "interactive": "refund_evaluation",
         "suggestions": [
           "Open 'Payments/Transactions' tab to locate the charge",
           "If the charge was made within the last 30 days, send a refund request to accounting.",

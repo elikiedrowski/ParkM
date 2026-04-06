@@ -1,94 +1,130 @@
 /**
- * ParkM CSR Wizard — Refund Automation Panel
- * Provides customer lookup, permit review, refund eligibility evaluation,
- * permit cancellation, and accounting email forwarding — all inline in the wizard.
+ * ParkM CSR Wizard — Refund Automation Panel (Step-Embedded)
+ * Renders account lookup and refund evaluation inline within wizard steps.
  *
- * Only visible for refund/cancellation-related tags.
+ * Step 1 (interactive: "account_lookup") — search by email or name, show customer info
+ * Step 4 (interactive: "refund_evaluation") — show permits, evaluate/process refunds
+ *
+ * Called by app.js after wizard steps are rendered, targets the
+ * .step-interactive-embed containers created by WizardRenderer.
  */
 var RefundPanel = (function () {
   var customerData = null;
   var ticketEmail = "";
 
-  // Tags that trigger the refund panel
-  var REFUND_TAGS_KEYWORDS = [
-    "cancel", "refund", "double charged", "extra charges",
-    "charged", "move out", "moved out"
-  ];
+  // Track which embed containers we're using (set during initEmbedded)
+  var lookupContainer = null;
+  var refundContainer = null;
 
-  /* ── Should this panel be visible? ──────────────────────────────── */
+  /* ── Initialize embedded panels ────────────────────────────────── */
 
-  function shouldShow(tags) {
-    if (!tags || tags.length === 0) return false;
-    var joined = tags.join(" ").toLowerCase();
-    return REFUND_TAGS_KEYWORDS.some(function (kw) {
-      return joined.indexOf(kw) !== -1;
+  function initEmbedded(contactEmail) {
+    customerData = null;
+    ticketEmail = contactEmail || "";
+
+    // Find all interactive embed containers rendered by WizardRenderer
+    var allEmbeds = document.querySelectorAll(".step-interactive-embed");
+    lookupContainer = null;
+    refundContainer = null;
+
+    for (var i = 0; i < allEmbeds.length; i++) {
+      var embedId = allEmbeds[i].id || "";
+      // The step id is namespaced as "0_1", "0_4" etc by app.js
+      // The interactive field from JSON propagates through
+      var stepRow = allEmbeds[i].closest(".step-row");
+      if (!stepRow) continue;
+      var interactiveType = allEmbeds[i].getAttribute("data-interactive");
+      if (interactiveType === "account_lookup") {
+        lookupContainer = allEmbeds[i];
+      } else if (interactiveType === "refund_evaluation") {
+        refundContainer = allEmbeds[i];
+      }
+    }
+
+    if (lookupContainer) {
+      _renderLookupUI(lookupContainer);
+      // Auto-search if we have a contact email
+      if (contactEmail) {
+        var input = lookupContainer.querySelector(".refund-search-input");
+        if (input) input.value = contactEmail;
+        _onSearch();
+      }
+    }
+
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Complete account lookup above to view permits and evaluate refunds.</div>';
+    }
+  }
+
+  /* ── Render Lookup UI into container ───────────────────────────── */
+
+  function _renderLookupUI(container) {
+    container.innerHTML =
+      '<div class="refund-lookup-row">' +
+        '<input type="text" class="refund-search-input refund-email-input" placeholder="Search by email or name...">' +
+        '<button class="btn btn-primary refund-lookup-btn">Search</button>' +
+      '</div>' +
+      '<div class="refund-lookup-error" style="display:none;"></div>' +
+      '<div class="refund-search-results" style="display:none;"></div>' +
+      '<div class="refund-customer-info" style="display:none;"></div>';
+
+    var btn = container.querySelector(".refund-lookup-btn");
+    var input = container.querySelector(".refund-search-input");
+    btn.addEventListener("click", _onSearch);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") _onSearch();
     });
   }
 
-  /* ── Initialize / show the panel ────────────────────────────────── */
+  /* ── Customer Search / Lookup ────────────────────────────────────── */
 
-  function init(tags, contactEmail) {
-    var panel = document.getElementById("refund-panel");
-    if (!shouldShow(tags)) {
-      panel.style.display = "none";
+  function _isEmail(str) {
+    return str.indexOf("@") !== -1;
+  }
+
+  function _onSearch() {
+    if (!lookupContainer) return;
+    var input = lookupContainer.querySelector(".refund-search-input");
+    var query = input ? input.value.trim() : "";
+    if (!query) {
+      _showError("Enter an email address or name");
       return;
     }
 
-    panel.style.display = "block";
-    _resetPanel();
-
-    // Attach event handlers
-    document.getElementById("refund-lookup-btn").onclick = _onLookup;
-
-    // Pre-populate email and auto-lookup
-    if (contactEmail) {
-      ticketEmail = contactEmail;
-      var input = document.getElementById("refund-email-input");
-      if (input) input.value = contactEmail;
-      _onLookup();
-    }
-  }
-
-  function _resetPanel() {
-    customerData = null;
-    document.getElementById("refund-email-input").value = "";
-    document.getElementById("refund-customer-info").style.display = "none";
-    document.getElementById("refund-customer-info").innerHTML = "";
-    document.getElementById("refund-permits-list").innerHTML = "";
-    document.getElementById("refund-permits-section").style.display = "none";
-    document.getElementById("refund-inactive-list").innerHTML = "";
-    document.getElementById("refund-inactive-section").style.display = "none";
-    document.getElementById("refund-lookup-error").style.display = "none";
-    document.getElementById("refund-lookup-error").textContent = "";
-    document.getElementById("refund-lookup-btn").disabled = false;
-    document.getElementById("refund-lookup-btn").textContent = "Lookup";
-  }
-
-  /* ── Customer Lookup ────────────────────────────────────────────── */
-
-  function _onLookup() {
-    var email = document.getElementById("refund-email-input").value.trim();
-    if (!email) {
-      _showError("Enter an email address");
-      return;
-    }
-
-    var btn = document.getElementById("refund-lookup-btn");
+    var btn = lookupContainer.querySelector(".refund-lookup-btn");
     btn.disabled = true;
     btn.textContent = "Searching...";
     _hideError();
+    _hideEl(lookupContainer.querySelector(".refund-search-results"));
+    _hideEl(lookupContainer.querySelector(".refund-customer-info"));
+    // Clear refund container while searching
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Searching...</div>';
+    }
 
+    if (_isEmail(query)) {
+      _doEmailLookup(query);
+    } else {
+      _doNameSearch(query);
+    }
+  }
+
+  function _doEmailLookup(email) {
+    var btn = lookupContainer.querySelector(".refund-lookup-btn");
     var url = ParkMConfig.API_BASE_URL + "/parkm/customer?email=" + encodeURIComponent(email);
 
     _fetchWithTimeout(url, null, 35000)
       .then(function (data) {
         btn.disabled = false;
-        btn.textContent = "Lookup";
+        btn.textContent = "Search";
         customerData = data;
 
         if (!data.found) {
           _showError("No ParkM account found for this email.");
           _showNotFoundActions(email);
+          if (refundContainer) {
+            refundContainer.innerHTML = '<div class="refund-eval-placeholder">No account found — cannot evaluate refunds.</div>';
+          }
           return;
         }
 
@@ -97,16 +133,94 @@ var RefundPanel = (function () {
       })
       .catch(function (err) {
         btn.disabled = false;
-        btn.textContent = "Lookup";
+        btn.textContent = "Search";
         _showError("Lookup failed: " + err.message);
       });
+  }
+
+  function _doNameSearch(query) {
+    var btn = lookupContainer.querySelector(".refund-lookup-btn");
+    var url = ParkMConfig.API_BASE_URL + "/parkm/customer/search?q=" + encodeURIComponent(query);
+
+    _fetchWithTimeout(url, null, 65000)
+      .then(function (data) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+
+        var results = data.results || [];
+        if (results.length === 0) {
+          _showError('No accounts found for "' + _esc(query) + '".');
+          if (refundContainer) {
+            refundContainer.innerHTML = '<div class="refund-eval-placeholder">No account found — cannot evaluate refunds.</div>';
+          }
+          return;
+        }
+
+        if (results.length === 1 && results[0].email && results[0].email.indexOf("@fake.com") === -1) {
+          _selectSearchResult(results[0]);
+          return;
+        }
+
+        _renderSearchResults(results);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+        _showError("Search failed: " + err.message);
+      });
+  }
+
+  function _renderSearchResults(results) {
+    var container = lookupContainer.querySelector(".refund-search-results");
+    container.style.display = "block";
+    var html = '<div class="refund-search-results-title">' + results.length + ' accounts found</div>';
+
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      var detailParts = [];
+      if (r.email && r.email.indexOf("@fake.com") === -1) detailParts.push(r.email);
+      if (r.unit_number) detailParts.push("Unit " + r.unit_number);
+      if (r.phone) detailParts.push(r.phone);
+
+      html += '<div class="refund-search-result-item" data-idx="' + i + '">' +
+        '<div class="refund-search-result-info">' +
+          '<div class="refund-search-result-name">' + _esc(r.name || "Unknown") + '</div>' +
+          (detailParts.length > 0 ? '<div class="refund-search-result-detail">' + _esc(detailParts.join(" · ")) + '</div>' : '') +
+        '</div>' +
+        '<div class="refund-search-result-select">Select &rarr;</div>' +
+      '</div>';
+    }
+
+    container.innerHTML = html;
+
+    var items = container.querySelectorAll(".refund-search-result-item");
+    for (var j = 0; j < items.length; j++) {
+      (function (idx) {
+        items[idx].addEventListener("click", function () {
+          _selectSearchResult(results[idx]);
+        });
+      })(j);
+    }
+  }
+
+  function _selectSearchResult(result) {
+    var searchResults = lookupContainer.querySelector(".refund-search-results");
+    searchResults.style.display = "none";
+
+    if (result.email && result.email.indexOf("@fake.com") === -1) {
+      var input = lookupContainer.querySelector(".refund-search-input");
+      if (input) input.value = result.email;
+      _doEmailLookup(result.email);
+    } else {
+      _showError("This account has no email on file. Please look up using a different identifier.");
+    }
   }
 
   /* ── Render Customer Info Card ──────────────────────────────────── */
 
   function _renderCustomerInfo(data) {
     var c = data.customer;
-    var infoDiv = document.getElementById("refund-customer-info");
+    var infoDiv = lookupContainer.querySelector(".refund-customer-info");
     infoDiv.style.display = "block";
 
     infoDiv.innerHTML =
@@ -118,57 +232,60 @@ var RefundPanel = (function () {
       '</div>';
   }
 
-  /* ── Render Permits ─────────────────────────────────────────────── */
+  /* ── Render Permits (into refund evaluation step) ───────────────── */
 
   function _renderPermits(data) {
-    var section = document.getElementById("refund-permits-section");
-    var list = document.getElementById("refund-permits-list");
-    list.innerHTML = "";
+    if (!refundContainer) return;
+    refundContainer.innerHTML = "";
 
     var permits = data.permits || [];
     var now = new Date();
     var active = permits.filter(function (p) {
       if (p.is_cancelled) return false;
-      // Hide expired permits
       if (p.expiration_date && new Date(p.expiration_date) < now) return false;
       return true;
     });
-    var cancelled = permits.filter(function (p) { return p.is_cancelled; });
-    var expired = permits.filter(function (p) {
-      return !p.is_cancelled && p.expiration_date && new Date(p.expiration_date) < now;
-    });
 
     var inactivePermits = data.inactive_permits || [];
-    var inactiveSection = document.getElementById("refund-inactive-section");
-    var inactiveList = document.getElementById("refund-inactive-list");
-    inactiveList.innerHTML = "";
 
     if (active.length === 0 && inactivePermits.length === 0) {
-      section.style.display = "block";
-      list.innerHTML = '<div class="refund-no-permits">No permits found</div>';
-      inactiveSection.style.display = "none";
+      refundContainer.innerHTML = '<div class="refund-no-permits">No permits found for this customer.</div>';
       return;
     }
 
-    // Render active permits
+    // Active permits section
     if (active.length > 0) {
-      section.style.display = "block";
+      var activeHeader = document.createElement("h4");
+      activeHeader.className = "refund-permits-title";
+      activeHeader.textContent = "Active Permits";
+      refundContainer.appendChild(activeHeader);
+
+      var activeList = document.createElement("div");
+      activeList.className = "refund-permits-list";
       active.forEach(function (permit) {
-        list.appendChild(_buildPermitCard(permit, data.customer));
+        activeList.appendChild(_buildPermitCard(permit, data.customer));
       });
+      refundContainer.appendChild(activeList);
     } else {
-      section.style.display = "block";
-      list.innerHTML = '<div class="refund-no-permits">No active permits</div>';
+      var noActive = document.createElement("div");
+      noActive.className = "refund-no-permits";
+      noActive.textContent = "No active permits";
+      refundContainer.appendChild(noActive);
     }
 
-    // Render inactive permits (display-only, no action buttons)
+    // Inactive permits section
     if (inactivePermits.length > 0) {
-      inactiveSection.style.display = "block";
+      var inactiveHeader = document.createElement("h4");
+      inactiveHeader.className = "refund-permits-title refund-inactive-title";
+      inactiveHeader.innerHTML = 'Inactive Permits <span class="refund-inactive-subtitle">(charged within 30 days)</span>';
+      refundContainer.appendChild(inactiveHeader);
+
+      var inactiveList = document.createElement("div");
+      inactiveList.className = "refund-inactive-list";
       inactivePermits.forEach(function (permit) {
         inactiveList.appendChild(_buildInactivePermitCard(permit));
       });
-    } else {
-      inactiveSection.style.display = "none";
+      refundContainer.appendChild(inactiveList);
     }
   }
 
@@ -180,7 +297,6 @@ var RefundPanel = (function () {
     var vehicleStr = [vehicle.year, vehicle.make, vehicle.model, vehicle.color]
       .filter(Boolean).join(" ");
     var plateStr = vehicle.plate || "";
-    // Show "make model — plate" or just plate if no make/model
     var vehicleLine = vehicleStr ? vehicleStr + (plateStr ? " — " + plateStr : "") : plateStr;
 
     var effDate = permit.effective_date ? _formatDate(permit.effective_date) : "N/A";
@@ -219,11 +335,9 @@ var RefundPanel = (function () {
       .filter(Boolean).join(" ");
     var plateStr = vehicle.plate ? " — " + vehicle.plate : "";
 
-    // Format dates
     var effDate = permit.effective_date ? _formatDate(permit.effective_date) : "N/A";
     var expDate = permit.expiration_date ? _formatDate(permit.expiration_date) : "N/A";
 
-    // Price
     var price = permit.recurring_price || permit.permit_price || permit.total_amount;
     var priceStr = price ? "$" + parseFloat(price).toFixed(2) : "N/A";
     var recurStr = permit.is_recurring ? " /mo" : " one-time";
@@ -239,10 +353,9 @@ var RefundPanel = (function () {
         '<div class="refund-permit-detail"><span class="refund-detail-label">Price:</span> ' + priceStr + recurStr + '</div>' +
         (permit.balance_due > 0 ? '<div class="refund-permit-detail refund-balance-due"><span class="refund-detail-label">Balance Due:</span> $' + parseFloat(permit.balance_due).toFixed(2) + '</div>' : '') +
       '</div>' +
-      '<div class="refund-permit-actions" id="permit-actions-' + permit.id + '"></div>' +
-      '<div class="refund-permit-result" id="permit-result-' + permit.id + '"></div>';
+      '<div class="refund-permit-actions"></div>' +
+      '<div class="refund-permit-result"></div>';
 
-    // Add action buttons after innerHTML is set
     var actionsDiv = card.querySelector(".refund-permit-actions");
 
     var evalBtn = document.createElement("button");
@@ -270,7 +383,6 @@ var RefundPanel = (function () {
     var resultDiv = card.querySelector(".refund-permit-result");
     resultDiv.innerHTML = '<div class="refund-loading">Evaluating...</div>';
 
-    // Disable buttons during evaluation
     var btns = card.querySelectorAll(".refund-action-btn");
     for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
 
@@ -284,11 +396,6 @@ var RefundPanel = (function () {
       ticket_id: ticketId
     };
 
-    _doEvaluate(body, permit, customer, resultDiv);
-  }
-
-  function _doEvaluate(body, permit, customer, resultDiv) {
-    var card = resultDiv.closest(".refund-permit-card");
     _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -300,16 +407,12 @@ var RefundPanel = (function () {
       .catch(function (err) {
         resultDiv.innerHTML =
           '<div class="refund-error">Evaluation failed: ' + _esc(err.message) + '</div>';
-        // Re-enable buttons on failure
-        if (card) {
-          var btns = card.querySelectorAll(".refund-action-btn");
-          for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
-        }
+        var btns = card.querySelectorAll(".refund-action-btn");
+        for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
       });
   }
 
   function _renderEvalResult(data, permit, customer, resultDiv) {
-    // Find the result for this specific permit
     var permitResult = null;
     (data.results || []).forEach(function (r) {
       if (r.permit && r.permit.id === permit.id) {
@@ -324,6 +427,7 @@ var RefundPanel = (function () {
 
     var elig = permitResult.eligibility;
     var eligible = elig.eligible;
+    var btnId = "process-refund-" + permit.id;
 
     var html =
       '<div class="refund-eval-result ' + (eligible ? 'refund-eval-eligible' : 'refund-eval-ineligible') + '">' +
@@ -337,7 +441,7 @@ var RefundPanel = (function () {
 
     if (eligible) {
       html += '<div class="refund-eval-actions">';
-      html += '<button class="btn btn-primary refund-action-btn" id="process-refund-' + permit.id + '">Cancel & Forward to Accounting</button>';
+      html += '<button class="btn btn-primary refund-action-btn" id="' + btnId + '">Cancel & Forward to Accounting</button>';
       html += '</div>';
     } else {
       html += '<div class="refund-eval-actions">';
@@ -347,9 +451,8 @@ var RefundPanel = (function () {
 
     resultDiv.innerHTML = html;
 
-    // Attach process handler if eligible
     if (eligible) {
-      var processBtn = document.getElementById("process-refund-" + permit.id);
+      var processBtn = document.getElementById(btnId);
       if (processBtn) {
         processBtn.addEventListener("click", function () {
           _processRefund(permit, customer, resultDiv);
@@ -411,31 +514,28 @@ var RefundPanel = (function () {
 
     var html = '<div class="refund-process-result">';
 
-    // Cancel status
     html += '<div class="refund-process-step ' + (cancelOk ? 'step-ok' : 'step-fail') + '">';
     html += (cancelOk ? 'Permit cancelled' : 'Cancel may have failed — verify in ParkM');
     html += '</div>';
 
-    // Zoho status update
     if (data.zoho_status_updated) {
       html += '<div class="refund-process-step step-ok">Ticket set to "Waiting on Accounting"</div>';
     } else if (data.zoho_status_updated === false) {
       html += '<div class="refund-process-step step-fail">Could not update ticket status — please set to "Waiting on Accounting" manually</div>';
     }
 
-    // Accounting email preview
     if (acctEmail) {
+      var insertBtnId = "insert-accounting-" + permit.id;
       html += '<div class="refund-accounting-email">';
       html += '<div class="refund-accounting-label">Email to <strong>' + _esc(acctEmail.to) + '</strong>:</div>';
       html += '<div class="refund-accounting-preview">' + acctEmail.body_html + '</div>';
-      html += '<button class="btn btn-primary refund-action-btn" id="insert-accounting-' + permit.id + '">Insert Email into Reply</button>';
+      html += '<button class="btn btn-primary refund-action-btn" id="' + insertBtnId + '">Insert Email into Reply</button>';
       html += '</div>';
     }
 
     html += '</div>';
     resultDiv.innerHTML = html;
 
-    // Attach insert handler
     if (acctEmail) {
       var insertBtn = document.getElementById("insert-accounting-" + permit.id);
       if (insertBtn) {
@@ -445,7 +545,7 @@ var RefundPanel = (function () {
       }
     }
 
-    // Update customerData in background but don't re-render (preserve result view)
+    // Refresh customer data in background
     if (cancelOk && customerData && customerData.customer) {
       var url = ParkMConfig.API_BASE_URL + "/parkm/customer?email=" + encodeURIComponent(customerData.customer.email);
       fetch(url, { signal: AbortSignal.timeout(30000) })
@@ -462,7 +562,6 @@ var RefundPanel = (function () {
       return;
     }
 
-    // Disable all buttons on this card during cancel
     var btns = card.querySelectorAll(".refund-action-btn");
     for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
 
@@ -499,17 +598,14 @@ var RefundPanel = (function () {
 
   function _insertAccountingEmail(acctEmail) {
     try {
-      // Set the To field to accounting email, clear CC
       ZOHODESK.set("ticket.replyEditorRecipients", {
         to: [acctEmail.to],
         cc: [],
         bcc: []
       });
-      // Insert the email body
       ZOHODESK.invoke("INSERT", "ticket.replyEditor", { value: acctEmail.body_html, type: "replace" });
     } catch (e) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        // Strip HTML tags for plain-text clipboard fallback
         var tmp = document.createElement("div");
         tmp.innerHTML = acctEmail.body_html;
         navigator.clipboard.writeText(tmp.textContent || tmp.innerText || "");
@@ -542,7 +638,8 @@ var RefundPanel = (function () {
   /* ── Not Found Actions ──────────────────────────────────────────── */
 
   function _showNotFoundActions(email) {
-    var infoDiv = document.getElementById("refund-customer-info");
+    if (!lookupContainer) return;
+    var infoDiv = lookupContainer.querySelector(".refund-customer-info");
     infoDiv.style.display = "block";
     infoDiv.innerHTML =
       '<div class="refund-not-found">' +
@@ -557,15 +654,28 @@ var RefundPanel = (function () {
   /* ── Helpers ────────────────────────────────────────────────────── */
 
   function _showError(msg) {
-    var el = document.getElementById("refund-lookup-error");
-    el.textContent = msg;
-    el.style.display = "block";
+    if (!lookupContainer) return;
+    var el = lookupContainer.querySelector(".refund-lookup-error");
+    if (el) {
+      el.textContent = msg;
+      el.style.display = "block";
+    }
   }
 
   function _hideError() {
-    var el = document.getElementById("refund-lookup-error");
-    el.style.display = "none";
-    el.textContent = "";
+    if (!lookupContainer) return;
+    var el = lookupContainer.querySelector(".refund-lookup-error");
+    if (el) {
+      el.style.display = "none";
+      el.textContent = "";
+    }
+  }
+
+  function _hideEl(el) {
+    if (el) {
+      el.style.display = "none";
+      el.innerHTML = "";
+    }
   }
 
   function _esc(str) {
@@ -607,7 +717,7 @@ var RefundPanel = (function () {
   /* ── Public API ─────────────────────────────────────────────────── */
 
   return {
-    init: init,
-    shouldShow: shouldShow
+    initEmbedded: initEmbedded,
+    getCustomerData: function () { return customerData; }
   };
 })();

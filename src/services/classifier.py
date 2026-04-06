@@ -31,7 +31,7 @@ class EmailClassifier:
         Returns a dict with "tags" (list of 1+ tag strings) plus complexity,
         language, urgency, confidence, key_entities, and other metadata.
         """
-        prompt = self._build_classification_prompt(subject, body)
+        prompt = self._build_classification_prompt(subject, body, from_email)
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -87,11 +87,12 @@ class EmailClassifier:
 
         return result
 
-    def _build_classification_prompt(self, subject: str, body: str) -> str:
+    def _build_classification_prompt(self, subject: str, body: str, from_email: str = "") -> str:
         """Build the classification prompt with granular tags"""
+        email_line = f"\nFrom: {from_email}" if from_email else ""
         return f"""Analyze this customer support email and classify it.
 
-EMAIL:
+EMAIL:{email_line}
 Subject: {subject}
 Body: {body}
 
@@ -163,11 +164,26 @@ Provide your classification in JSON format with these fields:
    - Example: customer says "I need to update my plate AND my car was warned" → ["Customer Update Vehicle Info", "Customer Warned or Tagged"]
 
    SENDER DETECTION:
+   The "From" email address is a critical signal for determining sender type.
+
+   EMAIL DOMAIN RULES (highest priority):
+   - @parkm.com → ParkM internal staff / Sales Rep → use "Sales Rep ..." tags
+   - Personal email domains (@gmail.com, @yahoo.com, @hotmail.com, @outlook.com, @aol.com, @icloud.com, @live.com, @comcast.net, @att.net, @verizon.net, etc.) → almost always a Customer → use "Customer ..." tags
+   - Corporate/business email domains that are NOT @parkm.com (e.g., @greystar.com, @lincolnapts.com, @[propertyname].com) → likely Property manager/staff → use "Property ..." tags
+
+   CONTENT RULES (use to confirm or override domain signal):
    - If the email is from a property manager or leasing office → use "Property ..." tags
    - If the email is from a resident/customer → use "Customer ..." tags
    - If the email mentions "on behalf of" a resident → still use "Property ..." tags
-   - Clues for property: mentions "resident", "unit", "leasing office", property company name, "our community"
-   - Clues for customer: mentions "my permit", "my car", "I moved out", "I need help"
+   - Clues for property: mentions "resident", "unit", "leasing office", property company name, "our community", "our property"
+   - Clues for customer: mentions "my permit", "my car", "I moved out", "I need help", "my account"
+   - Clues for sales rep: mentions ParkM internally, sales context, references being a ParkM employee
+
+   COMBINING SIGNALS:
+   - When the email domain and content agree, use high confidence
+   - When a corporate domain sends customer-like language (e.g., "my permit"), trust the content — they may be a resident with a work email
+   - When a personal email sends property-like language (e.g., "our resident needs"), trust the content — they may be a property manager using personal email
+   - @parkm.com senders should almost always get "Sales Rep ..." tags unless content clearly indicates otherwise
 
 2. "complexity" - How difficult to resolve (choose ONE):
    - "simple" - Clear request, straightforward resolution

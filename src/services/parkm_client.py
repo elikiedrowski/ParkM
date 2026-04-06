@@ -159,6 +159,26 @@ class ParkMClient:
             logger.error(f"Customer search fallback failed for {email}: {e}")
             return None
 
+    async def search_customers(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """Search for ParkM customers by any term (name, email, etc.).
+
+        Uses the Customers/Search endpoint which matches against customer-level
+        fields (name, email). Does NOT search vehicle plates or unit numbers.
+
+        Returns a list of customer dicts (may be empty).
+        """
+        try:
+            data = await self._post(
+                "/api/services/app/Customers/Search",
+                body={"filter": query, "maxResultCount": max_results},
+                timeout=60,
+            )
+            items = data.get("result", {}).get("items", [])
+            return [item.get("customer", item) for item in items]
+        except Exception as e:
+            logger.error(f"Customer search failed for '{query}': {e}")
+            return []
+
     async def get_customer_by_id(self, customer_id: str) -> Optional[Dict[str, Any]]:
         """Look up a ParkM customer by their UUID."""
         try:

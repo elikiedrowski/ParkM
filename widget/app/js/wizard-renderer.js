@@ -102,8 +102,13 @@ var WizardRenderer = (function () {
     var list = document.getElementById("entity-list");
     list.innerHTML = "";
 
-    // Collect entity info from steps that have entity_field
-    var entitySteps = (wizard.steps || []).filter(function (s) { return s.entity_field; });
+    // Collect entity info from steps that have entity_field (deduplicate by field name)
+    var seen = {};
+    var entitySteps = (wizard.steps || []).filter(function (s) {
+      if (!s.entity_field || seen[s.entity_field]) return false;
+      seen[s.entity_field] = true;
+      return true;
+    });
 
     if (entitySteps.length === 0 && Object.keys(entities).length === 0) {
       panel.style.display = "none";
@@ -173,6 +178,15 @@ var WizardRenderer = (function () {
         renderDecisionStep(row, step);
       } else {
         renderCheckboxStep(row, step);
+      }
+
+      // Interactive embedded UI (e.g., account lookup, refund evaluation)
+      if (step.interactive) {
+        var embedDiv = document.createElement("div");
+        embedDiv.className = "step-interactive-embed";
+        embedDiv.id = "interactive-" + step.id;
+        embedDiv.setAttribute("data-interactive", step.interactive);
+        row.appendChild(embedDiv);
       }
 
       // Conditional step: hidden until the matching decision is selected

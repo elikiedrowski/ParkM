@@ -70,9 +70,9 @@ var ParkMApp = (function () {
           if (results[i].contact_email) { contactEmail = results[i].contact_email; break; }
         }
         renderStackedWizards(tags, currentWizards);
-        // Initialize refund panel if tags are refund/cancellation-related
+        // Initialize step-embedded refund tools (account lookup + refund evaluation)
         if (typeof RefundPanel !== "undefined") {
-          RefundPanel.init(tags, contactEmail);
+          RefundPanel.initEmbedded(contactEmail);
         }
         showState("wizard-container");
         resizeWidget();

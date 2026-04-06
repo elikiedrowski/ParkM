@@ -18,13 +18,21 @@ _WIZARD_PATH = Path(__file__).parent.parent / "wizard" / "wizard_content.json"
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 
 _wizard_data: Optional[Dict[str, Any]] = None
+_wizard_mtime: float = 0
 
 
 def _load_wizard_data() -> Dict[str, Any]:
-    global _wizard_data
-    if _wizard_data is None:
+    global _wizard_data, _wizard_mtime
+    # Reload if file has been modified (supports deploy without restart)
+    try:
+        mtime = _WIZARD_PATH.stat().st_mtime
+    except OSError:
+        mtime = 0
+    if _wizard_data is None or mtime != _wizard_mtime:
         with open(_WIZARD_PATH, encoding="utf-8") as f:
             _wizard_data = json.load(f)
+        _wizard_mtime = mtime
+        logger.info("Wizard content loaded/reloaded from %s", _WIZARD_PATH)
     return _wizard_data
 
 

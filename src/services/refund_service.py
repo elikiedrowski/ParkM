@@ -126,6 +126,7 @@ class RefundService:
             "community": item.get("community") or p.get("communityName"),
             "balance_due": p.get("amountDue", 0),
             "permit_name": p.get("name"),
+            "delay_cancellation_date": p.get("delayCancellationDate"),
         }
 
     async def _get_inactive_permits(

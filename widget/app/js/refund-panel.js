@@ -342,9 +342,18 @@ var RefundPanel = (function () {
     var priceStr = price ? "$" + parseFloat(price).toFixed(2) : "N/A";
     var recurStr = permit.is_recurring ? " /mo" : " one-time";
 
+    var delayCancelLine = '';
+    if (permit.delay_cancellation_date) {
+      delayCancelLine = '<div class="refund-permit-detail refund-delay-cancel-notice">' +
+        '<span class="refund-detail-label">Cancellation Scheduled:</span> ' +
+        _formatDate(permit.delay_cancellation_date) +
+      '</div>';
+    }
+
     card.innerHTML =
       '<div class="refund-permit-header">' +
         '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
+        (permit.delay_cancellation_date ? '<span class="refund-delay-badge">Pending Cancel</span>' : '') +
       '</div>' +
       '<div class="refund-permit-details">' +
         (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
@@ -352,6 +361,7 @@ var RefundPanel = (function () {
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Price:</span> ' + priceStr + recurStr + '</div>' +
         (permit.balance_due > 0 ? '<div class="refund-permit-detail refund-balance-due"><span class="refund-detail-label">Balance Due:</span> $' + parseFloat(permit.balance_due).toFixed(2) + '</div>' : '') +
+        delayCancelLine +
       '</div>' +
       '<div class="refund-permit-actions"></div>' +
       '<div class="refund-permit-result"></div>';

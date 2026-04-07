@@ -258,9 +258,14 @@ class ParkMClient:
     ) -> bool:
         """Schedule a delayed cancellation for a permit.
 
-        Instead of cancelling immediately, sets the permit to cancel on a
-        future date. The resident receives a cancellation notice email so
-        they can correct any mistakes before the cancellation takes effect.
+        Instead of cancelling immediately, sets the permit's delayCancellationDate
+        field. ParkM's background job cancels the permit when that date arrives.
+        The resident receives a cancellation notice so they can correct mistakes.
+
+        Approach (discovered via Swagger):
+        1. GET Permits/GetPermitForEdit — fetch current permit data
+        2. Set delayCancellationDate on the DTO
+        3. POST Permits/CreateOrEdit — save it back
 
         Args:
             permit_id: UUID of the permit
@@ -269,22 +274,32 @@ class ParkMClient:
         Returns:
             True if the delay cancellation was scheduled successfully
         """
-        # TODO: Confirm exact endpoint name with Stephen — likely
-        # DelayCancelPermit or ScheduleCancelPermit. Using the most
-        # probable name based on ParkM's API naming conventions.
         try:
-            await self._post(
-                "/api/services/app/Permits/DelayCancelPermit",
-                params={
-                    "Id": permit_id,
-                    "sendNotice": str(send_notice).lower(),
-                },
-                body={
-                    "cancelDate": cancel_date,
-                },
+            # Step 1: Get current permit data
+            edit_data = await self._get(
+                "/api/services/app/Permits/GetPermitForEdit",
+                params={"Id": permit_id},
             )
-            logger.info(f"Permit {permit_id} delay-cancel scheduled for {cancel_date} (notice={send_notice})")
-            return True
+            permit_dto = edit_data.get("result", {}).get("permit", edit_data.get("result", {}))
+            if not permit_dto or not permit_dto.get("id"):
+                logger.error(f"Could not fetch permit {permit_id} for delay cancel")
+                return False
+
+            # Step 2: Set delay cancellation date and notice preference
+            permit_dto["delayCancellationDate"] = cancel_date
+            permit_dto["dontSendNotifications"] = not send_notice
+
+            # Step 3: Save back
+            result = await self._post(
+                "/api/services/app/Permits/CreateOrEdit",
+                body=permit_dto,
+            )
+            success = result.get("success", False)
+            if success:
+                logger.info(f"Permit {permit_id} delay-cancel scheduled for {cancel_date} (notice={send_notice})")
+            else:
+                logger.error(f"Permit delay-cancel returned success=false: {result}")
+            return success
         except Exception as e:
             logger.error(f"Failed to delay-cancel permit {permit_id}: {e}")
             return False

@@ -422,8 +422,6 @@ class RefundService:
   <li><strong>Refund Amount:</strong> {safe_amount}</li>
 </ul>
 
-<p>Please process via ParkM app: Transactions and Payments → Actions → Reverse Charge</p>
-
 <p>Thank you,<br>
 ParkM Support Team</p>"""
 

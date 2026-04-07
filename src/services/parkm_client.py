@@ -250,6 +250,45 @@ class ParkMClient:
             logger.error(f"Failed to cancel permit {permit_id}: {e}")
             return False
 
+    async def delay_cancel_permit(
+        self,
+        permit_id: str,
+        cancel_date: str,
+        send_notice: bool = True,
+    ) -> bool:
+        """Schedule a delayed cancellation for a permit.
+
+        Instead of cancelling immediately, sets the permit to cancel on a
+        future date. The resident receives a cancellation notice email so
+        they can correct any mistakes before the cancellation takes effect.
+
+        Args:
+            permit_id: UUID of the permit
+            cancel_date: ISO-8601 datetime string for when to cancel
+            send_notice: Whether to send cancellation notice email
+        Returns:
+            True if the delay cancellation was scheduled successfully
+        """
+        # TODO: Confirm exact endpoint name with Stephen — likely
+        # DelayCancelPermit or ScheduleCancelPermit. Using the most
+        # probable name based on ParkM's API naming conventions.
+        try:
+            await self._post(
+                "/api/services/app/Permits/DelayCancelPermit",
+                params={
+                    "Id": permit_id,
+                    "sendNotice": str(send_notice).lower(),
+                },
+                body={
+                    "cancelDate": cancel_date,
+                },
+            )
+            logger.info(f"Permit {permit_id} delay-cancel scheduled for {cancel_date} (notice={send_notice})")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delay-cancel permit {permit_id}: {e}")
+            return False
+
     # ── Vehicles ──────────────────────────────────────────────────────
 
     async def get_customer_vehicles(self, customer_id: str) -> List[Dict[str, Any]]:

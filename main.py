@@ -830,10 +830,13 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
         "customer_email": "john@example.com",
         "permit_id": "uuid-of-permit-to-cancel",
         "reason": "Customer moved out",
-        "ticket_id": "12345"
+        "ticket_id": "12345",
+        "cancel_date": null  // optional ISO-8601 datetime for delayed cancellation
     }
 
     This WILL cancel the permit in ParkM. CSR should confirm before calling.
+    If cancel_date is provided, schedules a delayed cancellation instead of
+    cancelling immediately.
     """
     try:
         data = await request.json()
@@ -848,6 +851,7 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
             reason=data.get("reason", "Customer requested cancellation/refund"),
             ticket_id=data.get("ticket_id", ""),
             auto_cancel=True,
+            cancel_date=data.get("cancel_date"),
         )
 
         # If refund eligible, also update the Zoho ticket status
@@ -871,12 +875,13 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
 
 @app.post("/parkm/permit/cancel")
 async def parkm_cancel_permit(request: Request, _auth=Depends(require_parkm_auth)):
-    """Cancel a specific permit in ParkM.
+    """Cancel a specific permit in ParkM (immediate or delayed).
 
     Request body:
     {
         "permit_id": "uuid",
-        "send_notice": true
+        "send_notice": true,
+        "cancel_date": null  // optional ISO-8601 datetime for delayed cancellation
     }
     """
     try:
@@ -888,6 +893,7 @@ async def parkm_cancel_permit(request: Request, _auth=Depends(require_parkm_auth
         result = await refund_service.cancel_permit(
             permit_id=permit_id,
             send_notice=data.get("send_notice", True),
+            cancel_date=data.get("cancel_date"),
         )
         return result
     except HTTPException:

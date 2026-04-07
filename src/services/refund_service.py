@@ -333,18 +333,46 @@ class RefundService:
 
     # ── Step 3: Cancel Permit ─────────────────────────────────────────
 
-    async def cancel_permit(self, permit_id: str, send_notice: bool = True) -> Dict[str, Any]:
-        """Cancel a permit in ParkM.
+    async def cancel_permit(
+        self,
+        permit_id: str,
+        send_notice: bool = True,
+        cancel_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Cancel a permit in ParkM (immediate or delayed).
+
+        Args:
+            permit_id: UUID of the permit
+            send_notice: Whether to send cancellation notice to customer
+            cancel_date: If provided (ISO-8601), schedule a delayed cancellation
+                         instead of cancelling immediately.
 
         Returns:
-            {"success": bool, "permit_id": str, "message": str}
+            {"success": bool, "permit_id": str, "message": str, "cancel_type": str}
         """
-        success = await self.parkm.cancel_permit(permit_id, send_notice=send_notice)
-        return {
-            "success": success,
-            "permit_id": permit_id,
-            "message": "Permit cancelled successfully" if success else "Failed to cancel permit",
-        }
+        if cancel_date:
+            success = await self.parkm.delay_cancel_permit(
+                permit_id, cancel_date=cancel_date, send_notice=send_notice
+            )
+            return {
+                "success": success,
+                "permit_id": permit_id,
+                "cancel_type": "delayed",
+                "cancel_date": cancel_date,
+                "message": (
+                    f"Permit cancellation scheduled for {cancel_date}"
+                    if success
+                    else "Failed to schedule permit cancellation"
+                ),
+            }
+        else:
+            success = await self.parkm.cancel_permit(permit_id, send_notice=send_notice)
+            return {
+                "success": success,
+                "permit_id": permit_id,
+                "cancel_type": "immediate",
+                "message": "Permit cancelled successfully" if success else "Failed to cancel permit",
+            }
 
     # ── Step 4: Build Accounting Email ────────────────────────────────
 
@@ -353,8 +381,7 @@ class RefundService:
         customer_name: str,
         customer_email: str,
         refund_amount: float,
-        reason: str,
-        permit_type: str = "",
+        property_name: str = "",
         ticket_id: str = "",
     ) -> Dict[str, Any]:
         """Build the email content to forward to accounting@parkm.com.
@@ -363,7 +390,7 @@ class RefundService:
         - Reply All on the Zoho ticket
         - Remove the customer's email
         - Add accounting@parkm.com
-        - Include: resident email, refund amount, reason
+        - Include: resident name, resident email, property name, refund amount
 
         Returns:
             {
@@ -378,8 +405,7 @@ class RefundService:
         safe_name = html.escape(customer_name)
         safe_email = html.escape(customer_email)
         safe_amount = html.escape(amount_str)
-        safe_permit = html.escape(permit_type)
-        safe_reason = html.escape(reason)
+        safe_property = html.escape(property_name)
 
         subject = f"Refund Request - {customer_name}"
         if ticket_id:
@@ -390,11 +416,10 @@ class RefundService:
 <p>Please process the following refund:</p>
 
 <ul>
-  <li><strong>Resident Email:</strong> {safe_email}</li>
   <li><strong>Resident Name:</strong> {safe_name}</li>
+  <li><strong>Resident Email:</strong> {safe_email}</li>
+  <li><strong>Property Name:</strong> {safe_property}</li>
   <li><strong>Refund Amount:</strong> {safe_amount}</li>
-  <li><strong>Permit Type:</strong> {safe_permit}</li>
-  <li><strong>Reason:</strong> {safe_reason}</li>
 </ul>
 
 <p>Please process via ParkM app: Transactions and Payments → Actions → Reverse Charge</p>
@@ -417,6 +442,7 @@ ParkM Support Team</p>"""
         reason: str = "Customer requested cancellation/refund",
         ticket_id: str = "",
         auto_cancel: bool = False,
+        cancel_date: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run the full refund evaluation workflow.
 
@@ -468,7 +494,9 @@ ParkM Support Team</p>"""
             # Step 3: Auto-cancel if requested AND eligible for refund
             cancel_result = None
             if auto_cancel and eligibility["eligible"] and not permit.get("is_cancelled"):
-                cancel_result = await self.cancel_permit(permit["id"])
+                cancel_result = await self.cancel_permit(
+                    permit["id"], cancel_date=cancel_date
+                )
 
             # Step 4: Build accounting email if eligible
             accounting_email = None
@@ -477,8 +505,7 @@ ParkM Support Team</p>"""
                     customer_name=customer["name"],
                     customer_email=customer["email"],
                     refund_amount=eligibility["refund_amount"],
-                    reason=reason,
-                    permit_type=permit.get("type_name", ""),
+                    property_name=permit.get("community") or permit.get("type_name", ""),
                     ticket_id=ticket_id,
                 )
 

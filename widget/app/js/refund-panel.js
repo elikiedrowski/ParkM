@@ -464,41 +464,42 @@ var RefundPanel = (function () {
   /* ── Process Refund (Cancel + Forward to Accounting) ────────────── */
 
   function _processRefund(permit, customer, resultDiv) {
-    if (!confirm("Cancel this permit and forward refund details to accounting@parkm.com?")) {
-      return;
-    }
-    var processBtn = document.getElementById("process-refund-" + permit.id);
-    if (processBtn) {
-      processBtn.disabled = true;
-      processBtn.textContent = "Processing...";
-    }
+    _showCancelDialog(permit, function (opts) {
+      // opts: { cancel_date: null|string, send_notice: bool }
+      var processBtn = document.getElementById("process-refund-" + permit.id);
+      if (processBtn) {
+        processBtn.disabled = true;
+        processBtn.textContent = "Processing...";
+      }
 
-    var ticketId = (typeof ParkMApp !== "undefined" && ParkMApp.getTicketId)
-      ? ParkMApp.getTicketId() : "";
+      var ticketId = (typeof ParkMApp !== "undefined" && ParkMApp.getTicketId)
+        ? ParkMApp.getTicketId() : "";
 
-    var body = {
-      customer_email: customer.email,
-      permit_id: permit.id,
-      reason: "Customer requested cancellation/refund",
-      ticket_id: ticketId
-    };
+      var body = {
+        customer_email: customer.email,
+        permit_id: permit.id,
+        reason: "Customer requested cancellation/refund",
+        ticket_id: ticketId,
+        cancel_date: opts.cancel_date
+      };
 
-    _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    })
-      .then(function (data) {
-        _renderProcessResult(data, permit, resultDiv);
+      _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
       })
-      .catch(function (err) {
-        if (processBtn) {
-          processBtn.disabled = false;
-          processBtn.textContent = "Cancel & Forward to Accounting";
-        }
-        resultDiv.insertAdjacentHTML("beforeend",
-          '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
-      });
+        .then(function (data) {
+          _renderProcessResult(data, permit, resultDiv);
+        })
+        .catch(function (err) {
+          if (processBtn) {
+            processBtn.disabled = false;
+            processBtn.textContent = "Cancel & Forward to Accounting";
+          }
+          resultDiv.insertAdjacentHTML("beforeend",
+            '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
+        });
+    });
   }
 
   function _renderProcessResult(data, permit, resultDiv) {
@@ -510,12 +511,21 @@ var RefundPanel = (function () {
     });
 
     var cancelOk = permitResult && permitResult.cancel_result && permitResult.cancel_result.success;
+    var cancelResult = permitResult && permitResult.cancel_result;
     var acctEmail = permitResult && permitResult.accounting_email;
 
     var html = '<div class="refund-process-result">';
 
+    var cancelMsg;
+    if (cancelOk && cancelResult.cancel_type === "delayed") {
+      cancelMsg = "Permit cancellation scheduled for " + _formatDate(cancelResult.cancel_date);
+    } else if (cancelOk) {
+      cancelMsg = "Permit cancelled";
+    } else {
+      cancelMsg = "Cancel may have failed — verify in ParkM";
+    }
     html += '<div class="refund-process-step ' + (cancelOk ? 'step-ok' : 'step-fail') + '">';
-    html += (cancelOk ? 'Permit cancelled' : 'Cancel may have failed — verify in ParkM');
+    html += cancelMsg;
     html += '</div>';
 
     if (data.zoho_status_updated) {
@@ -558,40 +568,172 @@ var RefundPanel = (function () {
   /* ── Cancel Permit (standalone, no refund) ──────────────────────── */
 
   function _cancelPermit(permit, card) {
-    if (!confirm("Cancel this permit?\n\n" + permit.type_name + "\n\nThis will send a cancellation notice to the customer.")) {
-      return;
-    }
+    _showCancelDialog(permit, function (opts) {
+      // opts: { cancel_date: null|string, send_notice: bool }
+      var btns = card.querySelectorAll(".refund-action-btn");
+      for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
 
-    var btns = card.querySelectorAll(".refund-action-btn");
-    for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+      var resultDiv = card.querySelector(".refund-permit-result");
+      resultDiv.innerHTML = '<div class="refund-loading">Cancelling...</div>';
 
-    var resultDiv = card.querySelector(".refund-permit-result");
-    resultDiv.innerHTML = '<div class="refund-loading">Cancelling...</div>';
-
-    _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        permit_id: permit.id,
-        send_notice: true
+      _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          permit_id: permit.id,
+          send_notice: opts.send_notice,
+          cancel_date: opts.cancel_date
+        })
       })
-    })
-      .then(function (data) {
-        if (data.success) {
-          resultDiv.innerHTML = '<div class="refund-process-step step-ok">Permit cancelled successfully</div>';
-          card.classList.add("refund-permit-card--cancelled");
-          _refreshPermits();
-        } else {
-          resultDiv.innerHTML = '<div class="refund-process-step step-fail">Cancel failed — try manually in ParkM</div>';
-          var btns = card.querySelectorAll(".refund-action-btn");
-          for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
+        .then(function (data) {
+          if (data.success) {
+            var msg = data.cancel_type === "delayed"
+              ? "Permit cancellation scheduled for " + _formatDate(opts.cancel_date)
+              : "Permit cancelled successfully";
+            resultDiv.innerHTML = '<div class="refund-process-step step-ok">' + _esc(msg) + '</div>';
+            card.classList.add("refund-permit-card--cancelled");
+            _refreshPermits();
+          } else {
+            resultDiv.innerHTML = '<div class="refund-process-step step-fail">Cancel failed — try manually in ParkM</div>';
+            var btns2 = card.querySelectorAll(".refund-action-btn");
+            for (var j = 0; j < btns2.length; j++) btns2[j].disabled = false;
+          }
+        })
+        .catch(function (err) {
+          resultDiv.innerHTML = '<div class="refund-error">Cancel failed: ' + _esc(err.message) + '</div>';
+          var btns2 = card.querySelectorAll(".refund-action-btn");
+          for (var j = 0; j < btns2.length; j++) btns2[j].disabled = false;
+        });
+    });
+  }
+
+  /* ── Cancel Dialog (two-step: immediate vs delay) ───────────────── */
+
+  function _showCancelDialog(permit, onConfirm) {
+    // Remove any existing dialog
+    var existing = document.getElementById("cancel-dialog-overlay");
+    if (existing) existing.remove();
+
+    // Default delay date: 1 week from now
+    var defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    var defaultDateStr = defaultDate.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+
+    var overlay = document.createElement("div");
+    overlay.id = "cancel-dialog-overlay";
+    overlay.className = "cancel-dialog-overlay";
+
+    // Step 1: Choose cancel type
+    overlay.innerHTML =
+      '<div class="cancel-dialog">' +
+        '<div class="cancel-dialog-header">' +
+          '<h3 class="cancel-dialog-title">Delay Cancellation</h3>' +
+          '<button class="cancel-dialog-x" data-action="close">&times;</button>' +
+        '</div>' +
+        '<div class="cancel-dialog-body">' +
+          '<p>Would you like to cancel immediately or delay the cancellation to a future date?</p>' +
+        '</div>' +
+        '<div class="cancel-dialog-footer">' +
+          '<button class="btn btn-link cancel-dialog-btn" data-action="close">Close</button>' +
+          '<button class="btn btn-secondary cancel-dialog-btn" data-action="now">Cancel Now</button>' +
+          '<button class="btn btn-primary cancel-dialog-btn" data-action="delay">Delay</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Event delegation for step 1
+    overlay.addEventListener("click", function handler(e) {
+      var action = e.target.getAttribute("data-action");
+      if (!action) {
+        // Click on overlay background closes
+        if (e.target === overlay) {
+          overlay.remove();
         }
-      })
-      .catch(function (err) {
-        resultDiv.innerHTML = '<div class="refund-error">Cancel failed: ' + _esc(err.message) + '</div>';
-        var btns = card.querySelectorAll(".refund-action-btn");
-        for (var i = 0; i < btns.length; i++) btns[i].disabled = false;
-      });
+        return;
+      }
+
+      if (action === "close") {
+        overlay.remove();
+      } else if (action === "now") {
+        overlay.remove();
+        onConfirm({ cancel_date: null, send_notice: true });
+      } else if (action === "delay") {
+        // Transition to step 2: date picker
+        _showDelayDatePicker(overlay, defaultDateStr, onConfirm);
+      }
+    });
+  }
+
+  function _showDelayDatePicker(overlay, defaultDateStr, onConfirm) {
+    // Replace the overlay entirely to avoid stacking event listeners
+    overlay.remove();
+
+    var overlay2 = document.createElement("div");
+    overlay2.id = "cancel-dialog-overlay";
+    overlay2.className = "cancel-dialog-overlay";
+
+    overlay2.innerHTML =
+      '<div class="cancel-dialog">' +
+        '<div class="cancel-dialog-header">' +
+          '<h3 class="cancel-dialog-title">Schedule Cancellation</h3>' +
+          '<button class="cancel-dialog-x" data-action="close">&times;</button>' +
+        '</div>' +
+        '<div class="cancel-dialog-body">' +
+          '<p>Select the date and time for the cancellation:</p>' +
+          '<div class="cancel-dialog-date-row">' +
+            '<input type="datetime-local" class="cancel-dialog-date-input" value="' + defaultDateStr + '">' +
+          '</div>' +
+          '<label class="cancel-dialog-notice-label">' +
+            '<input type="checkbox" class="cancel-dialog-notice-check" checked> ' +
+            'Send cancellation notice to resident' +
+          '</label>' +
+        '</div>' +
+        '<div class="cancel-dialog-footer">' +
+          '<button class="btn btn-link cancel-dialog-btn" data-action="back">Back</button>' +
+          '<button class="btn btn-secondary cancel-dialog-btn" data-action="close">Cancel</button>' +
+          '<button class="btn btn-primary cancel-dialog-btn" data-action="schedule">Schedule Cancellation</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay2);
+
+    var dialog = overlay2.querySelector(".cancel-dialog");
+
+    overlay2.addEventListener("click", function (e) {
+      var action = e.target.getAttribute("data-action");
+      if (!action) {
+        if (e.target === overlay2) overlay2.remove();
+        return;
+      }
+
+      if (action === "close") {
+        overlay2.remove();
+      } else if (action === "back") {
+        overlay2.remove();
+        _showCancelDialog(null, onConfirm); // re-show step 1
+      } else if (action === "schedule") {
+        var dateInput = dialog.querySelector(".cancel-dialog-date-input");
+        var noticeCheck = dialog.querySelector(".cancel-dialog-notice-check");
+        var dateVal = dateInput ? dateInput.value : "";
+        if (!dateVal) {
+          dateInput.style.borderColor = "#e74c3c";
+          dateInput.focus();
+          return;
+        }
+        var selectedDate = new Date(dateVal);
+        if (isNaN(selectedDate.getTime())) {
+          dateInput.style.borderColor = "#e74c3c";
+          dateInput.focus();
+          return;
+        }
+        overlay2.remove();
+        onConfirm({
+          cancel_date: selectedDate.toISOString(),
+          send_notice: noticeCheck ? noticeCheck.checked : true
+        });
+      }
+    });
   }
 
   /* ── Insert Accounting Email ────────────────────────────────────── */

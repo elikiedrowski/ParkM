@@ -169,7 +169,8 @@ Provide your classification in JSON format with these fields:
    EMAIL DOMAIN RULES (highest priority):
    - @parkm.com → ParkM internal staff / Sales Rep → use "Sales Rep ..." tags
    - Personal email domains (@gmail.com, @yahoo.com, @hotmail.com, @outlook.com, @aol.com, @icloud.com, @live.com, @comcast.net, @att.net, @verizon.net, etc.) → almost always a Customer → use "Customer ..." tags
-   - Corporate/business email domains that are NOT @parkm.com (e.g., @greystar.com, @lincolnapts.com, @[propertyname].com) → likely Property manager/staff → use "Property ..." tags
+   - KNOWN Property management domains (high confidence): @greystar.com, @redpeak.com, @udr.com → use "Property ..." tags
+   - Other corporate/business email domains that are NOT @parkm.com (e.g., @lincolnapts.com, @[propertyname].com) → likely Property manager/staff → use "Property ..." tags
 
    CONTENT RULES (use to confirm or override domain signal):
    - If the email is from a property manager or leasing office → use "Property ..." tags

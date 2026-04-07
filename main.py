@@ -903,6 +903,30 @@ async def parkm_cancel_permit(request: Request, _auth=Depends(require_parkm_auth
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ── Widget Access Control ──────────────────────────────────────────────
+
+# Comma-separated list of agent emails allowed to use the widget.
+# Empty string = all agents allowed (no restriction).
+WIDGET_ALLOWED_AGENTS = os.getenv("WIDGET_ALLOWED_AGENTS", "")
+
+
+@app.get("/widget/access")
+async def widget_access_check(email: str = ""):
+    """Check if an agent is allowed to use the CSR Wizard widget.
+
+    Query params:
+        email: The agent's Zoho Desk email address
+
+    Returns:
+        {"allowed": bool}
+    """
+    if not WIDGET_ALLOWED_AGENTS:
+        return {"allowed": True}
+
+    allowed_list = [e.strip().lower() for e in WIDGET_ALLOWED_AGENTS.split(",") if e.strip()]
+    return {"allowed": email.strip().lower() in allowed_list}
+
+
 # ── Analytics Dashboard ────────────────────────────────────────────────
 
 # Department filter for analytics — defaults to Testing department

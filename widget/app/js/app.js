@@ -309,6 +309,36 @@ var ParkMApp = (function () {
     });
   }
 
+  /* ── Agent Access Check ───────────────────────────────────────────── */
+
+  function _checkAgentAccess(callback) {
+    ZOHODESK.get("user.email").then(function (resp) {
+      var agentEmail = resp["user.email"] || "";
+      console.log("Agent email:", agentEmail);
+
+      if (!agentEmail) {
+        // Can't determine agent — allow access (fail open)
+        callback(true);
+        return;
+      }
+
+      var url = ParkMConfig.API_BASE_URL + "/widget/access?email=" + encodeURIComponent(agentEmail);
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          console.log("Access check:", data.allowed ? "allowed" : "restricted");
+          callback(data.allowed);
+        })
+        .catch(function (err) {
+          console.log("Access check failed, allowing access:", err);
+          callback(true); // fail open
+        });
+    }).catch(function (err) {
+      console.log("Could not get agent email, allowing access:", err);
+      callback(true); // fail open
+    });
+  }
+
   /* ── Initialize the app ───────────────────────────────────────────── */
 
   function init() {
@@ -327,38 +357,53 @@ var ParkMApp = (function () {
     }
 
     ZOHODESK.extension.onload().then(function (App) {
-      console.log("SDK loaded, fetching ticket data...");
-      // Resize immediately on load
+      console.log("SDK loaded, checking access...");
       resizeWidget();
 
-      // Listen for ticket switches — try multiple event patterns
-      try {
-        ZOHODESK.on("ticket_detail.changed", function () {
-          console.log("ticket_detail.changed fired, reloading...");
-          loadTicket();
-        });
-      } catch (e) { console.log("ticket_detail.changed not supported"); }
+      // Check agent access before loading anything
+      _checkAgentAccess(function (allowed) {
+        if (!allowed) {
+          document.getElementById("loading-state").style.display = "none";
+          document.getElementById("wizard-container").style.display = "none";
+          document.getElementById("error-state").style.display = "none";
+          document.getElementById("no-classification-state").style.display = "none";
+          var body = document.body;
+          var notice = document.createElement("div");
+          notice.className = "access-restricted";
+          notice.innerHTML = '<p style="text-align:center;color:#888;padding:40px 16px;font-size:13px;">' +
+            'The CSR Wizard is not yet available for your account.</p>';
+          body.appendChild(notice);
+          return;
+        }
 
-      try {
-        ZOHODESK.on("ticket.id.changed", function () {
-          console.log("ticket.id.changed fired, reloading...");
-          loadTicket();
-        });
-      } catch (e) { console.log("ticket.id.changed not supported"); }
-
-      // Fallback: poll for ticket ID changes every 2s
-      setInterval(function () {
-        ZOHODESK.get("ticket.id").then(function (resp) {
-          var newId = resp["ticket.id"];
-          if (newId && newId !== ticketId) {
-            console.log("Ticket ID changed from", ticketId, "to", newId, "— reloading...");
+        // Listen for ticket switches
+        try {
+          ZOHODESK.on("ticket_detail.changed", function () {
+            console.log("ticket_detail.changed fired, reloading...");
             loadTicket();
-          }
-        }).catch(function () {});
-      }, 2000);
+          });
+        } catch (e) { console.log("ticket_detail.changed not supported"); }
 
-      // Load the initial ticket
-      loadTicket();
+        try {
+          ZOHODESK.on("ticket.id.changed", function () {
+            console.log("ticket.id.changed fired, reloading...");
+            loadTicket();
+          });
+        } catch (e) { console.log("ticket.id.changed not supported"); }
+
+        // Fallback: poll for ticket ID changes every 2s
+        setInterval(function () {
+          ZOHODESK.get("ticket.id").then(function (resp) {
+            var newId = resp["ticket.id"];
+            if (newId && newId !== ticketId) {
+              console.log("Ticket ID changed from", ticketId, "to", newId, "— reloading...");
+              loadTicket();
+            }
+          }).catch(function () {});
+        }, 2000);
+
+        loadTicket();
+      });
     }).catch(function (err) {
       console.error("Initialization failed:", err);
       showError("Failed to initialize: " + (err.message || String(err)));

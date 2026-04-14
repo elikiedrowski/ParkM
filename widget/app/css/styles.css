@@ -641,6 +641,36 @@ body {
 
 /* ── Refund Automation Panel ──────────────────────────────────────── */
 
+.refund-search-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.refund-search-tab {
+  flex: 1;
+  padding: 7px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.refund-search-tab:hover {
+  color: #1976d2;
+}
+
+.refund-search-tab--active {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+  font-weight: 600;
+}
+
 .refund-lookup-row {
   display: flex;
   gap: 6px;

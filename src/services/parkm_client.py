@@ -159,6 +159,39 @@ class ParkMClient:
             logger.error(f"Customer search fallback failed for {email}: {e}")
             return None
 
+    async def search_vehicles_by_plate(self, plate: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """Search vehicles by license plate via Vehicles/SearchAzure.
+
+        Each result has plate, customerName, community, but customerId is null —
+        callers must follow up with search_customers(name) to get the customer id.
+        """
+        try:
+            data = await self._post(
+                "/api/services/app/Vehicles/SearchAzure",
+                body={"filter": plate, "maxResultCount": max_results},
+                timeout=30,
+            )
+            return data.get("result", {}).get("items", [])
+        except Exception as e:
+            logger.error(f"Vehicle plate search failed for '{plate}': {e}")
+            return []
+
+    async def search_units(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
+        """Search units by unit number via Units/Search.
+
+        Returns units with embedded customers array (full customer objects).
+        """
+        try:
+            data = await self._post(
+                "/api/services/app/Units/Search",
+                body={"filter": query, "maxResultCount": max_results},
+                timeout=30,
+            )
+            return data.get("result", {}).get("items", [])
+        except Exception as e:
+            logger.error(f"Unit search failed for '{query}': {e}")
+            return []
+
     async def search_customers(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """Search for ParkM customers by any term (name, email, etc.).
 

@@ -58,10 +58,26 @@ var RefundPanel = (function () {
 
   /* ── Render Lookup UI into container ───────────────────────────── */
 
+  var SEARCH_TABS = [
+    { id: "email", label: "Email", placeholder: "name@example.com" },
+    { id: "name", label: "Name", placeholder: "First or last name" },
+    { id: "plate", label: "Plate", placeholder: "License plate" },
+    { id: "unit", label: "Unit", placeholder: "Unit number" }
+  ];
+  var activeSearchTab = "email";
+
   function _renderLookupUI(container) {
+    var tabsHtml = '<div class="refund-search-tabs">';
+    for (var i = 0; i < SEARCH_TABS.length; i++) {
+      var t = SEARCH_TABS[i];
+      tabsHtml += '<button class="refund-search-tab' + (t.id === activeSearchTab ? ' refund-search-tab--active' : '') + '" data-tab="' + t.id + '">' + t.label + '</button>';
+    }
+    tabsHtml += '</div>';
+
     container.innerHTML =
+      tabsHtml +
       '<div class="refund-lookup-row">' +
-        '<input type="text" class="refund-search-input refund-email-input" placeholder="Search by email or name...">' +
+        '<input type="text" class="refund-search-input refund-email-input" placeholder="">' +
         '<button class="btn btn-primary refund-lookup-btn">Search</button>' +
       '</div>' +
       '<div class="refund-lookup-error" style="display:none;"></div>' +
@@ -74,6 +90,48 @@ var RefundPanel = (function () {
     input.addEventListener("keydown", function (e) {
       if (e.key === "Enter") _onSearch();
     });
+
+    var tabBtns = container.querySelectorAll(".refund-search-tab");
+    for (var j = 0; j < tabBtns.length; j++) {
+      tabBtns[j].addEventListener("click", function () {
+        _switchTab(this.getAttribute("data-tab"));
+      });
+    }
+
+    _applyTabPlaceholder();
+  }
+
+  function _switchTab(tabId) {
+    activeSearchTab = tabId;
+    if (!lookupContainer) return;
+    var tabBtns = lookupContainer.querySelectorAll(".refund-search-tab");
+    for (var i = 0; i < tabBtns.length; i++) {
+      if (tabBtns[i].getAttribute("data-tab") === tabId) {
+        tabBtns[i].classList.add("refund-search-tab--active");
+      } else {
+        tabBtns[i].classList.remove("refund-search-tab--active");
+      }
+    }
+    var input = lookupContainer.querySelector(".refund-search-input");
+    if (input) {
+      input.value = "";
+      input.focus();
+    }
+    _hideError();
+    _hideEl(lookupContainer.querySelector(".refund-search-results"));
+    _applyTabPlaceholder();
+  }
+
+  function _applyTabPlaceholder() {
+    if (!lookupContainer) return;
+    var input = lookupContainer.querySelector(".refund-search-input");
+    if (!input) return;
+    for (var i = 0; i < SEARCH_TABS.length; i++) {
+      if (SEARCH_TABS[i].id === activeSearchTab) {
+        input.placeholder = SEARCH_TABS[i].placeholder;
+        return;
+      }
+    }
   }
 
   /* ── Customer Search / Lookup ────────────────────────────────────── */
@@ -87,7 +145,7 @@ var RefundPanel = (function () {
     var input = lookupContainer.querySelector(".refund-search-input");
     var query = input ? input.value.trim() : "";
     if (!query) {
-      _showError("Enter an email address or name");
+      _showError("Enter a search term");
       return;
     }
 
@@ -97,15 +155,18 @@ var RefundPanel = (function () {
     _hideError();
     _hideEl(lookupContainer.querySelector(".refund-search-results"));
     _hideEl(lookupContainer.querySelector(".refund-customer-info"));
-    // Clear refund container while searching
     if (refundContainer) {
       refundContainer.innerHTML = '<div class="refund-eval-placeholder">Searching...</div>';
     }
 
-    if (_isEmail(query)) {
+    if (activeSearchTab === "email" || (activeSearchTab !== "email" && _isEmail(query))) {
       _doEmailLookup(query);
-    } else {
+    } else if (activeSearchTab === "name") {
       _doNameSearch(query);
+    } else if (activeSearchTab === "plate") {
+      _doPlateSearch(query);
+    } else if (activeSearchTab === "unit") {
+      _doUnitSearch(query);
     }
   }
 
@@ -136,6 +197,183 @@ var RefundPanel = (function () {
         btn.textContent = "Search";
         _showError("Lookup failed: " + err.message);
       });
+  }
+
+  function _doPlateSearch(query) {
+    var btn = lookupContainer.querySelector(".refund-lookup-btn");
+    var url = ParkMConfig.API_BASE_URL + "/parkm/search/plate?q=" + encodeURIComponent(query);
+
+    _fetchWithTimeout(url, null, 35000)
+      .then(function (data) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+
+        var results = data.results || [];
+        if (results.length === 0) {
+          _showError('No vehicles found for plate "' + _esc(query) + '".');
+          if (refundContainer) {
+            refundContainer.innerHTML = '<div class="refund-eval-placeholder">No vehicle found — cannot evaluate refunds.</div>';
+          }
+          return;
+        }
+
+        _renderPlateResults(results);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+        _showError("Plate search failed: " + err.message);
+      });
+  }
+
+  function _doUnitSearch(query) {
+    var btn = lookupContainer.querySelector(".refund-lookup-btn");
+    var url = ParkMConfig.API_BASE_URL + "/parkm/search/unit?q=" + encodeURIComponent(query);
+
+    _fetchWithTimeout(url, null, 35000)
+      .then(function (data) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+
+        var results = data.results || [];
+        if (results.length === 0) {
+          _showError('No units found for "' + _esc(query) + '".');
+          if (refundContainer) {
+            refundContainer.innerHTML = '<div class="refund-eval-placeholder">No unit found — cannot evaluate refunds.</div>';
+          }
+          return;
+        }
+
+        _renderUnitResults(results);
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "Search";
+        _showError("Unit search failed: " + err.message);
+      });
+  }
+
+  function _renderPlateResults(results) {
+    var container = lookupContainer.querySelector(".refund-search-results");
+    container.style.display = "block";
+    var html = '<div class="refund-search-results-title">' + results.length + ' vehicle' + (results.length !== 1 ? 's' : '') + ' found</div>';
+
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      var detailParts = [];
+      if (r.customer_name) detailParts.push(r.customer_name);
+      if (r.community) detailParts.push(r.community);
+
+      html += '<div class="refund-search-result-item" data-idx="' + i + '">' +
+        '<div class="refund-search-result-info">' +
+          '<div class="refund-search-result-name">' + _esc(r.plate_state || r.plate || "Unknown plate") + '</div>' +
+          (r.vehicle_description ? '<div class="refund-search-result-detail">' + _esc(r.vehicle_description.trim()) + '</div>' : '') +
+          (detailParts.length > 0 ? '<div class="refund-search-result-detail">' + _esc(detailParts.join(" · ")) + '</div>' : '') +
+        '</div>' +
+        '<div class="refund-search-result-select">Select &rarr;</div>' +
+      '</div>';
+    }
+
+    container.innerHTML = html;
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Pick a vehicle above to load the customer\'s permits.</div>';
+    }
+
+    var items = container.querySelectorAll(".refund-search-result-item");
+    for (var j = 0; j < items.length; j++) {
+      (function (idx) {
+        items[idx].addEventListener("click", function () {
+          _selectPlateResult(results[idx]);
+        });
+      })(j);
+    }
+  }
+
+  function _selectPlateResult(result) {
+    // Plate search returns customer_name but not customerId. Look the customer
+    // up by name and load their record.
+    if (!result.customer_name) {
+      _showError("This vehicle has no customer linked. Try a different search.");
+      return;
+    }
+    _hideEl(lookupContainer.querySelector(".refund-search-results"));
+    _hideError();
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Loading customer...</div>';
+    }
+
+    var url = ParkMConfig.API_BASE_URL + "/parkm/customer/search?q=" + encodeURIComponent(result.customer_name);
+    _fetchWithTimeout(url, null, 65000)
+      .then(function (data) {
+        var matches = (data.results || []).filter(function (c) {
+          return c.email && c.email.indexOf("@fake.com") === -1;
+        });
+        if (matches.length === 0) {
+          _showError("Could not find a customer record for " + _esc(result.customer_name) + ".");
+          if (refundContainer) {
+            refundContainer.innerHTML = '<div class="refund-eval-placeholder">No customer record found.</div>';
+          }
+          return;
+        }
+        if (matches.length === 1) {
+          _selectSearchResult(matches[0]);
+          return;
+        }
+        // Multiple matches — show name picker
+        _renderSearchResults(matches);
+      })
+      .catch(function (err) {
+        _showError("Customer lookup failed: " + err.message);
+      });
+  }
+
+  function _renderUnitResults(results) {
+    var container = lookupContainer.querySelector(".refund-search-results");
+    container.style.display = "block";
+    var html = '<div class="refund-search-results-title">' + results.length + ' unit' + (results.length !== 1 ? 's' : '') + ' found</div>';
+
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      var residentCount = (r.customers || []).length;
+      var residentLabel = residentCount === 1 ? r.customers[0].name : (residentCount + " residents");
+
+      html += '<div class="refund-search-result-item" data-idx="' + i + '">' +
+        '<div class="refund-search-result-info">' +
+          '<div class="refund-search-result-name">Unit ' + _esc(r.unit_number || "?") + '</div>' +
+          (r.address ? '<div class="refund-search-result-detail">' + _esc(r.address) + '</div>' : '') +
+          (residentCount > 0 ? '<div class="refund-search-result-detail">' + _esc(residentLabel) + '</div>' : '<div class="refund-search-result-detail">No residents</div>') +
+        '</div>' +
+        '<div class="refund-search-result-select">Select &rarr;</div>' +
+      '</div>';
+    }
+
+    container.innerHTML = html;
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Pick a unit above to load the resident\'s permits.</div>';
+    }
+
+    var items = container.querySelectorAll(".refund-search-result-item");
+    for (var j = 0; j < items.length; j++) {
+      (function (idx) {
+        items[idx].addEventListener("click", function () {
+          _selectUnitResult(results[idx]);
+        });
+      })(j);
+    }
+  }
+
+  function _selectUnitResult(result) {
+    var residents = (result.customers || []);
+    if (residents.length === 0) {
+      _showError("This unit has no residents on file.");
+      return;
+    }
+    if (residents.length === 1) {
+      _selectSearchResult(residents[0]);
+      return;
+    }
+    // Multiple residents — show resident picker using the existing search results renderer
+    _renderSearchResults(residents);
   }
 
   function _doNameSearch(query) {
@@ -211,9 +449,31 @@ var RefundPanel = (function () {
       var input = lookupContainer.querySelector(".refund-search-input");
       if (input) input.value = result.email;
       _doEmailLookup(result.email);
+    } else if (result.id) {
+      _doLookupById(result.id);
     } else {
-      _showError("This account has no email on file. Please look up using a different identifier.");
+      _showError("This account has no email or ID on file. Please try a different search.");
     }
+  }
+
+  function _doLookupById(customerId) {
+    if (refundContainer) {
+      refundContainer.innerHTML = '<div class="refund-eval-placeholder">Loading customer...</div>';
+    }
+    var url = ParkMConfig.API_BASE_URL + "/parkm/customer/by-id/" + encodeURIComponent(customerId);
+    _fetchWithTimeout(url, null, 35000)
+      .then(function (data) {
+        customerData = data;
+        if (!data.found) {
+          _showError("Customer record could not be loaded.");
+          return;
+        }
+        _renderCustomerInfo(data);
+        _renderPermits(data);
+      })
+      .catch(function (err) {
+        _showError("Customer lookup failed: " + err.message);
+      });
   }
 
   /* ── Render Customer Info Card ──────────────────────────────────── */

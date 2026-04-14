@@ -787,6 +787,111 @@ async def parkm_customer_search(q: str, _auth=Depends(require_parkm_auth)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/parkm/search/plate")
+async def parkm_search_plate(q: str, _auth=Depends(require_parkm_auth)):
+    """Search vehicles by license plate.
+
+    Returns list of vehicles with plate, customer name, community, vehicle desc.
+    customerId is null in the response — call /parkm/customer/search?q={name}
+    after CSR picks a result to look up the actual customer record.
+    """
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Plate query must be at least 2 characters")
+    try:
+        from src.services.parkm_client import ParkMClient
+        parkm = ParkMClient()
+        items = await parkm.search_vehicles_by_plate(q.strip(), max_results=15)
+        results = []
+        seen_keys = set()
+        for item in items:
+            v = item.get("vehicle", {}) or {}
+            plate = v.get("licensePlate") or ""
+            customer_name = item.get("customerName") or ""
+            community = item.get("community") or ""
+            # Dedupe by (plate, customer_name) since search returns close matches
+            key = (plate.lower(), customer_name.lower())
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            results.append({
+                "plate": plate,
+                "plate_state": item.get("plateState") or "",
+                "vehicle_description": (item.get("description") or "").strip(),
+                "customer_name": customer_name,
+                "community": community,
+                "community_id": item.get("communityId"),
+            })
+        return {"query": q, "count": len(results), "results": results}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Plate search failed for '{q}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/parkm/search/unit")
+async def parkm_search_unit(q: str, _auth=Depends(require_parkm_auth)):
+    """Search units by unit number.
+
+    Returns list of units, each with embedded customer records.
+    """
+    if not q or len(q.strip()) < 2:
+        raise HTTPException(status_code=400, detail="Unit query must be at least 2 characters")
+    try:
+        from src.services.parkm_client import ParkMClient
+        parkm = ParkMClient()
+        items = await parkm.search_units(q.strip(), max_results=15)
+        results = []
+        for item in items:
+            unit = item.get("unit", {}) or {}
+            customer_entries = item.get("customers", []) or []
+            customers = []
+            for ce in customer_entries:
+                c = ce.get("customer", ce) or {}
+                email = c.get("primaryEmailAddress") or ""
+                # Filter placeholder fake.com emails
+                if "@fake.com" in email.lower():
+                    email = ""
+                customers.append({
+                    "id": c.get("id"),
+                    "name": f'{c.get("firstName", "")} {c.get("lastName", "")}'.strip(),
+                    "email": email,
+                    "phone": c.get("mobilePhone") or c.get("homePhone") or "",
+                    "account_id": c.get("accountId"),
+                })
+            results.append({
+                "unit_id": unit.get("id"),
+                "unit_number": unit.get("unitNumber"),
+                "address": unit.get("primaryAddress") or "",
+                "city": unit.get("city") or "",
+                "state": unit.get("state") or "",
+                "customers": customers,
+            })
+        return {"query": q, "count": len(results), "results": results}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unit search failed for '{q}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/parkm/customer/by-id/{customer_id}")
+async def parkm_customer_by_id(customer_id: str, _auth=Depends(require_parkm_auth)):
+    """Fetch full customer + permits by ParkM customer ID.
+
+    Used after CSR picks a result from plate/unit/name search to load
+    customer details and permits into the refund panel.
+    """
+    try:
+        result = await refund_service.lookup_customer_by_id(customer_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Customer lookup by id failed for {customer_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/parkm/refund/evaluate")
 async def parkm_evaluate_refund(request: Request, _auth=Depends(require_parkm_auth)):
     """Evaluate refund eligibility for a customer.

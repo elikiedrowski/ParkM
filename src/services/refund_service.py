@@ -35,21 +35,23 @@ class RefundService:
     # ── Step 1: Customer Lookup ───────────────────────────────────────
 
     async def lookup_customer(self, email: str) -> Dict[str, Any]:
-        """Find customer in ParkM and return their account summary.
-
-        Returns:
-            {
-                "found": bool,
-                "customer": { id, name, email, ... } or None,
-                "permits": [ active permit summaries ],
-                "inactive_permits": [ inactive permits charged within 30 days ],
-                "vehicles": [ vehicle summaries ],
-            }
-        """
+        """Find customer in ParkM by email and return their account summary."""
         customer = await self.parkm.get_customer_by_email(email)
         if not customer:
             return {"found": False, "customer": None, "permits": [], "inactive_permits": [], "vehicles": []}
+        return await self._build_customer_summary(customer, fallback_email=email)
 
+    async def lookup_customer_by_id(self, customer_id: str) -> Dict[str, Any]:
+        """Find customer in ParkM by ID and return their account summary."""
+        customer = await self.parkm.get_customer_by_id(customer_id)
+        if not customer:
+            return {"found": False, "customer": None, "permits": [], "inactive_permits": [], "vehicles": []}
+        return await self._build_customer_summary(customer)
+
+    async def _build_customer_summary(
+        self, customer: Dict[str, Any], fallback_email: str = ""
+    ) -> Dict[str, Any]:
+        """Shared logic to assemble customer + permits + inactive permits."""
         customer_id = customer["id"]
         name = f"{customer.get('firstName', '')} {customer.get('lastName', '')}".strip()
 
@@ -86,7 +88,7 @@ class RefundService:
             "customer": {
                 "id": customer_id,
                 "name": name,
-                "email": customer.get("primaryEmailAddress") or email,
+                "email": customer.get("primaryEmailAddress") or fallback_email,
                 "phone": customer.get("mobilePhone"),
                 "account_id": customer.get("accountId"),
                 "org_unit_id": customer.get("organizationUnitId"),

@@ -54,7 +54,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
 
         # Step 3: Classify email
         logger.info(f"[{ticket_id}] Classifying email with AI")
-        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id)
+        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id, department_id=department_id)
 
         logger.info(f"[{ticket_id}] Classification result:")
         logger.info(f"  - Tags: {classification.get('tags')}")
@@ -138,13 +138,17 @@ async def process_correction_webhook(ticket_id: str, payload: Dict[str, Any]):
         confidence_raw = cf.get("cf_ai_confidence")
         confidence = int(confidence_raw) if confidence_raw is not None else None
         department_id = ticket_data.get("departmentId", "")
+        subject = ticket_data.get("subject") or ""
+        description = ticket_data.get("description") or ""
 
         log_correction(
             ticket_id=ticket_id,
             original_intent=original_tags,
             corrected_intent=corrected_tags,
             confidence=confidence,
-            department_id=department_id
+            department_id=department_id,
+            subject=subject,
+            description_snippet=description[:500] if description else None,
         )
 
     except Exception as e:

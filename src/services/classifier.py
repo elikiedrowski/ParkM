@@ -4,16 +4,96 @@ Classifies support emails with granular tags and multi-intent support.
 Tags align with the Zoho Desk 'Tagging' picklist values.
 """
 import json
+import logging
 import os
-from typing import Dict, Any, List
+import time
+from typing import Dict, Any, List, Optional
 from openai import OpenAI
 from src.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 # Load tag values from the canonical source
 _TAG_VALUES_PATH = os.path.join(os.path.dirname(__file__), "..", "wizard", "tagging_values.json")
 with open(_TAG_VALUES_PATH) as _f:
     VALID_TAGS: List[str] = json.load(_f)["values"]
+
+# Load corrected-examples few-shot block (built from human review of 31 mistagged tickets)
+_CORRECTED_EXAMPLES_PATH = os.path.join(os.path.dirname(__file__), "..", "wizard", "corrected_examples.txt")
+try:
+    with open(_CORRECTED_EXAMPLES_PATH) as _f:
+        CORRECTED_EXAMPLES: str = _f.read()
+except FileNotFoundError:
+    CORRECTED_EXAMPLES = ""
+
+
+# ── Live-learning cache (per-department) ────────────────────────────────────
+# Rebuilt from the `corrections` table every LIVE_LEARNING_TTL seconds.
+_LIVE_LEARNING_CACHE: Dict[str, Dict[str, Any]] = {}
+LIVE_LEARNING_TTL = 600  # 10 minutes
+LIVE_LEARNING_LIMIT = 20
+
+
+def _build_live_learning_block(department_id: Optional[str]) -> str:
+    """Fetch the most recent CSR corrections for this department and format
+    them as a few-shot block to inject into the classifier prompt.
+
+    Cached per-department for LIVE_LEARNING_TTL seconds. Returns empty string
+    on any failure — this path must never break classification.
+    """
+    if os.environ.get("LIVE_LEARNING_ENABLED", "true").lower() in ("0", "false", "no"):
+        return ""
+
+    cache_key = f"corrections:{department_id or 'default'}"
+    entry = _LIVE_LEARNING_CACHE.get(cache_key)
+    if entry and (time.time() - entry["ts"]) < LIVE_LEARNING_TTL:
+        return entry["block"]
+
+    try:
+        from src.db.database import get_engine, read_recent_corrections
+        engine = get_engine()
+        if not engine:
+            return ""
+        rows = read_recent_corrections(engine, department_id=department_id, limit=LIVE_LEARNING_LIMIT)
+    except Exception as e:
+        logger.warning(f"Live-learning DB read failed ({e}); skipping injection")
+        return ""
+
+    # Only keep corrections with real content AND canonical tags — older legacy
+    # rows may have empty subject/body or obsolete tag names.
+    usable = []
+    for r in rows:
+        subj = (r.get("subject") or "").strip()
+        snippet = (r.get("description_snippet") or "").strip()
+        if not subj and not snippet:
+            continue
+        correct = r["corrected_tags"] or ([] if not r.get("corrected_intent") else [r["corrected_intent"]])
+        if not any(t in VALID_TAGS for t in correct):
+            continue
+        usable.append(r)
+
+    if not usable:
+        _LIVE_LEARNING_CACHE[cache_key] = {"ts": time.time(), "block": ""}
+        return ""
+
+    lines = [
+        "LIVE CSR CORRECTIONS (most recent first — your team has overridden these classifications):",
+        "",
+    ]
+    for i, r in enumerate(usable, 1):
+        ai = "; ".join(r["original_tags"]) or r.get("original_intent") or "?"
+        correct = "; ".join(r["corrected_tags"]) or r.get("corrected_intent") or "?"
+        subj = (r.get("subject") or "").strip()
+        snippet = (r.get("description_snippet") or "").strip()
+        lines.append(f"[L{i}] Subject: \"{subj[:120]}\"")
+        if snippet:
+            lines.append(f"      Body: \"{snippet[:250]}\"")
+        lines.append(f"      AI picked: {ai}  →  CSR corrected to: {correct}")
+        lines.append("")
+    block = "\n".join(lines)
+    _LIVE_LEARNING_CACHE[cache_key] = {"ts": time.time(), "block": block}
+    return block
 
 
 class EmailClassifier:
@@ -24,14 +104,14 @@ class EmailClassifier:
         self.client = OpenAI(api_key=self.settings.openai_api_key)
         self.model = self.settings.ai_model
 
-    def classify_email(self, subject: str, body: str, from_email: str = "", ticket_id: str = "") -> Dict[str, Any]:
+    def classify_email(self, subject: str, body: str, from_email: str = "", ticket_id: str = "", department_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Classify an email and return structured classification data.
 
         Returns a dict with "tags" (list of 1+ tag strings) plus complexity,
         language, urgency, confidence, key_entities, and other metadata.
         """
-        prompt = self._build_classification_prompt(subject, body, from_email)
+        prompt = self._build_classification_prompt(subject, body, from_email, department_id=department_id)
 
         response = self.client.chat.completions.create(
             model=self.model,
@@ -87,9 +167,10 @@ class EmailClassifier:
 
         return result
 
-    def _build_classification_prompt(self, subject: str, body: str, from_email: str = "") -> str:
+    def _build_classification_prompt(self, subject: str, body: str, from_email: str = "", department_id: Optional[str] = None) -> str:
         """Build the classification prompt with granular tags"""
         email_line = f"\nFrom: {from_email}" if from_email else ""
+        LIVE_LEARNING_BLOCK = _build_live_learning_block(department_id)
         return f"""Analyze this customer support email and classify it.
 
 EMAIL:{email_line}
@@ -162,6 +243,61 @@ Provide your classification in JSON format with these fields:
    - Order tags by importance: the primary issue first, secondary issues after.
    - Most emails will have 1 tag. Some will have 2-3. Rarely more than 3.
    - Example: customer says "I need to update my plate AND my car was warned" → ["Customer Update Vehicle Info", "Customer Warned or Tagged"]
+
+   PRIORITY RULES (avoid common misclassifications — derived from human review):
+
+   RULE 1 — Cancel + refund dominates context:
+   If the email contains explicit cancel + refund language ("cancel my permit",
+   "refund me", "stop charging me", "I moved out, please refund", "cancel and
+   reimburse"), tag as "Customer Canceling a Permit and Refunding" — even if
+   the email ALSO mentions a license plate, contact info change, or a charge
+   dispute as supporting context. The cancel+refund intent dominates secondary
+   topics.
+
+   RULE 2 — "Customer Double Charged or Extra Charges" is reserved for actual
+   duplicate or unexpected charges. Do NOT use for:
+     - General billing complaints (use "Customer Payment Help")
+     - Renewal billing questions (use "Customer Need Help Renewing Permit")
+     - Cancel+refund requests (use "Customer Canceling a Permit and Refunding")
+     - Grandfathered permit billing (use "Customer Inquiring for Grandfathered Permit")
+   Trigger phrases for valid use: "charged twice", "two charges", "duplicate
+   charge", "extra charge I didn't authorize", "charged for something I didn't buy".
+
+   RULE 3 — "Customer Update Vehicle Info" requires that updating the vehicle
+   is the PRIMARY ask. Do NOT use just because the email mentions a vehicle.
+   If the customer says "cancel the permit on my Honda", the intent is cancel,
+   not update. Trigger phrases for valid use: "I got a new car", "please update
+   my plate to", "I changed vehicles", "new license plate is".
+
+   RULE 4 — "Customer Update Contact Info" requires that updating contact
+   information is the PRIMARY ask. Do NOT use just because the email contains
+   a new email address in the signature or mentions an address change in passing.
+   Trigger phrases for valid use: "please update my email to", "new phone
+   number", "I changed my address", "update my unit number".
+
+   RULE 5 — "Customer Miscellaneous Questions" is a LAST RESORT. Always prefer
+   a specific tag. Before tagging miscellaneous, check whether the email matches
+   any of: Need Help Buying, Need Help Renewing, Payment Help, Update Contact
+   Info, Password Reset, Guest Permit Questions. Only use miscellaneous if no
+   specific tag fits.
+
+   RULE 6 — "Customer Towed Booted Ticketed" requires an ACTUAL tow, boot, or
+   ticket event on the customer's vehicle. Do NOT use for general questions
+   about parking enforcement, complaints about other cars, or property
+   inquiries. Trigger phrases for valid use: "my car was towed", "got booted",
+   "received a ticket", "found a tow notice".
+
+   RULE 7 — "Customer Need help buying a permit" recognition. Triggers include:
+   "how do I get a permit", "I just moved in", "I'm trying to buy a permit",
+   "trying to register", "trying to sign up", "new resident need permit",
+   "how do I purchase". First-time-buyer intent — they don't have a permit yet
+   and want one.
+
+   RULE 8 — "Customer Inquiring for Locked Down Permit" recognition. Triggers
+   include: "permits show as Sold Out", "can't purchase a permit", "permit
+   page won't let me buy", "system says no permits available", "community is
+   full", "lockdown". This is a community-wide availability issue, NOT a
+   customer trying to add an extra permit (which is "Additional Permit").
 
    SENDER DETECTION:
    The "From" email address is a critical signal for determining sender type.
@@ -265,6 +401,8 @@ Subject: "(No Subject)"
 Body: ""
 → tags: ["Needs Tag"], confidence: 0.30
 
+{CORRECTED_EXAMPLES}
+{LIVE_LEARNING_BLOCK}
 Respond ONLY with valid JSON, no other text."""
 
     def get_routing_recommendation(self, classification: Dict[str, Any]) -> str:

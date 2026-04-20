@@ -29,7 +29,9 @@ def log_correction(
     original_intent: str,
     corrected_intent: str,
     confidence: Optional[int] = None,
-    department_id: Optional[str] = None
+    department_id: Optional[str] = None,
+    subject: Optional[str] = None,
+    description_snippet: Optional[str] = None,
 ) -> bool:
     """
     Append a CSR correction to DB (primary) or JSONL (fallback).
@@ -69,6 +71,8 @@ def log_correction(
                     corrected_tags_json=json.dumps(corrected_tags) if corrected_tags else None,
                     confidence=confidence,
                     is_misclassification=is_misclassification,
+                    subject=(subject or "")[:500] or None,
+                    description_snippet=(description_snippet or "")[:500] or None,
                 ))
                 conn.commit()
             logger.info(

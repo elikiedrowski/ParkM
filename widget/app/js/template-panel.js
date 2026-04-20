@@ -22,14 +22,17 @@ var TemplatePanel = (function () {
 
   function renderButtons(quickTemplates) {
     var container = document.getElementById("template-buttons");
+    var panel = document.getElementById("templates-panel");
+    // Panel may be hidden/removed from the DOM (scope trim) — no-op if absent
+    if (!container || !panel) return;
     container.innerHTML = "";
 
     if (!quickTemplates || quickTemplates.length === 0) {
-      document.getElementById("templates-panel").style.display = "none";
+      panel.style.display = "none";
       return;
     }
 
-    document.getElementById("templates-panel").style.display = "block";
+    panel.style.display = "block";
 
     quickTemplates.forEach(function (tmpl) {
       var btn = document.createElement("button");

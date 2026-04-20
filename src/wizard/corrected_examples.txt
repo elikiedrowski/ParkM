@@ -1,0 +1,157 @@
+CORRECTED EXAMPLES — 31 real misclassifications from human review. Match these patterns:
+
+[1] Subject: "Confirmation"
+    Body: "Greetings, I purchased a permit but didn’t get a confirmation email. Please confirm I won’t be towed, thanks John 3:16 Frances Grant, Author amazon.com/author/franniemae "Mini Testimony, Mega Victory""
+    → correct: Customer Need help buying a permit (NOT Customer Miscellaneous Questions)
+    Lesson: First-time buyer ("purchased but no confirmation", "just moved in, how do I permit") = Need Help Buying.
+
+[2] Subject: "License Plate Removal from Billing System"
+    Body: "Hello good morning ! haven’t lived in this condominium for a month. Please remove my license plate from the billing system FL-AS98ZX 2020 TOYOTA Corolla White. Thank you ! Sent from my iPhone"
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Update Vehicle Info)
+    Lesson: "moved out / remove plate from billing" is cancel+refund, not plate-update.
+
+[3] Subject: "Re: Expiring Permit"
+    Body: "I no longer live here. Please do not send me any more messages. Mary Bushbaum On 12/07/2025 8:00 AM MST ParkM wrote: Expiring Permit Your permit is set to expire. Your permit expires at 12/08/2025 03:00 PM MST. You can purchase a new one here: PURCHASE PERMIT CO-084FOI 2002 SUBARU Impreza Silver..."
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Update Contact Info)
+    Lesson: "Stop emailing me, I moved" with billing context = cancel+refund, not contact-update.
+
+[4] Subject: "Ya registre mi carro"
+    Body: "Enviado desde mi iPhone"
+    → correct: Customer Need help buying a permit (NOT Needs Tag)
+    Lesson: Don't default to Needs Tag when a concrete "I want to buy a permit" signal is present — even if sparse.
+
+[5] Subject: "Re: Permit Renewal Payment"
+    Body: "Hello somebody. this email shows you that I have paid $10.00 for the current year as showed below ! However. I got a email reminder and a text payment from you on 12-6-2025 that I have to pay again $10.00 on 12/09/2025 MST for the same service! Please do not automatically charge to my credit card..."
+    → correct: Customer Need Help Renewing Permit (NOT Customer Double Charged or Extra Charges)
+    Lesson: Confusion about a renewal reminder ≠ double charge. Customer sees an existing payment and a renewal notice.
+
+[6] Subject: "New card"
+    Body: "Sent from my iPhone4088 8141 7510 4828. expire 11/28"
+    → correct: Customer Payment Help (NOT Customer Update Vehicle Info)
+    Lesson: Payment-method issues are Payment Help even if the email also mentions vehicle details.
+
+[7] Subject: "Change permit"
+    Body: "Id like to change my permit to my covered parking spot for the infiniti qx60 instead of the extra uncovered car."
+    → correct: Customer Inquiring for Locked Down Permit (NOT Customer Update Vehicle Info)
+    Lesson: "My permit stopped working / shows sold out" signals community lockdown, not a vehicle-info update.
+
+[8] Subject: "2nd parking permit"
+    Body: "This is in regards to my 2nd permit, I already paid $100 for each car when I signed my lease back in June for a whole year. And now since the property is changing to parkM it’s asking for my 2nd car permit $25 a month but I already paid $100 for a year when I signed my lease in June. How can we..."
+    → correct: Customer Inquiring for Grandfathered Permit (NOT Customer Double Charged or Extra Charges)
+    Lesson: Billing question tied to a grandfathered-permit context is its own tag.
+
+[9] Subject: "Fw: C Lawson Apt 506 parking space"
+    Body: "Hello! Could you please help Curtis Lawson with his his permit and parking situation? Thank you! From: C Law Sent: Monday, December 8, 2025 4:59 PM To: TwentyOne 01 on Market Property Subject: C Lawson Apt 506 parking space Hi Tim As requested I’m reaching out to provide the required information..."
+    → correct: Customer Rental Car (NOT Property Update Resident Vehicle)
+    Lesson: Rental car replacement on a resident permit is "Customer Rental Car", distinct from routine property updates.
+
+[10] Subject: "Charge on card"
+    Body: "here is the full charge. doesn’t show a date but i’m assuming it was made yesterday when it showed up on his account On Mon, Dec 8, 2025 at 2:21 PM Sierra Garza wrote: it isn’t showing a date right now because it still shows pending but this charge showed up on his account yesterday. what i sent..."
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Double Charged or Extra Charges)
+    Lesson: "moved out, stop charging me, refund" is cancel+refund, not a double-charge dispute.
+
+[11] Subject: "W3-J103 Parking Permit"
+    Body: "Hello, I hope this email finds you well. Jorge Cobos Granados who resides at 9029 E. Mississippi Ave. is looking to purchase a parking permit, but he is showing under his old property. Would you be able to help with this? Daniela Diaz-Reyes Assistant Community Manager T: (303) 752-2222 TAVA Waters..."
+    → correct: Property Update Resident Contact Information (NOT Property Permitting PAID Resident Vehicle for Them)
+    Lesson: Property correcting a resident's email/phone/address → Update Resident Contact, not Permitting Vehicle.
+
+[12] Subject: "Retreat at Fitzsimons - Annual Parking"
+    Body: "div.zm_2013923861514430903_parse_7659230714030146268 P { margin-top: 0; margin-bottom: 0 } Hi, Can we get Jose Moncada permission to get an annual parking pass please? Ive cd him and can you confirm in spanish once he can? Lucy Talamantes| Assistant Community Manager The Retreat at Fitzsimons..."
+    → correct: Property Changing Resident Type for Approved Permit (NOT Property Permitting PAID Resident Vehicle for Them)
+    Lesson: Changing resident TYPE (tenant → owner etc.) on an approved permit is its own tag.
+
+[13] Subject: "Need to reactivate permit on my Nissan Sentra DRY-D54"
+    Body: "Whenever I try to activate or purchase a permit, it says permit limit has been reached. Our apartment complex last two vehicles per apartment so I’m a little bit confused."
+    → correct: Customer Inquiring for Locked Down Permit (NOT Customer Inquiring for Additional Permit)
+    Lesson: "Can't buy a second permit" usually = Locked Down (community cap), NOT Additional Permit which implies they're allowed another.
+
+[14] Subject: "Parking Spot"
+    Body: "Need to change my spot to 204 if posible."
+    → correct: Customer Miscellaneous Questions (NOT Customer Parking Space Not in Dropdown)
+    Lesson: Reserve "Space Not in Dropdown" for actual missing-space signups; general questions → Miscellaneous.
+
+[15] Subject: "permit verification"
+    Body: "Hello I would like to confirm if the following vehicle had an active permit for Retreat at Fitzsimmons on 12/8/2025 at 3:29am White 2012 Chrysler 300 Plate-BQIL32 VIN-308350 -- TOW CO DENVER 4740 LIPAN ST. DENVER, CO. 80211 720-400-1733 TOWCODENVER.COM"
+    → correct: Property Checking if a Vehicle is Permitted (NOT Customer Towed Booted Ticketed)
+    Lesson: Property asking about a vehicle + tow context → Property Checking if Vehicle is Permitted, not Customer Towed.
+
+[16] Subject: "Honda Civic 2009 placa EBWK55"
+    Body: "Enviado desde mi iPhone Quisiera saber si me cobraron la mensualidad del parqueadero, gracias"
+    → correct: Customer Payment Help (NOT Customer Miscellaneous Questions)
+    Lesson: Any payment-method or billing question → Payment Help, not Miscellaneous.
+
+[17] Subject: "Re: Permit Cancelled"
+    Body: "Hello, I talked to Bre, carport C-17 is the permit that is cancelled. I am attached garage 17-C. My permit should not be cancelled. Thank you for attention to this matter. On Fri, Dec 5, 2025, 4:36 PM ParkM wrote: PERMIT CANCELLED YOUR PERMIT HAS BEEN CANCELLED Shadow Ridge at Southlands Scott..."
+    → correct: Customer Need help buying a permit (NOT Customer Towed Booted Ticketed)
+    Lesson: "Towed because I didn't have a permit, help me get one" = Need Help Buying, NOT Towed. Tow/boot is a PAST event; the asked-for resolution is buying.
+
+[18] Subject: "Day pass"
+    Body: "I purchased the night pass lastly night and it expired at 9 am. I tried logging on at 8:30 this morning to purchase the day pass. The day pass is unavailable and greyed out. I just tried again at 10:15 am and it’s still greyed out. If Billy car gets towed because of y’all’s fucked up system I’m..."
+    → correct: Customer Guest Permit and Pricing Questions (NOT Customer Towed Booted Ticketed)
+    Lesson: Tow involving a guest vehicle → Guest Permit Questions.
+
+[19] Subject: "(No Subject)"
+    Body: "I don’t live there anymore so please stop sending me these Sent from my iPhone"
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Update Contact Info)
+    Lesson: "Stop emailing me, I moved" with billing context = cancel+refund, not contact-update.
+
+[20] Subject: "Car not registered"
+    Body: "My car isn't registered on your app for a permanent as a resident and I was told by the office manager when I signed the lease that when they input it in the system , it automatically went in. She even assigned me a parking spot number.My number is number three in front of apartment 1c on building..."
+    → correct: Customer Need help buying a permit (NOT Customer Parking Space Not in Dropdown)
+    Lesson: New resident not finding their space in the signup dropdown is "Need Help Buying" — the space-dropdown tag is rare.
+
+[21] Subject: "Park m"
+    Body: "I no longer live there and moved out if state can y’all please remove me from park m thanks so much Sent from my iPhone"
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Update Contact Info)
+    Lesson: "Stop emailing me, I moved" with billing context = cancel+refund, not contact-update.
+
+[22] Subject: "Moving"
+    Body: "I’m moving and need to transfer my permit"
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Update Vehicle Info)
+    Lesson: "moved out / remove plate from billing" is cancel+refund, not plate-update.
+
+[23] Subject: "Moving"
+    Body: "How do I transfer my permit ZM4F7D"
+    → correct: Customer Need help buying a permit (NOT Customer Miscellaneous Questions)
+    Lesson: First-time buyer ("purchased but no confirmation", "just moved in, how do I permit") = Need Help Buying.
+
+[24] Subject: "I ask refund"
+    Body: "Hello, I am writing to make a complaint because I have noticed that you are still charging $10 from my account ending in 8589. I request a refund for the months of November and December."
+    → correct: Customer Canceling a Permit and Refunding (NOT Customer Double Charged or Extra Charges)
+    Lesson: "moved out, stop charging me, refund" is cancel+refund, not a double-charge dispute.
+
+[25] Subject: "4400 Syracuse | Property Manager Move Out Admin Portal"
+    Body: "Can we set up Erika Cced here with the ability to cancel permits on past permits within the parkm portal? Thanks, Jonny Miller Parking Expert ParkM.com Schedule: My Calendar Direct: masked082@parkm.com Support: masked003@parkm.com Direct: 303-929-1584"
+    → correct: Needs Tag (NOT Sales Rep Asking for a Vehicle to be Released)
+    Lesson: Only use Sales Rep tags when the SENDER is a ParkM sales rep and the content matches. Otherwise → Needs Tag.
+
+[26] Subject: "(No Subject)"
+    Body: "Nececito llamar al guardia numeri de teléfono"
+    → correct: Customer Miscellaneous Questions (NOT Needs Tag)
+    Lesson: Short / sparse emails with a question but no specific category → Miscellaneous, not Needs Tag. Reserve Needs Tag for unintelligible content.
+
+[27] Subject: "Carport 46"
+    Body: "Good morning! Could someone please issue a pass for my car so I can park in carport 46 at Copper 87? Please let me know. If not, please let me know what I need to do to obtain one. Thanks! Best, Lilly"
+    → correct: Customer Inquiring for Locked Down Permit (NOT Customer Need help buying a permit)
+    Lesson: First-time-buyer who is blocked by a community cap/lockdown → Locked Down, not Need Help Buying.
+
+[28] Subject: "(No Subject)"
+    Body: "Necesito registrar mi vehículo Año: 2009 Marca: Toyota Modelo: corolla s esport 2009 Color: blanco Placa: TMP43340 Vin: 031716"
+    → correct: Customer Need help buying a permit (NOT Customer Update Vehicle Info)
+    Lesson: "I have a new car and need a permit" from a first-time buyer = Need Help Buying.
+
+[29] Subject: "Parking pass"
+    Body: "My pass is supposed to be valid until my lease is up at the end of April. I was not a new lease holder. I have had a lease since March of 2025. Andrew Evanisko"
+    → correct: Customer Need Help Renewing Permit (NOT Customer Miscellaneous Questions)
+    Lesson: Existing-customer renewal confusion → Renewing, not Miscellaneous.
+
+[30] Subject: "A-417 Deactivate Permit #267A"
+    Body: "ParkM, Can you please deactivate this permit? Kind regards, Mikaella Meridian SLC Apartments 30 N. Orange Street, Salt Lake City, UT 84116 (p) 385.722.9332 | masked105@greystar.com | MeridianSLC.com"
+    → correct: Property Cancel Resident Account (NOT Property Miscellaneous Questions)
+    Lesson: Property asking to close/remove a resident account → Property Cancel Resident Account, not Miscellaneous.
+
+[31] Subject: "Unknown transaction"
+    Body: "Hey Internal, can you please look into this charge(s)? Description (were they double charged?, can't find the charge in their account.. etc?): Can't find charges on their account Account email : masked109@me.com Last 4 digits of the card charged : 7999 Date of charge(s ): 11/17/2025 Screenshot of..."
+    → correct: Customer Payment Help (NOT Customer Double Charged or Extra Charges)
+    Lesson: Payment failure / method issue is Payment Help — NOT double charge.
+

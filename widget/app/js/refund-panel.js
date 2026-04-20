@@ -613,7 +613,7 @@ var RefundPanel = (function () {
     card.innerHTML =
       '<div class="refund-permit-header">' +
         '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
-        (permit.delay_cancellation_date ? '<span class="refund-delay-badge">Pending Cancel</span>' : '') +
+        (permit.delay_cancellation_date ? '<span class="refund-delay-badge">Permit Set to be Cancelled</span>' : '') +
       '</div>' +
       '<div class="refund-permit-details">' +
         (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
@@ -635,14 +635,6 @@ var RefundPanel = (function () {
       _evaluateRefund(permit, customer, card);
     });
     actionsDiv.appendChild(evalBtn);
-
-    var cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn btn-secondary refund-action-btn";
-    cancelBtn.textContent = "Cancel Permit";
-    cancelBtn.addEventListener("click", function () {
-      _cancelPermit(permit, card);
-    });
-    actionsDiv.appendChild(cancelBtn);
 
     return card;
   }
@@ -748,7 +740,7 @@ var RefundPanel = (function () {
       var body = {
         customer_email: customer.email,
         permit_id: permit.id,
-        reason: "Customer requested cancellation/refund",
+        reason: opts.refund_reason || "Customer requested cancellation/refund",
         ticket_id: ticketId,
         cancel_date: opts.cancel_date
       };
@@ -797,12 +789,6 @@ var RefundPanel = (function () {
     html += '<div class="refund-process-step ' + (cancelOk ? 'step-ok' : 'step-fail') + '">';
     html += cancelMsg;
     html += '</div>';
-
-    if (data.zoho_status_updated) {
-      html += '<div class="refund-process-step step-ok">Ticket set to "Waiting on Accounting"</div>';
-    } else if (data.zoho_status_updated === false) {
-      html += '<div class="refund-process-step step-fail">Could not update ticket status — please set to "Waiting on Accounting" manually</div>';
-    }
 
     if (acctEmail) {
       var insertBtnId = "insert-accounting-" + permit.id;
@@ -927,10 +913,61 @@ var RefundPanel = (function () {
         overlay.remove();
       } else if (action === "now") {
         overlay.remove();
-        onConfirm({ cancel_date: null, send_notice: true });
+        _showRefundReasonDialog({ cancel_date: null, send_notice: true }, onConfirm);
       } else if (action === "delay") {
         // Transition to step 2: date picker
         _showDelayDatePicker(overlay, defaultDateStr, onConfirm);
+      }
+    });
+  }
+
+  function _showRefundReasonDialog(baseOpts, onConfirm) {
+    var overlay = document.createElement("div");
+    overlay.id = "cancel-dialog-overlay";
+    overlay.className = "cancel-dialog-overlay";
+
+    overlay.innerHTML =
+      '<div class="cancel-dialog">' +
+        '<div class="cancel-dialog-header">' +
+          '<h3 class="cancel-dialog-title">Refund Reason</h3>' +
+          '<button class="cancel-dialog-x" data-action="close">&times;</button>' +
+        '</div>' +
+        '<div class="cancel-dialog-body">' +
+          '<p>Enter the reason for this refund (required):</p>' +
+          '<textarea class="cancel-dialog-reason-input" rows="4" placeholder="e.g. Resident moved out, stopped using the permit, etc."></textarea>' +
+          '<div class="cancel-dialog-reason-error" style="display:none; color:#dc2626; font-size:12px; margin-top:6px;">Refund reason is required.</div>' +
+        '</div>' +
+        '<div class="cancel-dialog-footer">' +
+          '<button class="btn btn-link cancel-dialog-btn" data-action="close">Cancel</button>' +
+          '<button class="btn btn-primary cancel-dialog-btn" data-action="submit">Forward to Accounting</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    var textarea = overlay.querySelector(".cancel-dialog-reason-input");
+    var errorEl = overlay.querySelector(".cancel-dialog-reason-error");
+    if (textarea) textarea.focus();
+
+    overlay.addEventListener("click", function (e) {
+      var action = e.target.getAttribute("data-action");
+      if (!action) {
+        if (e.target === overlay) overlay.remove();
+        return;
+      }
+      if (action === "close") {
+        overlay.remove();
+      } else if (action === "submit") {
+        var reason = (textarea && textarea.value || "").trim();
+        if (!reason) {
+          errorEl.style.display = "block";
+          textarea.style.borderColor = "#dc2626";
+          textarea.focus();
+          return;
+        }
+        overlay.remove();
+        var finalOpts = Object.assign({}, baseOpts, { refund_reason: reason });
+        onConfirm(finalOpts);
       }
     });
   }
@@ -998,10 +1035,10 @@ var RefundPanel = (function () {
           return;
         }
         overlay2.remove();
-        onConfirm({
+        _showRefundReasonDialog({
           cancel_date: selectedDate.toISOString(),
           send_notice: noticeCheck ? noticeCheck.checked : true
-        });
+        }, onConfirm);
       }
     });
   }

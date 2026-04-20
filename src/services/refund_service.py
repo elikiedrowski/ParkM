@@ -386,6 +386,7 @@ class RefundService:
         refund_amount: float,
         property_name: str = "",
         ticket_id: str = "",
+        refund_reason: str = "",
     ) -> Dict[str, Any]:
         """Build the email content to forward to accounting@parkm.com.
 
@@ -409,10 +410,13 @@ class RefundService:
         safe_email = html.escape(customer_email)
         safe_amount = html.escape(amount_str)
         safe_property = html.escape(property_name)
+        safe_reason = html.escape(refund_reason) if refund_reason else ""
 
         subject = f"Refund Request - {customer_name}"
         if ticket_id:
             subject += f" (Ticket #{ticket_id})"
+
+        reason_li = f"\n  <li><strong>Reason for Refund:</strong> {safe_reason}</li>" if safe_reason else ""
 
         body_html = f"""<p>Hi Accounting,</p>
 
@@ -422,7 +426,7 @@ class RefundService:
   <li><strong>Resident Name:</strong> {safe_name}</li>
   <li><strong>Resident Email:</strong> {safe_email}</li>
   <li><strong>Property Name:</strong> {safe_property}</li>
-  <li><strong>Refund Amount:</strong> {safe_amount}</li>
+  <li><strong>Refund Amount:</strong> {safe_amount}</li>{reason_li}
 </ul>
 
 <p>Thank you,<br>
@@ -508,6 +512,7 @@ ParkM Support Team</p>"""
                     refund_amount=eligibility["refund_amount"],
                     property_name=permit.get("community") or permit.get("type_name", ""),
                     ticket_id=ticket_id,
+                    refund_reason=reason or "",
                 )
 
             results.append({

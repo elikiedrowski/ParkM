@@ -353,11 +353,12 @@ async def test_ticket_tagging(ticket_id: str):
         subject = ticket_data.get("subject", "")
         description = ticket_data.get("description", "")
         sender_email = ticket_data.get("email", "")
-        
+        dept_id_for_llm = ticket_data.get("departmentId", "")
+
         logger.info(f"Ticket: {subject}")
-        
+
         # Classify
-        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id)
+        classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id, department_id=dept_id_for_llm)
         routing = classifier.get_routing_recommendation(classification)
 
         # Tag (import tagger here to avoid circular import)
@@ -454,7 +455,8 @@ async def batch_classify(limit: int = 25):
             sender_email = ticket_data.get("email", "")
 
             classification = classifier.classify_email(
-                subject, description, sender_email, ticket_id=ticket_id
+                subject, description, sender_email, ticket_id=ticket_id,
+                department_id=ticket_data.get("departmentId", ""),
             )
             routing = classifier.get_routing_recommendation(classification)
 
@@ -556,7 +558,8 @@ async def batch_reclassify(
             sender_email = ticket_data.get("email", "")
 
             classification = classifier.classify_email(
-                subject, description, sender_email, ticket_id=ticket_id
+                subject, description, sender_email, ticket_id=ticket_id,
+                department_id=ticket_data.get("departmentId", ""),
             )
             routing = classifier.get_routing_recommendation(classification)
 
@@ -959,17 +962,7 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
             cancel_date=data.get("cancel_date"),
         )
 
-        # If refund eligible, also update the Zoho ticket status
-        ticket_id = data.get("ticket_id")
-        if ticket_id and result.get("status") == "refund_eligible":
-            try:
-                await zoho_client.update_ticket(ticket_id, {"status": "Waiting on Accounting"})
-                result["zoho_status_updated"] = True
-            except Exception as e:
-                logger.error(f"Failed to update Zoho ticket {ticket_id}: {e}")
-                result["zoho_status_updated"] = False
-                result["zoho_error"] = str(e)
-
+        # Ticket status is NOT auto-changed — CSR decides manually (per Apr 16 feedback).
         return result
     except HTTPException:
         raise

@@ -74,6 +74,10 @@ if _SA_AVAILABLE:
         Column("corrected_tags_json", Text, nullable=True),  # JSON array of agent-corrected tags
         Column("confidence", Integer, nullable=True),
         Column("is_misclassification", Boolean, default=False),
+        # Live-learning content snapshot — captured at correction time so future
+        # classifications can use these as few-shot examples.
+        Column("subject", Text, nullable=True),
+        Column("description_snippet", Text, nullable=True),  # first ~500 chars
     )
 
     api_usage = Table("api_usage", _metadata,
@@ -257,6 +261,50 @@ def read_corrections(engine, days: Optional[int] = None, department_id: Optional
             "corrected_tags": corrected_tags,
             "confidence": row["confidence"],
             "is_misclassification": row["is_misclassification"],
+        })
+    return result
+
+
+def read_recent_corrections(engine, department_id: Optional[str] = None, limit: int = 20) -> List[Dict]:
+    """Latest N misclassification corrections for the live-learning loop.
+
+    Filters to corrections where the CSR actually changed tags (is_misclassification=True)
+    and returns most-recent-first. Falls back to broader match if dept filter is empty.
+    """
+    from sqlalchemy import desc
+    stmt = select(corrections).where(corrections.c.is_misclassification == True)
+    if department_id:
+        stmt = stmt.where(
+            or_(corrections.c.department_id == department_id, corrections.c.department_id == None)
+        )
+    stmt = stmt.order_by(desc(corrections.c.timestamp)).limit(limit)
+    with engine.connect() as conn:
+        rows = conn.execute(stmt).mappings().all()
+    result = []
+    for row in rows:
+        original_tags = []
+        corrected_tags = []
+        if row.get("original_tags_json"):
+            try:
+                original_tags = json.loads(row["original_tags_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if not original_tags and row["original_intent"]:
+            original_tags = [t.strip() for t in row["original_intent"].split(";") if t.strip()]
+        if row.get("corrected_tags_json"):
+            try:
+                corrected_tags = json.loads(row["corrected_tags_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if not corrected_tags and row["corrected_intent"]:
+            corrected_tags = [t.strip() for t in row["corrected_intent"].split(";") if t.strip()]
+        result.append({
+            "ticket_id": row["ticket_id"],
+            "department_id": row["department_id"],
+            "original_tags": original_tags,
+            "corrected_tags": corrected_tags,
+            "subject": row.get("subject"),
+            "description_snippet": row.get("description_snippet"),
         })
     return result
 

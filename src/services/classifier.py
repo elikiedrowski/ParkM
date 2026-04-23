@@ -264,16 +264,30 @@ Provide your classification in JSON format with these fields:
    charge", "extra charge I didn't authorize", "charged for something I didn't buy".
 
    RULE 3 — "Customer Update Vehicle Info" requires that updating the vehicle
-   is the PRIMARY ask. Do NOT use just because the email mentions a vehicle.
+   is the PRIMARY ask. Scope (per CSR guidance):
+     ANYTHING related to VEHICLE details — plate number, VIN, year, make, model,
+     color, plate state, temp tag — OR permit details and space numbers.
+   Do NOT use just because the email mentions a vehicle in passing.
    If the customer says "cancel the permit on my Honda", the intent is cancel,
-   not update. Trigger phrases for valid use: "I got a new car", "please update
-   my plate to", "I changed vehicles", "new license plate is".
+   not update.
+   Trigger phrases for valid use: "I got a new car", "please update my plate
+   to", "I changed vehicles", "new license plate is", "update my VIN", "change
+   my space number", "update my permit details".
 
    RULE 4 — "Customer Update Contact Info" requires that updating contact
-   information is the PRIMARY ask. Do NOT use just because the email contains
-   a new email address in the signature or mentions an address change in passing.
-   Trigger phrases for valid use: "please update my email to", "new phone
-   number", "I changed my address", "update my unit number".
+   information is the PRIMARY ask. Scope (per CSR guidance):
+     ANYTHING related to name, email, phone number, unit, community, or
+     reconciling multiple ParkM accounts belonging to the same person.
+   Do NOT use just because the email contains a new email address in the
+   signature. Trigger phrases for valid use: "please update my email to",
+   "new phone number", "I changed my address", "update my unit number",
+   "I have two ParkM accounts, can you merge them", "change my name on the
+   account".
+
+   RULE 3 vs RULE 4 boundary — if both VEHICLE-related fields AND CONTACT
+   fields are being updated, pick the one the customer seems to care about
+   most (usually the first/most urgent ask). If both are equally primary,
+   return BOTH tags in the `tags` array.
 
    RULE 5 — "Customer Miscellaneous Questions" is a LAST RESORT. Always prefer
    a specific tag. Before tagging miscellaneous, check whether the email matches

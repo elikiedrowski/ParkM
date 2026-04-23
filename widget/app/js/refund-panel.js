@@ -21,6 +21,11 @@ var RefundPanel = (function () {
   function initEmbedded(contactEmail) {
     customerData = null;
     ticketEmail = contactEmail || "";
+    // Clear any lingering banner/selection from a previous ticket view
+    _selectedPermitId = null;
+    _lastPermitsData = null;
+    var existingBanner = document.getElementById("refund-floating-banner");
+    if (existingBanner) existingBanner.remove();
 
     // Find all interactive embed containers rendered by WizardRenderer
     var allEmbeds = document.querySelectorAll(".step-interactive-embed");
@@ -61,8 +66,7 @@ var RefundPanel = (function () {
   var SEARCH_TABS = [
     { id: "email", label: "Email", placeholder: "name@example.com" },
     { id: "name", label: "Name", placeholder: "First or last name" },
-    { id: "plate", label: "Plate", placeholder: "License plate" },
-    { id: "unit", label: "Unit", placeholder: "Unit number" }
+    { id: "plate", label: "Plate", placeholder: "License plate" }
   ];
   var activeSearchTab = "email";
 
@@ -165,8 +169,6 @@ var RefundPanel = (function () {
       _doNameSearch(query);
     } else if (activeSearchTab === "plate") {
       _doPlateSearch(query);
-    } else if (activeSearchTab === "unit") {
-      _doUnitSearch(query);
     }
   }
 
@@ -494,9 +496,63 @@ var RefundPanel = (function () {
 
   /* ── Render Permits (into refund evaluation step) ───────────────── */
 
+  // Module-level selection state. When set, _renderPermits collapses non-selected
+  // permits behind a "Show all permits" toggle.
+  var _selectedPermitId = null;
+  var _lastPermitsData = null;
+
+  function _selectPermit(permitId) {
+    _selectedPermitId = permitId;
+    if (_lastPermitsData) _renderPermits(_lastPermitsData);
+    _renderFloatingBanner();
+  }
+
+  function _clearPermitSelection() {
+    _selectedPermitId = null;
+    if (_lastPermitsData) _renderPermits(_lastPermitsData);
+    _renderFloatingBanner();
+  }
+
+  /* ── Floating permit banner ─────────────────────────────────────────
+     A compact summary of the selected permit pinned to the top of the widget
+     viewport, so CSRs don't lose context while scrolling through wizard steps. */
+
+  function _renderFloatingBanner() {
+    var existing = document.getElementById("refund-floating-banner");
+    if (existing) existing.remove();
+    if (!_selectedPermitId || !_lastPermitsData) return;
+
+    var permits = (_lastPermitsData.permits || []).concat(_lastPermitsData.inactive_permits || []);
+    var permit = permits.find(function (p) { return p.id === _selectedPermitId; });
+    if (!permit) return;
+
+    var vehicle = permit.vehicle || {};
+    var vehicleStr = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
+    var plateStr = vehicle.plate || "";
+
+    var banner = document.createElement("div");
+    banner.id = "refund-floating-banner";
+    banner.innerHTML =
+      '<div class="refund-floating-inner">' +
+        '<div class="refund-floating-main">' +
+          '<span class="refund-floating-label">Selected:</span> ' +
+          '<strong>' + _esc(permit.type_name || "Permit") + '</strong>' +
+          (vehicleStr ? ' — ' + _esc(vehicleStr) : '') +
+          (plateStr ? ' (' + _esc(plateStr) + ')' : '') +
+          (permit.delay_cancellation_date ? ' <span class="refund-delay-badge">Permit Set to be Cancelled</span>' : '') +
+        '</div>' +
+        '<button class="refund-floating-clear" type="button">Clear</button>' +
+      '</div>';
+    document.body.appendChild(banner);
+    banner.querySelector(".refund-floating-clear").addEventListener("click", _clearPermitSelection);
+  }
+
   function _renderPermits(data) {
     if (!refundContainer) return;
+    _lastPermitsData = data;
     refundContainer.innerHTML = "";
+    // Keep the floating banner in sync with the latest permit data
+    setTimeout(_renderFloatingBanner, 0);
 
     var permits = data.permits || [];
     var now = new Date();
@@ -513,7 +569,46 @@ var RefundPanel = (function () {
       return;
     }
 
-    // Active permits section
+    // Reset selection if the selected permit is no longer in the list
+    if (_selectedPermitId) {
+      var stillHere =
+        active.some(function (p) { return p.id === _selectedPermitId; }) ||
+        inactivePermits.some(function (p) { return p.id === _selectedPermitId; });
+      if (!stillHere) _selectedPermitId = null;
+    }
+
+    var totalOthers = active.length + inactivePermits.length - (_selectedPermitId ? 1 : 0);
+
+    // When a permit is selected, render ONLY that permit (active or inactive)
+    // plus a "Show all permits" toggle. Otherwise show the full list.
+    if (_selectedPermitId) {
+      var selectedHeader = document.createElement("h4");
+      selectedHeader.className = "refund-permits-title";
+      selectedHeader.textContent = "Selected Permit";
+      refundContainer.appendChild(selectedHeader);
+
+      var selectedList = document.createElement("div");
+      selectedList.className = "refund-permits-list refund-permits-list--selected";
+      var sel = active.find(function (p) { return p.id === _selectedPermitId; });
+      if (sel) {
+        selectedList.appendChild(_buildPermitCard(sel, data.customer));
+      } else {
+        var inacSel = inactivePermits.find(function (p) { return p.id === _selectedPermitId; });
+        if (inacSel) selectedList.appendChild(_buildInactivePermitCard(inacSel));
+      }
+      refundContainer.appendChild(selectedList);
+
+      if (totalOthers > 0) {
+        var toggle = document.createElement("button");
+        toggle.className = "btn btn-link refund-show-all-btn";
+        toggle.textContent = "↺ Show all permits (" + (totalOthers + 1) + ")";
+        toggle.addEventListener("click", _clearPermitSelection);
+        refundContainer.appendChild(toggle);
+      }
+      return;
+    }
+
+    // Unselected: full list
     if (active.length > 0) {
       var activeHeader = document.createElement("h4");
       activeHeader.className = "refund-permits-title";
@@ -533,7 +628,6 @@ var RefundPanel = (function () {
       refundContainer.appendChild(noActive);
     }
 
-    // Inactive permits section
     if (inactivePermits.length > 0) {
       var inactiveHeader = document.createElement("h4");
       inactiveHeader.className = "refund-permits-title refund-inactive-title";
@@ -588,7 +682,17 @@ var RefundPanel = (function () {
 
   function _buildPermitCard(permit, customer) {
     var card = document.createElement("div");
-    card.className = "refund-permit-card";
+    var isSelected = (_selectedPermitId === permit.id);
+    card.className = "refund-permit-card" + (isSelected ? " refund-permit-card--selected" : "");
+    card.setAttribute("data-permit-id", permit.id);
+    // Whole-card click = select this permit (ignoring clicks on buttons)
+    if (!isSelected) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", function (e) {
+        if (e.target.closest(".refund-action-btn")) return;
+        _selectPermit(permit.id);
+      });
+    }
 
     var vehicle = permit.vehicle || {};
     var vehicleStr = [vehicle.year, vehicle.make, vehicle.model, vehicle.color]
@@ -631,10 +735,20 @@ var RefundPanel = (function () {
     var evalBtn = document.createElement("button");
     evalBtn.className = "btn btn-primary refund-action-btn";
     evalBtn.textContent = "Evaluate Refund";
-    evalBtn.addEventListener("click", function () {
+    evalBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
       _evaluateRefund(permit, customer, card);
     });
     actionsDiv.appendChild(evalBtn);
+
+    var cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn btn-secondary refund-action-btn";
+    cancelBtn.textContent = "Cancel Permit";
+    cancelBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      _cancelPermit(permit, card);
+    });
+    actionsDiv.appendChild(cancelBtn);
 
     return card;
   }
@@ -727,7 +841,7 @@ var RefundPanel = (function () {
 
   function _processRefund(permit, customer, resultDiv) {
     _showCancelDialog(permit, function (opts) {
-      // opts: { cancel_date: null|string, send_notice: bool }
+      // opts: { cancel_date: null|string, send_notice: bool, refund_reason: string }
       var processBtn = document.getElementById("process-refund-" + permit.id);
       if (processBtn) {
         processBtn.disabled = true;
@@ -761,7 +875,7 @@ var RefundPanel = (function () {
           resultDiv.insertAdjacentHTML("beforeend",
             '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
         });
-    });
+    }, /* requireReason */ true);
   }
 
   function _renderProcessResult(data, permit, resultDiv) {
@@ -863,9 +977,12 @@ var RefundPanel = (function () {
     });
   }
 
-  /* ── Cancel Dialog (two-step: immediate vs delay) ───────────────── */
+  /* ── Cancel Dialog (two-step: immediate vs delay) ─────────────────
+     requireReason: when true, appends the Refund Reason dialog before
+     onConfirm fires. Used for the Evaluate Refund flow.
+     When false, cancel-only flow — no reason, no accounting email. */
 
-  function _showCancelDialog(permit, onConfirm) {
+  function _showCancelDialog(permit, onConfirm, requireReason) {
     // Remove any existing dialog
     var existing = document.getElementById("cancel-dialog-overlay");
     if (existing) existing.remove();
@@ -913,10 +1030,15 @@ var RefundPanel = (function () {
         overlay.remove();
       } else if (action === "now") {
         overlay.remove();
-        _showRefundReasonDialog({ cancel_date: null, send_notice: true }, onConfirm);
+        var nowOpts = { cancel_date: null, send_notice: true };
+        if (requireReason) {
+          _showRefundReasonDialog(nowOpts, onConfirm);
+        } else {
+          onConfirm(nowOpts);
+        }
       } else if (action === "delay") {
         // Transition to step 2: date picker
-        _showDelayDatePicker(overlay, defaultDateStr, onConfirm);
+        _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason);
       }
     });
   }
@@ -972,7 +1094,7 @@ var RefundPanel = (function () {
     });
   }
 
-  function _showDelayDatePicker(overlay, defaultDateStr, onConfirm) {
+  function _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason) {
     // Replace the overlay entirely to avoid stacking event listeners
     overlay.remove();
 
@@ -1018,7 +1140,7 @@ var RefundPanel = (function () {
         overlay2.remove();
       } else if (action === "back") {
         overlay2.remove();
-        _showCancelDialog(null, onConfirm); // re-show step 1
+        _showCancelDialog(null, onConfirm, requireReason); // re-show step 1
       } else if (action === "schedule") {
         var dateInput = dialog.querySelector(".cancel-dialog-date-input");
         var noticeCheck = dialog.querySelector(".cancel-dialog-notice-check");
@@ -1035,10 +1157,15 @@ var RefundPanel = (function () {
           return;
         }
         overlay2.remove();
-        _showRefundReasonDialog({
+        var scheduledOpts = {
           cancel_date: selectedDate.toISOString(),
           send_notice: noticeCheck ? noticeCheck.checked : true
-        }, onConfirm);
+        };
+        if (requireReason) {
+          _showRefundReasonDialog(scheduledOpts, onConfirm);
+        } else {
+          onConfirm(scheduledOpts);
+        }
       }
     });
   }

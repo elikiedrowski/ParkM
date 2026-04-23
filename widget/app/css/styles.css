@@ -858,7 +858,10 @@ body {
   border-bottom: 2px solid #2563eb;
   padding: 8px 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  max-height: 50vh;
+  /* Grow to natural height — body padding pushes wizard content beneath it.
+     Fallback internal scroll only if the card's result section gets so tall
+     that it would otherwise exceed the iframe viewport. */
+  max-height: calc(100vh - 20px);
   overflow-y: auto;
 }
 #refund-floating-banner .refund-permit-card {

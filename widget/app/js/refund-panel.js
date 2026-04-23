@@ -26,6 +26,7 @@ var RefundPanel = (function () {
     _lastPermitsData = null;
     var existingBanner = document.getElementById("refund-floating-banner");
     if (existingBanner) existingBanner.remove();
+    document.body.style.paddingTop = "";
 
     // Find all interactive embed containers rendered by WizardRenderer
     var allEmbeds = document.querySelectorAll(".step-interactive-embed");
@@ -513,38 +514,72 @@ var RefundPanel = (function () {
     _renderFloatingBanner();
   }
 
-  /* ── Floating permit banner ─────────────────────────────────────────
-     A compact summary of the selected permit pinned to the top of the widget
-     viewport, so CSRs don't lose context while scrolling through wizard steps. */
+  /* ── Floating permit card ────────────────────────────────────────────
+     Renders the FULL selected permit card (with action buttons) pinned to the
+     top of the widget viewport so CSRs keep both context AND actions as they
+     scroll through wizard steps. */
 
   function _renderFloatingBanner() {
     var existing = document.getElementById("refund-floating-banner");
     if (existing) existing.remove();
-    if (!_selectedPermitId || !_lastPermitsData) return;
+    if (!_selectedPermitId || !_lastPermitsData) {
+      document.body.style.paddingTop = "";
+      return;
+    }
 
-    var permits = (_lastPermitsData.permits || []).concat(_lastPermitsData.inactive_permits || []);
-    var permit = permits.find(function (p) { return p.id === _selectedPermitId; });
-    if (!permit) return;
-
-    var vehicle = permit.vehicle || {};
-    var vehicleStr = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ");
-    var plateStr = vehicle.plate || "";
+    var active = (_lastPermitsData.permits || []).filter(function (p) {
+      var now = new Date();
+      if (p.is_cancelled) return false;
+      if (p.expiration_date && new Date(p.expiration_date) < now) return false;
+      return true;
+    });
+    var inactivePermits = _lastPermitsData.inactive_permits || [];
+    var customer = _lastPermitsData.customer;
 
     var banner = document.createElement("div");
     banner.id = "refund-floating-banner";
-    banner.innerHTML =
-      '<div class="refund-floating-inner">' +
-        '<div class="refund-floating-main">' +
-          '<span class="refund-floating-label">Selected:</span> ' +
-          '<strong>' + _esc(permit.type_name || "Permit") + '</strong>' +
-          (vehicleStr ? ' — ' + _esc(vehicleStr) : '') +
-          (plateStr ? ' (' + _esc(plateStr) + ')' : '') +
-          (permit.delay_cancellation_date ? ' <span class="refund-delay-badge">Permit Set to be Cancelled</span>' : '') +
-        '</div>' +
-        '<button class="refund-floating-clear" type="button">Clear</button>' +
-      '</div>';
+
+    var header = document.createElement("div");
+    header.className = "refund-floating-header";
+    header.innerHTML =
+      '<span class="refund-floating-label">Selected Permit</span>' +
+      '<button class="refund-floating-clear" type="button">Clear</button>';
+    banner.appendChild(header);
+
+    var activeSel = active.find(function (p) { return p.id === _selectedPermitId; });
+    if (activeSel) {
+      banner.appendChild(_buildPermitCard(activeSel, customer));
+    } else {
+      var inacSel = inactivePermits.find(function (p) { return p.id === _selectedPermitId; });
+      if (inacSel) banner.appendChild(_buildInactivePermitCard(inacSel));
+    }
+
     document.body.appendChild(banner);
     banner.querySelector(".refund-floating-clear").addEventListener("click", _clearPermitSelection);
+    _syncBodyPaddingForBanner();
+    // Re-measure whenever the card's content changes (eligibility result,
+    // email preview, error messages, etc.)
+    new MutationObserver(_syncBodyPaddingForBanner).observe(banner, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  // Keep the body padded enough so the floating banner doesn't overlap the
+  // wizard content beneath it. Re-measured on each render since the card's
+  // result area can grow (eligibility block, email preview, etc.).
+  function _syncBodyPaddingForBanner() {
+    var banner = document.getElementById("refund-floating-banner");
+    if (!banner) {
+      document.body.style.paddingTop = "";
+      return;
+    }
+    // Use requestAnimationFrame so we measure after layout
+    requestAnimationFrame(function () {
+      var h = banner.getBoundingClientRect().height;
+      document.body.style.paddingTop = (h + 8) + "px";
+    });
   }
 
   function _renderPermits(data) {
@@ -579,32 +614,23 @@ var RefundPanel = (function () {
 
     var totalOthers = active.length + inactivePermits.length - (_selectedPermitId ? 1 : 0);
 
-    // When a permit is selected, render ONLY that permit (active or inactive)
-    // plus a "Show all permits" toggle. Otherwise show the full list.
+    // When a permit is selected, the full card renders in the floating banner
+    // at the top of the widget (see _renderFloatingBanner). The normal flow just
+    // shows a "change selection" link so the CSR can go back to the full list.
     if (_selectedPermitId) {
-      var selectedHeader = document.createElement("h4");
-      selectedHeader.className = "refund-permits-title";
-      selectedHeader.textContent = "Selected Permit";
-      refundContainer.appendChild(selectedHeader);
+      var placeholder = document.createElement("div");
+      placeholder.className = "refund-selected-placeholder";
+      placeholder.innerHTML =
+        '<div class="refund-selected-placeholder-text">Permit selected — see the permit card pinned at the top of the widget.</div>';
 
-      var selectedList = document.createElement("div");
-      selectedList.className = "refund-permits-list refund-permits-list--selected";
-      var sel = active.find(function (p) { return p.id === _selectedPermitId; });
-      if (sel) {
-        selectedList.appendChild(_buildPermitCard(sel, data.customer));
-      } else {
-        var inacSel = inactivePermits.find(function (p) { return p.id === _selectedPermitId; });
-        if (inacSel) selectedList.appendChild(_buildInactivePermitCard(inacSel));
-      }
-      refundContainer.appendChild(selectedList);
+      var toggle = document.createElement("button");
+      toggle.className = "btn btn-link refund-show-all-btn";
+      toggle.textContent = "↺ Change selection / show all permits" +
+        (totalOthers + 1 > 1 ? " (" + (totalOthers + 1) + ")" : "");
+      toggle.addEventListener("click", _clearPermitSelection);
+      placeholder.appendChild(toggle);
 
-      if (totalOthers > 0) {
-        var toggle = document.createElement("button");
-        toggle.className = "btn btn-link refund-show-all-btn";
-        toggle.textContent = "↺ Show all permits (" + (totalOthers + 1) + ")";
-        toggle.addEventListener("click", _clearPermitSelection);
-        refundContainer.appendChild(toggle);
-      }
+      refundContainer.appendChild(placeholder);
       return;
     }
 
@@ -730,25 +756,29 @@ var RefundPanel = (function () {
       '<div class="refund-permit-actions"></div>' +
       '<div class="refund-permit-result"></div>';
 
-    var actionsDiv = card.querySelector(".refund-permit-actions");
+    // Action buttons only show on the selected card — unselected permits are
+    // click-to-select only (no Evaluate Refund / Cancel Permit available).
+    if (isSelected) {
+      var actionsDiv = card.querySelector(".refund-permit-actions");
 
-    var evalBtn = document.createElement("button");
-    evalBtn.className = "btn btn-primary refund-action-btn";
-    evalBtn.textContent = "Evaluate Refund";
-    evalBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      _evaluateRefund(permit, customer, card);
-    });
-    actionsDiv.appendChild(evalBtn);
+      var evalBtn = document.createElement("button");
+      evalBtn.className = "btn btn-primary refund-action-btn";
+      evalBtn.textContent = "Evaluate Refund";
+      evalBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        _evaluateRefund(permit, customer, card);
+      });
+      actionsDiv.appendChild(evalBtn);
 
-    var cancelBtn = document.createElement("button");
-    cancelBtn.className = "btn btn-secondary refund-action-btn";
-    cancelBtn.textContent = "Cancel Permit";
-    cancelBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      _cancelPermit(permit, card);
-    });
-    actionsDiv.appendChild(cancelBtn);
+      var cancelBtn = document.createElement("button");
+      cancelBtn.className = "btn btn-secondary refund-action-btn";
+      cancelBtn.textContent = "Cancel Permit";
+      cancelBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        _cancelPermit(permit, card);
+      });
+      actionsDiv.appendChild(cancelBtn);
+    }
 
     return card;
   }

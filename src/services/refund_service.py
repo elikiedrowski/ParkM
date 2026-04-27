@@ -496,9 +496,15 @@ ParkM Support Team</p>"""
 
             eligibility = self.evaluate_refund_eligibility(permit, transactions)
 
-            # Step 3: Auto-cancel if requested AND eligible for refund
+            # Step 3: Auto-cancel if requested AND eligible for refund.
+            # Skip when the permit is already cancelled OR already has a delayed
+            # cancellation scheduled — the CSR shouldn't have to re-cancel.
             cancel_result = None
-            if auto_cancel and eligibility["eligible"] and not permit.get("is_cancelled"):
+            already_handled = (
+                permit.get("is_cancelled")
+                or bool(permit.get("delay_cancellation_date"))
+            )
+            if auto_cancel and eligibility["eligible"] and not already_handled:
                 cancel_result = await self.cancel_permit(
                     permit["id"], cancel_date=cancel_date
                 )

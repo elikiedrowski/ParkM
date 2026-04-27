@@ -870,7 +870,8 @@ var RefundPanel = (function () {
   /* ── Process Refund (Cancel + Forward to Accounting) ────────────── */
 
   function _processRefund(permit, customer, resultDiv) {
-    _showCancelDialog(permit, function (opts) {
+    var alreadyHandled = permit.is_cancelled || !!permit.delay_cancellation_date;
+    var doProcess = function (opts) {
       // opts: { cancel_date: null|string, send_notice: bool, refund_reason: string }
       var processBtn = document.getElementById("process-refund-" + permit.id);
       if (processBtn) {
@@ -905,7 +906,19 @@ var RefundPanel = (function () {
           resultDiv.insertAdjacentHTML("beforeend",
             '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');
         });
-    }, /* requireReason */ true);
+    };
+
+    if (alreadyHandled) {
+      // Permit already cancelled or scheduled to cancel — skip the Cancel/Delay
+      // dialog entirely. Reuse the existing scheduled date if any; backend will
+      // not re-cancel an already-handled permit.
+      _showRefundReasonDialog({
+        cancel_date: permit.delay_cancellation_date || null,
+        send_notice: false,
+      }, doProcess);
+    } else {
+      _showCancelDialog(permit, doProcess, /* requireReason */ true);
+    }
   }
 
   function _renderProcessResult(data, permit, resultDiv) {
@@ -1203,6 +1216,7 @@ var RefundPanel = (function () {
   /* ── Insert Accounting Email ────────────────────────────────────── */
 
   function _insertAccountingEmail(acctEmail) {
+    var inserted = false;
     try {
       ZOHODESK.set("ticket.replyEditorRecipients", {
         to: [acctEmail.to],
@@ -1210,14 +1224,20 @@ var RefundPanel = (function () {
         bcc: []
       });
       ZOHODESK.invoke("INSERT", "ticket.replyEditor", { value: acctEmail.body_html, type: "replace" });
+      inserted = true;
     } catch (e) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         var tmp = document.createElement("div");
         tmp.innerHTML = acctEmail.body_html;
         navigator.clipboard.writeText(tmp.textContent || tmp.innerText || "");
         alert("Email copied to clipboard (unable to insert directly).");
+        inserted = true;
       }
     }
+    // Once the email is in the reply, the permit's refund workflow is done —
+    // collapse the floating card so the CSR can see the remaining wizard
+    // steps (respond to resident, update ticket status, send survey).
+    if (inserted) _clearPermitSelection();
   }
 
   /* ── Refresh Permits After Cancel ──────────────────────────────── */

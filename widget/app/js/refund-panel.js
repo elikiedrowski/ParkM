@@ -845,9 +845,12 @@ var RefundPanel = (function () {
         (elig.days_since_charge !== null ? '<div class="refund-eval-detail">' + elig.days_since_charge + ' days since last charge</div>' : '') +
       '</div>';
 
+    var alreadyHandled = permit.is_cancelled || !!permit.delay_cancellation_date;
+    var processBtnLabel = alreadyHandled ? "Forward to Accounting" : "Cancel & Forward to Accounting";
+
     if (eligible) {
       html += '<div class="refund-eval-actions">';
-      html += '<button class="btn btn-primary refund-action-btn" id="' + btnId + '">Cancel & Forward to Accounting</button>';
+      html += '<button class="btn btn-primary refund-action-btn" id="' + btnId + '">' + processBtnLabel + '</button>';
       html += '</div>';
     } else {
       html += '<div class="refund-eval-actions">';
@@ -901,7 +904,9 @@ var RefundPanel = (function () {
         .catch(function (err) {
           if (processBtn) {
             processBtn.disabled = false;
-            processBtn.textContent = "Cancel & Forward to Accounting";
+            processBtn.textContent = alreadyHandled
+              ? "Forward to Accounting"
+              : "Cancel & Forward to Accounting";
           }
           resultDiv.insertAdjacentHTML("beforeend",
             '<div class="refund-error">Processing failed: ' + _esc(err.message) + '</div>');

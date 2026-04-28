@@ -260,19 +260,12 @@ class RefundService:
                 "days_since_charge": None,
             }
 
-        if permit.get("is_cancelled"):
-            return {
-                "eligible": False,
-                "reason": "Permit is already cancelled",
-                "refund_amount": None,
-                "last_charge_date": None,
-                "days_since_charge": None,
-            }
-
         # Find the most recent transaction date for this permit.
+        # Inactive permits already carry last_charge_date (from _get_inactive_permits);
+        # for active permits we look it up from the transaction list.
         # Fall back to effective_date if no transactions available.
-        last_charge_str = None
-        if transactions:
+        last_charge_str = permit.get("last_charge_date")
+        if not last_charge_str and transactions:
             permit_txns = []
             for txn in transactions:
                 txn_permit_id = txn.get("permitId") or txn.get("permit_id")
@@ -477,9 +470,16 @@ ParkM Support Team</p>"""
 
         customer = lookup["customer"]
         permits = lookup["permits"]
-        active_permits = [p for p in permits if not p.get("is_cancelled")]
+        inactive_permits = lookup.get("inactive_permits", [])
+        # When evaluating a specific permit, look in both active and inactive
+        # so the inactive-permit refund flow works. When listing all, default
+        # to active only (inactive surface separately in the widget).
+        if permit_id:
+            candidates = permits + inactive_permits
+        else:
+            candidates = [p for p in permits if not p.get("is_cancelled")]
 
-        if not active_permits:
+        if not candidates:
             return {
                 "status": "no_active_permits",
                 "message": f"Customer {customer['name']} has no active permits",
@@ -490,24 +490,29 @@ ParkM Support Team</p>"""
         # Step 2: Evaluate eligibility
         transactions = lookup.get("transactions", [])
         results = []
-        for permit in active_permits:
+        for permit in candidates:
             if permit_id and permit["id"] != permit_id:
                 continue
 
             eligibility = self.evaluate_refund_eligibility(permit, transactions)
 
             # Step 3: Auto-cancel if requested AND eligible for refund.
-            # Skip when the permit is already cancelled OR already has a delayed
-            # cancellation scheduled — the CSR shouldn't have to re-cancel.
+            # If the permit is already fully cancelled, skip the API call but
+            # return a synthetic success so the widget renders the right
+            # message and continues to the accounting-email step.
             cancel_result = None
-            already_handled = (
-                permit.get("is_cancelled")
-                or bool(permit.get("delay_cancellation_date"))
-            )
-            if auto_cancel and eligibility["eligible"] and not already_handled:
-                cancel_result = await self.cancel_permit(
-                    permit["id"], cancel_date=cancel_date
-                )
+            if auto_cancel and eligibility["eligible"]:
+                if permit.get("is_cancelled"):
+                    cancel_result = {
+                        "success": True,
+                        "permit_id": permit["id"],
+                        "cancel_type": "already_cancelled",
+                        "message": "Permit was already cancelled",
+                    }
+                else:
+                    cancel_result = await self.cancel_permit(
+                        permit["id"], cancel_date=cancel_date
+                    )
 
             # Step 4: Build accounting email if eligible
             accounting_email = None

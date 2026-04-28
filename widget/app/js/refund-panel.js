@@ -551,7 +551,7 @@ var RefundPanel = (function () {
       banner.appendChild(_buildPermitCard(activeSel, customer));
     } else {
       var inacSel = inactivePermits.find(function (p) { return p.id === _selectedPermitId; });
-      if (inacSel) banner.appendChild(_buildInactivePermitCard(inacSel));
+      if (inacSel) banner.appendChild(_buildInactivePermitCard(inacSel, customer));
     }
 
     document.body.appendChild(banner);
@@ -663,13 +663,13 @@ var RefundPanel = (function () {
       var inactiveList = document.createElement("div");
       inactiveList.className = "refund-inactive-list";
       inactivePermits.forEach(function (permit) {
-        inactiveList.appendChild(_buildInactivePermitCard(permit));
+        inactiveList.appendChild(_buildInactivePermitCard(permit, data.customer));
       });
       refundContainer.appendChild(inactiveList);
     }
   }
 
-  function _buildInactivePermitCard(permit) {
+  function _buildInactivePermitCard(permit, customer) {
     var card = document.createElement("div");
     card.className = "refund-permit-card refund-permit-card--inactive";
 
@@ -701,7 +701,23 @@ var RefundPanel = (function () {
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Last Charge:</span> ' + lastCharge + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Price:</span> ' + priceStr + recurStr + '</div>' +
-      '</div>';
+      '</div>' +
+      '<div class="refund-permit-actions"></div>' +
+      '<div class="refund-permit-result"></div>';
+
+    // Inactive permits skip the Cancel Permit button (already cancelled/expired)
+    // but can still go through Evaluate Refund if charged within 30 days.
+    if (customer) {
+      var actionsDiv = card.querySelector(".refund-permit-actions");
+      var evalBtn = document.createElement("button");
+      evalBtn.className = "btn btn-primary refund-action-btn";
+      evalBtn.textContent = "Evaluate Refund";
+      evalBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        _evaluateRefund(permit, customer, card);
+      });
+      actionsDiv.appendChild(evalBtn);
+    }
 
     return card;
   }
@@ -943,6 +959,8 @@ var RefundPanel = (function () {
     var cancelMsg;
     if (cancelOk && cancelResult.cancel_type === "delayed") {
       cancelMsg = "Permit cancellation scheduled for " + _formatDate(cancelResult.cancel_date);
+    } else if (cancelOk && cancelResult.cancel_type === "already_cancelled") {
+      cancelMsg = "Permit was already cancelled";
     } else if (cancelOk) {
       cancelMsg = "Permit cancelled";
     } else {

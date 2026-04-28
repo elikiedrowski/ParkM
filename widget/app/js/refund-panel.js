@@ -671,7 +671,17 @@ var RefundPanel = (function () {
 
   function _buildInactivePermitCard(permit, customer) {
     var card = document.createElement("div");
-    card.className = "refund-permit-card refund-permit-card--inactive";
+    var isSelected = (_selectedPermitId === permit.id);
+    card.className = "refund-permit-card refund-permit-card--inactive" +
+      (isSelected ? " refund-permit-card--selected" : "");
+    card.setAttribute("data-permit-id", permit.id);
+    if (!isSelected) {
+      card.style.cursor = "pointer";
+      card.addEventListener("click", function (e) {
+        if (e.target.closest(".refund-action-btn")) return;
+        _selectPermit(permit.id);
+      });
+    }
 
     var vehicle = permit.vehicle || {};
     var vehicleStr = [vehicle.year, vehicle.make, vehicle.model, vehicle.color]
@@ -705,9 +715,10 @@ var RefundPanel = (function () {
       '<div class="refund-permit-actions"></div>' +
       '<div class="refund-permit-result"></div>';
 
-    // Inactive permits skip the Cancel Permit button (already cancelled/expired)
-    // but can still go through Evaluate Refund if charged within 30 days.
-    if (customer) {
+    // Action buttons only show on the selected card. Inactive permits skip the
+    // Cancel Permit button (already cancelled/expired) but can still go through
+    // Evaluate Refund if charged within the 30-day window.
+    if (isSelected && customer) {
       var actionsDiv = card.querySelector(".refund-permit-actions");
       var evalBtn = document.createElement("button");
       evalBtn.className = "btn btn-primary refund-action-btn";

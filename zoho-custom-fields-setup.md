@@ -79,12 +79,11 @@ This guide provides step-by-step instructions for creating custom fields in Zoho
 - **Description:** Flagged for human review (low confidence or complex)
 - **Default Value:** Unchecked
 
-### 8. License Plate
-- **Field Name:** `License Plate`
-- **API Name:** `cf_license_plate`
+### 8. License Plate Number (use existing field)
+- **Field Name:** `License Plate Number`
+- **API Name:** `cf_license_plate_number`
 - **Type:** Single Line (Text)
-- **Description:** Extracted vehicle license plate number
-- **Max Length:** 20 characters
+- **Note:** This is a pre-existing ParkM Zoho field shown in the Ticket Information panel — do **not** create a new one. The AI classifier writes to this field only when it's empty (see `src/services/tagger.py`); manual values are never overwritten. The deprecated `cf_license_plate` field can be deleted once we confirm no historical data is needed.
 
 ### 9. Move Out Date
 - **Field Name:** `Move Out Date`

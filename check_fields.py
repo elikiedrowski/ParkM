@@ -114,7 +114,7 @@ expected_fields = [
     'cf_ai_confidence',
     'cf_requires_refund',
     'cf_requires_human_review',
-    'cf_license_plate',
+    'cf_license_plate_number',
     'cf_move_out_date',
     'cf_routing_queue'
 ]

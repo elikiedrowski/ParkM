@@ -91,14 +91,10 @@ CUSTOM_FIELDS = [
         "description": "Flagged for human review (low confidence or complex)",
         "defaultValue": False
     },
-    {
-        "displayLabel": "License Plate",
-        "apiName": "cf_license_plate",
-        "type": "SINGLE_LINE",
-        "isRequired": False,
-        "description": "Extracted vehicle license plate number",
-        "maxLength": 20
-    },
+    # NOTE: We do NOT create a license plate field here. ParkM's Zoho already has
+    # the pre-existing "License Plate Number" field (cf_license_plate_number) shown
+    # in the Ticket Information panel. The classifier writes to that existing field
+    # via tagger.py — no new field needed.
     {
         "displayLabel": "Move Out Date",
         "apiName": "cf_move_out_date",

@@ -45,6 +45,8 @@ Thumbs.db
 
 # Zoho OAuth
 tokens.json
+.production_refresh_token
+.prod_creds
 
 # Testing
 .pytest_cache/

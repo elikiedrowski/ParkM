@@ -634,7 +634,7 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
                     "confidence": cf.get("cf_ai_confidence"),
                     "requires_human_review": cf.get("cf_requires_human_review") == "true",
                     "key_entities": {
-                        "license_plate": cf.get("cf_license_plate"),
+                        "license_plate": cf.get("cf_license_plate_number") or cf.get("cf_license_plate"),
                         "move_out_date": cf.get("cf_move_out_date"),
                     }
                 }

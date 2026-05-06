@@ -26,7 +26,7 @@ class TicketTagger:
             "confidence": "cf_ai_confidence",
             "requires_refund": "cf_requires_refund",
             "requires_human_review": "cf_requires_human_review",
-            "license_plate": "cf_license_plate",
+            "license_plate": "cf_license_plate_number",
             "move_out_date": "cf_move_out_date",
             "routing_queue": "cf_routing_queue",
         }
@@ -81,7 +81,18 @@ class TicketTagger:
             key_entities = classification.get("key_entities", {})
 
             if key_entities.get("license_plate"):
-                custom_field_data[self.custom_fields["license_plate"]] = key_entities["license_plate"]
+                # Don't overwrite a manually-entered plate. The Ticket Information
+                # panel's License Plate Number field is the system of record; AI
+                # extraction only fills it when blank.
+                plate_field = self.custom_fields["license_plate"]
+                existing_ticket = await self.zoho_client.get_ticket(ticket_id)
+                existing_plate = ((existing_ticket or {}).get("cf") or {}).get(plate_field)
+                if existing_plate:
+                    logger.info(
+                        f"[{ticket_id}] License plate already set ({existing_plate!r}); skipping AI write"
+                    )
+                else:
+                    custom_field_data[plate_field] = key_entities["license_plate"]
 
             if key_entities.get("move_out_date"):
                 move_out_date = self._parse_date(key_entities["move_out_date"])

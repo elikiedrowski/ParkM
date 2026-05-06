@@ -81,7 +81,7 @@ async def test_fields():
         expected = [
             "cf_ai_intent", "cf_ai_complexity", "cf_ai_language",
             "cf_ai_urgency", "cf_ai_confidence", "cf_requires_refund",
-            "cf_requires_human_review", "cf_license_plate",
+            "cf_requires_human_review", "cf_license_plate_number",
             "cf_move_out_date", "cf_routing_queue"
         ]
         

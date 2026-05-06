@@ -11,6 +11,7 @@ from src.services.tagger import TicketTagger
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import log_correction
 from src.services.analytics_logger import log_classification_event
+from src.services.parker_handler import prepare_parker_ticket
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +53,34 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
         logger.info(f"[{ticket_id}] Ticket from: {sender_email}")
         logger.info(f"[{ticket_id}] Subject: {subject}")
 
+        # Step 2b: If this came from Parker (Chat channel), the description is
+        # empty — the real content is in the incoming chat thread. Parse it and
+        # use the transcript as the body for classification.
+        parker_ctx = await prepare_parker_ticket(zoho_client, ticket_data)
+        if parker_ctx.is_parker and parker_ctx.transcript_text:
+            description = (
+                "[Chat transcript from Parker the Parking Bot — ParkM's website "
+                "intake chatbot. Lines prefixed with [Parker, the Parking Bot] are "
+                "bot messages; other lines are the resident's responses.]\n\n"
+                + parker_ctx.transcript_text
+            )
+
         # Step 3: Classify email
         logger.info(f"[{ticket_id}] Classifying email with AI")
         classification = classifier.classify_email(subject, description, sender_email, ticket_id=ticket_id, department_id=department_id)
+
+        # Step 3b: For Parker tickets where the menu selection deterministically
+        # implies a tag, override the LLM's tag output. The LLM is still useful
+        # for entity extraction, complexity, urgency, and language — but the
+        # tag itself is more reliable from the menu mapping.
+        if parker_ctx.is_parker and parker_ctx.deterministic_tag:
+            classification["tags"] = [parker_ctx.deterministic_tag]
+            classification["intent"] = parker_ctx.deterministic_tag
+            classification["confidence"] = max(classification.get("confidence", 0) or 0, 0.95)
+            classification["requires_human_review"] = False
+            logger.info(
+                f"[{ticket_id}] Parker deterministic tag applied: {parker_ctx.deterministic_tag}"
+            )
 
         logger.info(f"[{ticket_id}] Classification result:")
         logger.info(f"  - Tags: {classification.get('tags')}")

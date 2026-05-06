@@ -221,6 +221,57 @@ class ZohoDeskClient:
             self._log_zoho_call("search_tickets", success=False, error=str(e))
             raise
 
+    async def list_threads(self, ticket_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """List conversation threads on a ticket. Returns thread metadata only;
+        body content must be fetched per-thread via get_thread_content."""
+        try:
+            headers = await self._build_headers()
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/tickets/{ticket_id}/threads",
+                    headers=headers,
+                    params={"limit": limit},
+                )
+                if response.status_code == 401:
+                    self._invalidate_token()
+                    headers = await self._build_headers()
+                    response = await client.get(
+                        f"{self.base_url}/tickets/{ticket_id}/threads",
+                        headers=headers,
+                        params={"limit": limit},
+                    )
+                response.raise_for_status()
+                self._log_zoho_call("list_threads", ticket_id=ticket_id)
+                return response.json().get("data", [])
+        except Exception as e:
+            self._log_zoho_call("list_threads", ticket_id=ticket_id, success=False, error=str(e))
+            raise
+
+    async def get_thread_content(self, ticket_id: str, thread_id: str) -> Dict[str, Any]:
+        """Fetch a single thread's full content (the listing endpoint returns
+        metadata only). For Parker chat tickets, the structured Q&A transcript
+        lives in this response's `content` field."""
+        try:
+            headers = await self._build_headers()
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/tickets/{ticket_id}/threads/{thread_id}",
+                    headers=headers,
+                )
+                if response.status_code == 401:
+                    self._invalidate_token()
+                    headers = await self._build_headers()
+                    response = await client.get(
+                        f"{self.base_url}/tickets/{ticket_id}/threads/{thread_id}",
+                        headers=headers,
+                    )
+                response.raise_for_status()
+                self._log_zoho_call("get_thread_content", ticket_id=ticket_id)
+                return response.json()
+        except Exception as e:
+            self._log_zoho_call("get_thread_content", ticket_id=ticket_id, success=False, error=str(e))
+            raise
+
     async def get_departments(self) -> List[Dict[str, Any]]:
         """Get all departments"""
         try:

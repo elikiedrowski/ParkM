@@ -291,7 +291,12 @@ class RefundService:
             if ref_date is None and eff_dt is not None and eff_dt >= cutoff:
                 ref_date = eff_dt
 
-            needs_lookup = ref_date is None
+            # Look up the per-permit Stripe feed whenever we don't already have
+            # a date inside the refund window. PermitPortal/GetAllTransactions
+            # can be partially stale — returning an old date for a permit that
+            # was charged again recently — so an in-buffer ref_date isn't
+            # automatically trustworthy.
+            needs_lookup = ref_date is None or ref_date < cutoff
             candidates.append((raw, ref_date, needs_lookup))
 
         # Second pass: fetch payment history concurrently for the permits
@@ -322,7 +327,10 @@ class RefundService:
 
             if needs_lookup:
                 latest = self._latest_payment_date(payments_by_permit.get(permit_id, []))
-                if latest is not None:
+                # Take the more recent of the two — the per-permit Stripe feed
+                # may show a newer charge than the customer-wide transactions
+                # list (which can be stale).
+                if latest is not None and (ref_date is None or latest > ref_date):
                     ref_date = latest
 
             if ref_date is None or ref_date < cutoff:
@@ -356,11 +364,33 @@ class RefundService:
 
         return inactive_permits
 
-    @staticmethod
-    def _latest_payment_date(payments: List[Dict[str, Any]]) -> Optional[datetime]:
-        """Return the most recent payment date from a Permits/GetAllPaymentsForPermit list."""
+    # Stripe payment-intent / ParkM payment statuses that mean money did NOT
+    # move. We don't count these as evidence the permit was recently charged.
+    # Anything else (succeeded, paid, captured, or no status field at all) is
+    # included — be liberal about unknown statuses so we don't accidentally
+    # hide a real charge because ParkM tweaked the field shape.
+    _NON_CHARGE_STATUSES = frozenset({
+        "failed", "canceled", "cancelled", "void", "voided",
+        "requires_payment_method", "requires_action", "requires_confirmation",
+        "requires_capture", "incomplete", "incomplete_expired",
+    })
+
+    @classmethod
+    def _latest_payment_date(cls, payments: List[Dict[str, Any]]) -> Optional[datetime]:
+        """Return the most recent successful payment date from a
+        Permits/GetAllPaymentsForPermit list.
+
+        Skips payment intents whose status indicates the charge never
+        completed (failed, canceled, requires_*). Stripe creates intent
+        records for every checkout attempt, including abandoned ones, so
+        treating their `created` timestamp as a real charge would inflate
+        the inactive list with false positives.
+        """
         latest: Optional[datetime] = None
         for pay in payments:
+            status = str(pay.get("status") or pay.get("state") or "").strip().lower()
+            if status in cls._NON_CHARGE_STATUSES:
+                continue
             d = pay.get("created") or pay.get("creationTime") or pay.get("date")
             if not d:
                 continue

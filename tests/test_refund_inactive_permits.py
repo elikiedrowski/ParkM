@@ -137,3 +137,97 @@ async def test_active_permits_are_filtered_out():
 
     assert result == []
     svc.parkm.get_payments_for_permit.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_stale_customer_transaction_date_still_triggers_payment_lookup():
+    """
+    Hardening: PermitPortal/GetAllTransactions can be partially stale rather
+    than only empty. If it has an OLD transaction for a permit, the per-permit
+    Stripe feed should still be consulted in case there's a newer charge.
+    Without this, a permit with a 6-month-old txn-feed entry but a recent
+    Stripe charge would be excluded.
+    """
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    cancelled = _make_permit(permit_id="r000130", status="Cancelled", effective_days_ago=370)
+
+    # Customer-wide feed has a stale entry — older than the refund window.
+    stale_txn_date = (datetime.now(timezone.utc) - timedelta(days=180)).isoformat().replace("+00:00", "Z")
+    transactions = [{"permitId": "r000130", "transactionDate": stale_txn_date}]
+
+    # But the per-permit Stripe feed has a recent charge.
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=[_make_payment(days_ago=4)])
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1",
+        active_permit_ids=set(),
+        transactions=transactions,
+        all_permits_raw=[cancelled],
+    )
+
+    assert len(result) == 1
+    last_charge = datetime.fromisoformat(result[0]["last_charge_date"])
+    assert (datetime.now(timezone.utc) - last_charge).days < 30
+    svc.parkm.get_payments_for_permit.assert_awaited_once_with("r000130")
+
+
+@pytest.mark.asyncio
+async def test_failed_payment_intents_do_not_count_as_recent_activity():
+    """
+    Hardening: Stripe creates payment-intent records for every checkout
+    attempt, including ones that never completed (status=failed, canceled,
+    requires_action, etc.). Treating their `created` timestamp as evidence
+    of a charge would inflate the inactive list with permits whose customer
+    abandoned a payment but never actually paid.
+    """
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    cancelled = _make_permit(permit_id="r000130", status="Cancelled", effective_days_ago=370)
+
+    # All recent payment intents are failed/cancelled — none of them moved money.
+    failed_payments = [
+        {**_make_payment(days_ago=2), "status": "failed"},
+        {**_make_payment(days_ago=4), "status": "canceled"},
+        {**_make_payment(days_ago=6), "status": "requires_payment_method"},
+    ]
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=failed_payments)
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1",
+        active_permit_ids=set(),
+        transactions=[],
+        all_permits_raw=[cancelled],
+    )
+
+    assert result == []  # No real charge → permit excluded
+
+
+@pytest.mark.asyncio
+async def test_succeeded_payment_among_failed_intents_is_counted():
+    """A real successful charge mixed in with failed attempts should still
+    surface the permit — the failed ones just get filtered out."""
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    cancelled = _make_permit(permit_id="r000130", status="Cancelled", effective_days_ago=370)
+
+    payments = [
+        {**_make_payment(days_ago=1), "status": "failed"},   # newest, but didn't go through
+        {**_make_payment(days_ago=5), "status": "succeeded"},  # actual charge
+        {**_make_payment(days_ago=8), "status": "canceled"},
+    ]
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=payments)
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1",
+        active_permit_ids=set(),
+        transactions=[],
+        all_permits_raw=[cancelled],
+    )
+
+    assert len(result) == 1
+    last_charge = datetime.fromisoformat(result[0]["last_charge_date"])
+    # last_charge_date should be the succeeded one (5 days ago), NOT the
+    # failed-but-newer one (1 day ago).
+    age_days = (datetime.now(timezone.utc) - last_charge).days
+    assert 4 <= age_days <= 6

@@ -3,7 +3,7 @@
  */
 var ParkMConfig = {
   // Railway API base URL (no trailing slash)
-  API_BASE_URL: "https://parkm-production.up.railway.app",
+  API_BASE_URL: "https://parkm-production-7e56.up.railway.app",
 
   // Custom field API names
   FIELDS: {

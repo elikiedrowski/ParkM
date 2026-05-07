@@ -3,11 +3,11 @@
   "service": "DESK",
   "storage": false,
   "whiteListedDomains": [
-    "https://parkm-production.up.railway.app"
+    "https://parkm-production-7e56.up.railway.app"
   ],
   "cspDomains": {
     "connect-src": [
-      "https://parkm-production.up.railway.app"
+      "https://parkm-production-7e56.up.railway.app"
     ]
   },
   "modules": {

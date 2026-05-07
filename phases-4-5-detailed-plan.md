@@ -12,7 +12,6 @@
 - **Phase 4** = expand the "single pane of glass" beyond refunds to **every high-volume ticket type** (vehicle updates, account/payment, lockout/override, tow disputes). Today the wizard fully eliminates the parkm.app round-trip *only for refunds*. Phase 4 brings that same experience to the other ~80% of CSR ticket volume.
 - **Phase 5** = **progressive automation toward Katie's stated end state: 100% bot-driven refund processing, no CSR involvement.** Structured as four explicit "crawl-walk-run" stages so risk stays contained and we can stop at any stage if results aren't compelling.
 - **This work runs in parallel with Patrick's sales process and the launch-coordinator initiative** — different surface areas, no resource conflict, no shared critical path. ParkM doesn't have to choose one or the other.
-- **Combined estimate: 75–105 hours** across Phase 4 + Phase 5, deliverable in roughly 8–10 weeks of calendar time alongside other work.
 - **Recommendation:** approve Phase 4 to start now (low-risk, high-leverage CSR productivity gains), and approve Phase 5 Stage 1 ("simple cancellations") so we can begin proving the automation pattern on the lowest-risk ticket type while Phase 4 ships in parallel. Phase 5 Stages 2–4 stay gated on Stage 1 results.
 
 ---

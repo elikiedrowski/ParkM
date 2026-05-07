@@ -44,6 +44,17 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
             logger.error(f"[{ticket_id}] Failed to fetch ticket data")
             return
 
+        # Step 1b: Skip if this ticket has already been classified successfully.
+        # The same Ticket_Add can hit us twice — once from the API-subscription
+        # webhook and once from the synchronous workflow-rule webhook. We treat
+        # "Needs Tag" as not-yet-successfully-classified so retries still work.
+        existing_tags = (ticket_data.get("cf") or {}).get("cf_ai_tags") or ""
+        if existing_tags and existing_tags != "Needs Tag":
+            logger.info(
+                f"[{ticket_id}] Already classified ({existing_tags!r}); skipping duplicate webhook"
+            )
+            return
+
         # Step 2: Extract email content
         subject = ticket_data.get("subject", "")
         description = ticket_data.get("description", "")

@@ -251,6 +251,32 @@ class ParkMClient:
             return result
         return data
 
+    async def get_payments_for_permit(self, permit_id: str) -> List[Dict[str, Any]]:
+        """Get the Stripe payment-intent history for a single permit.
+
+        `PermitPortal/GetAllTransactions` is unreliable in production (returns
+        an empty list for many real customers even when their permits have
+        clearly been charged). `Permits/GetAllPaymentsForPermit` is the
+        authoritative per-permit charge feed: it returns all Stripe payment
+        intents tied to the permit, including those for cancelled permits.
+
+        Returns a list of dicts shaped like:
+            {"id": "pi_...", "created": "ISO-8601", "description": "...", "amount": float}
+        """
+        try:
+            data = await self._get(
+                "/api/services/app/Permits/GetAllPaymentsForPermit",
+                params={"PermitId": permit_id},
+            )
+        except httpx.HTTPStatusError:
+            return []
+        result = data.get("result")
+        if isinstance(result, list):
+            return result
+        if isinstance(result, dict):
+            return result.get("items", [])
+        return []
+
     async def get_permit_details(self, permit_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed permit info for editing/viewing."""
         try:

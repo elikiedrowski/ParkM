@@ -12,11 +12,12 @@ Implements the refund/cancellation workflow from the ParkM process flow:
 This service is called from the widget or API endpoints to automate
 the manual steps CSRs currently perform.
 """
+import asyncio
 import html
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.services.parkm_client import ParkMClient
 
@@ -234,9 +235,14 @@ class RefundService:
     ) -> List[Dict[str, Any]]:
         """Find inactive permits with activity within the last 30 days.
 
-        Filters all_permits_raw (already fetched once at the call site) to
-        permits not in the active set and within the 30-day window based on
-        last charge or effective date.
+        Source of truth for "what was charged in the last 30 days":
+        1. The customer-wide transactions list (PermitPortal/GetAllTransactions),
+           if it's populated. This is unreliable in prod — it returns [] for
+           many real customers — so we treat it as best-effort.
+        2. Permits/GetAllPaymentsForPermit per inactive permit. This is the
+           authoritative Stripe charge feed and works for cancelled permits.
+        3. effectiveDate as a last resort (only useful for short-lived permits
+           like Daily Guest where signup ≈ activity).
         """
         if not all_permits_raw:
             return []
@@ -244,7 +250,8 @@ class RefundService:
         now = datetime.now(timezone.utc)
         cutoff = now - timedelta(days=REFUND_WINDOW_DAYS)
 
-        # Build a map of permit_id -> most recent transaction date
+        # Best-effort: build a map of permit_id -> most recent transaction date
+        # from the customer-wide list. Often empty in prod.
         txn_dates: Dict[str, datetime] = {}
         for txn in transactions:
             permit_id = txn.get("permitId") or txn.get("permit_id")
@@ -258,33 +265,69 @@ class RefundService:
             except (ValueError, TypeError):
                 continue
 
-        inactive_permits = []
+        # First pass: collect non-active permits and decide which need a
+        # per-permit Stripe lookup. We skip the lookup for permits whose
+        # effectiveDate already proves they're within the 30-day window
+        # (e.g. a Daily Guest issued yesterday).
+        candidates: List[Tuple[Dict[str, Any], Optional[datetime], bool]] = []
         for raw in all_permits_raw:
             permit_data = raw.get("permit", raw)
             permit_id = permit_data.get("id")
             if not permit_id or permit_id in active_permit_ids:
                 continue
-
-            # Check status — use permit.status field ("Cancelled", "Expired", etc.)
             status = permit_data.get("status", "")
             if status == "Active":
                 continue
 
-            # Determine the reference date for the 30-day filter:
-            # prefer last transaction date, fall back to effective date
             ref_date = txn_dates.get(permit_id)
-            if not ref_date:
-                eff_str = permit_data.get("effectiveDate")
-                if eff_str:
-                    try:
-                        ref_date = datetime.fromisoformat(eff_str.replace("Z", "+00:00"))
-                    except (ValueError, TypeError):
-                        continue
+            eff_dt: Optional[datetime] = None
+            eff_str = permit_data.get("effectiveDate")
+            if eff_str:
+                try:
+                    eff_dt = datetime.fromisoformat(eff_str.replace("Z", "+00:00"))
+                except (ValueError, TypeError):
+                    eff_dt = None
 
-            if not ref_date or ref_date < cutoff:
+            if ref_date is None and eff_dt is not None and eff_dt >= cutoff:
+                ref_date = eff_dt
+
+            needs_lookup = ref_date is None
+            candidates.append((raw, ref_date, needs_lookup))
+
+        # Second pass: fetch payment history concurrently for the permits
+        # where we still don't have a date.
+        lookup_ids = [
+            (raw.get("permit", raw)).get("id")
+            for raw, _, needs in candidates
+            if needs
+        ]
+        payments_by_permit: Dict[str, List[Dict[str, Any]]] = {}
+        if lookup_ids:
+            results = await asyncio.gather(
+                *(self.parkm.get_payments_for_permit(pid) for pid in lookup_ids),
+                return_exceptions=True,
+            )
+            for pid, result in zip(lookup_ids, results):
+                if isinstance(result, Exception):
+                    logger.warning(f"get_payments_for_permit failed for {pid}: {result}")
+                    payments_by_permit[pid] = []
+                else:
+                    payments_by_permit[pid] = result or []
+
+        inactive_permits: List[Dict[str, Any]] = []
+        for raw, ref_date, needs_lookup in candidates:
+            permit_data = raw.get("permit", raw)
+            permit_id = permit_data.get("id")
+            status = permit_data.get("status", "")
+
+            if needs_lookup:
+                latest = self._latest_payment_date(payments_by_permit.get(permit_id, []))
+                if latest is not None:
+                    ref_date = latest
+
+            if ref_date is None or ref_date < cutoff:
                 continue
 
-            # Build summary from the GetAll data structure
             summary = {
                 "id": permit_id,
                 "type_name": raw.get("permitTypeName") or raw.get("communityName") or "Unknown",
@@ -312,6 +355,22 @@ class RefundService:
             inactive_permits.append(summary)
 
         return inactive_permits
+
+    @staticmethod
+    def _latest_payment_date(payments: List[Dict[str, Any]]) -> Optional[datetime]:
+        """Return the most recent payment date from a Permits/GetAllPaymentsForPermit list."""
+        latest: Optional[datetime] = None
+        for pay in payments:
+            d = pay.get("created") or pay.get("creationTime") or pay.get("date")
+            if not d:
+                continue
+            try:
+                dt = datetime.fromisoformat(d.replace("Z", "+00:00"))
+            except (ValueError, TypeError):
+                continue
+            if latest is None or dt > latest:
+                latest = dt
+        return latest
 
     # ── Step 2: Evaluate Refund Eligibility ───────────────────────────
 

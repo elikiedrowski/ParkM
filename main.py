@@ -960,6 +960,7 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
             ticket_id=data.get("ticket_id", ""),
             auto_cancel=True,
             cancel_date=data.get("cancel_date"),
+            send_notice=bool(data.get("send_notice", True)),
             update_next_recurring_date=bool(data.get("update_next_recurring_date", False)),
             next_recurring_date=data.get("next_recurring_date"),
         )

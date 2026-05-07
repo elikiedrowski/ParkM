@@ -918,7 +918,8 @@ var RefundPanel = (function () {
         permit_id: permit.id,
         reason: opts.refund_reason || "Customer requested cancellation/refund",
         ticket_id: ticketId,
-        cancel_date: opts.cancel_date
+        cancel_date: opts.cancel_date,
+        send_notice: opts.send_notice !== false
       };
       if (opts.update_next_recurring_date) {
         body.update_next_recurring_date = true;
@@ -981,8 +982,10 @@ var RefundPanel = (function () {
       cancelMsg = "Permit cancelled";
     } else {
       var cancelErr = (cancelResult && (cancelResult.error || cancelResult.message)) || "";
+      // cancelErr may contain ParkM-controlled response body text — escape
+      // before injecting into innerHTML.
       cancelMsg = cancelErr
-        ? "Cancel failed — " + cancelErr + " — verify in ParkM"
+        ? "Cancel failed — " + _esc(cancelErr) + " — verify in ParkM"
         : "Cancel may have failed — verify in ParkM";
     }
     html += '<div class="refund-process-step ' + (cancelOk ? 'step-ok' : 'step-fail') + '">';

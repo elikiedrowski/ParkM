@@ -633,6 +633,7 @@ ParkM Support Team</p>"""
         ticket_id: str = "",
         auto_cancel: bool = False,
         cancel_date: Optional[str] = None,
+        send_notice: bool = True,
         update_next_recurring_date: bool = False,
         next_recurring_date: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -703,9 +704,22 @@ ParkM Support Team</p>"""
                         "cancel_type": "already_cancelled",
                         "message": "Permit was already cancelled",
                     }
+                elif permit.get("delay_cancellation_date"):
+                    # Already scheduled to cancel — re-running delay_cancel_permit
+                    # would mutate the existing schedule (or fail). Return a
+                    # synthetic success so the widget renders the right message
+                    # and continues to the accounting-email step.
+                    cancel_result = {
+                        "success": True,
+                        "permit_id": permit["id"],
+                        "cancel_type": "already_scheduled",
+                        "cancel_date": permit.get("delay_cancellation_date"),
+                        "message": "Permit was already scheduled to cancel",
+                    }
                 else:
                     cancel_result = await self.cancel_permit(
                         permit["id"],
+                        send_notice=send_notice,
                         cancel_date=cancel_date,
                         update_next_recurring_date=update_next_recurring_date,
                         next_recurring_date=next_recurring_date,

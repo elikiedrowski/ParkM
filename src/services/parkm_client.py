@@ -288,6 +288,8 @@ class ParkMClient:
         permit_id: str,
         cancel_date: str,
         send_notice: bool = True,
+        update_next_recurring_date: bool = False,
+        next_recurring_date: Optional[str] = None,
     ) -> bool:
         """Schedule a delayed cancellation for a permit.
 
@@ -298,12 +300,24 @@ class ParkMClient:
         Approach (discovered via Swagger):
         1. GET Permits/GetPermitForEdit — fetch current permit data
         2. Set delayCancellationDate on the DTO
-        3. POST Permits/CreateOrEdit — save it back
+        3. (Optionally) set nextRecurringDate to a new value or null to clear
+        4. POST Permits/CreateOrEdit — save it back
+
+        The nextRecurringDate update mirrors what .APP's "Actions > Edit >
+        Delete Next Recurring Date" does — same endpoint, same DTO field. CSRs
+        use this when scheduling a cancellation to prevent an auto-charge from
+        firing before the cancellation takes effect.
 
         Args:
             permit_id: UUID of the permit
             cancel_date: ISO-8601 datetime string for when to cancel
             send_notice: Whether to send cancellation notice email
+            update_next_recurring_date: If True, also write nextRecurringDate
+                using the next_recurring_date param. If False (default), leave
+                the field untouched.
+            next_recurring_date: New value for nextRecurringDate (ISO-8601), or
+                None to clear it. Only applied when update_next_recurring_date
+                is True.
         Returns:
             True if the delay cancellation was scheduled successfully
         """
@@ -322,7 +336,15 @@ class ParkMClient:
             permit_dto["delayCancellationDate"] = cancel_date
             permit_dto["dontSendNotifications"] = not send_notice
 
-            # Step 3: Save back
+            # Step 3: Optionally adjust the next recurring date so the permit
+            # doesn't auto-charge before the scheduled cancellation fires.
+            if update_next_recurring_date:
+                permit_dto["nextRecurringDate"] = next_recurring_date
+                logger.info(
+                    f"Permit {permit_id} nextRecurringDate set to {next_recurring_date!r}"
+                )
+
+            # Step 4: Save back
             result = await self._post(
                 "/api/services/app/Permits/CreateOrEdit",
                 body=permit_dto,

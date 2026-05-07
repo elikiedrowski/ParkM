@@ -920,6 +920,10 @@ var RefundPanel = (function () {
         ticket_id: ticketId,
         cancel_date: opts.cancel_date
       };
+      if (opts.update_next_recurring_date) {
+        body.update_next_recurring_date = true;
+        body.next_recurring_date = opts.next_recurring_date; // null = clear
+      }
 
       _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
         method: "POST",
@@ -1024,14 +1028,19 @@ var RefundPanel = (function () {
       var resultDiv = card.querySelector(".refund-permit-result");
       resultDiv.innerHTML = '<div class="refund-loading">Cancelling...</div>';
 
+      var cancelBody = {
+        permit_id: permit.id,
+        send_notice: opts.send_notice,
+        cancel_date: opts.cancel_date
+      };
+      if (opts.update_next_recurring_date) {
+        cancelBody.update_next_recurring_date = true;
+        cancelBody.next_recurring_date = opts.next_recurring_date; // null = clear
+      }
       _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          permit_id: permit.id,
-          send_notice: opts.send_notice,
-          cancel_date: opts.cancel_date
-        })
+        body: JSON.stringify(cancelBody)
       })
         .then(function (data) {
           if (data.success) {
@@ -1116,7 +1125,7 @@ var RefundPanel = (function () {
         }
       } else if (action === "delay") {
         // Transition to step 2: date picker
-        _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason);
+        _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason, permit);
       }
     });
   }
@@ -1172,9 +1181,25 @@ var RefundPanel = (function () {
     });
   }
 
-  function _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason) {
+  function _showDelayDatePicker(overlay, defaultDateStr, onConfirm, requireReason, permit) {
     // Replace the overlay entirely to avoid stacking event listeners
     overlay.remove();
+
+    // Pre-fill the next-recurring-date field with the permit's current value,
+    // formatted as datetime-local expects (yyyy-MM-ddTHH:mm). Empty if the
+    // permit has no upcoming recurring charge.
+    var originalNextRecurring = (permit && permit.next_recurring_date) || "";
+    var nextRecurringDefault = "";
+    if (originalNextRecurring) {
+      var d = new Date(originalNextRecurring);
+      if (!isNaN(d.getTime())) {
+        // Strip seconds and timezone for datetime-local
+        var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+        nextRecurringDefault =
+          d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+          "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+      }
+    }
 
     var overlay2 = document.createElement("div");
     overlay2.id = "cancel-dialog-overlay";
@@ -1195,6 +1220,12 @@ var RefundPanel = (function () {
             '<input type="checkbox" class="cancel-dialog-notice-check" checked> ' +
             'Send cancellation notice to resident' +
           '</label>' +
+          '<p style="margin-top:14px;">Next recurring date:</p>' +
+          '<div class="cancel-dialog-date-row" style="display:flex; align-items:center; gap:8px;">' +
+            '<input type="datetime-local" class="cancel-dialog-next-recurring-input" value="' + nextRecurringDefault + '" style="flex:1;">' +
+            '<button type="button" class="btn btn-link cancel-dialog-clear-recurring" data-action="clear-recurring" style="padding:4px 8px;">Clear</button>' +
+          '</div>' +
+          '<div style="font-size:11px; color:#6b7280; margin-top:4px;">Clear this to prevent the next auto-charge before the cancellation date.</div>' +
         '</div>' +
         '<div class="cancel-dialog-footer">' +
           '<button class="btn btn-link cancel-dialog-btn" data-action="back">Back</button>' +
@@ -1218,10 +1249,14 @@ var RefundPanel = (function () {
         overlay2.remove();
       } else if (action === "back") {
         overlay2.remove();
-        _showCancelDialog(null, onConfirm, requireReason); // re-show step 1
+        _showCancelDialog(permit, onConfirm, requireReason); // re-show step 1
+      } else if (action === "clear-recurring") {
+        var nextInput = dialog.querySelector(".cancel-dialog-next-recurring-input");
+        if (nextInput) nextInput.value = "";
       } else if (action === "schedule") {
         var dateInput = dialog.querySelector(".cancel-dialog-date-input");
         var noticeCheck = dialog.querySelector(".cancel-dialog-notice-check");
+        var nextRecurringInput = dialog.querySelector(".cancel-dialog-next-recurring-input");
         var dateVal = dateInput ? dateInput.value : "";
         if (!dateVal) {
           dateInput.style.borderColor = "#e74c3c";
@@ -1239,6 +1274,18 @@ var RefundPanel = (function () {
           cancel_date: selectedDate.toISOString(),
           send_notice: noticeCheck ? noticeCheck.checked : true
         };
+        // Detect whether the CSR changed the next-recurring-date field. If so,
+        // include the change in the payload so the backend can update ParkM.
+        var newRecurringVal = nextRecurringInput ? nextRecurringInput.value : "";
+        if (newRecurringVal !== nextRecurringDefault) {
+          scheduledOpts.update_next_recurring_date = true;
+          if (newRecurringVal) {
+            var nrd = new Date(newRecurringVal);
+            scheduledOpts.next_recurring_date = isNaN(nrd.getTime()) ? null : nrd.toISOString();
+          } else {
+            scheduledOpts.next_recurring_date = null; // explicit clear
+          }
+        }
         if (requireReason) {
           _showRefundReasonDialog(scheduledOpts, onConfirm);
         } else {

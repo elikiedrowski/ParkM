@@ -960,6 +960,8 @@ async def parkm_process_refund(request: Request, _auth=Depends(require_parkm_aut
             ticket_id=data.get("ticket_id", ""),
             auto_cancel=True,
             cancel_date=data.get("cancel_date"),
+            update_next_recurring_date=bool(data.get("update_next_recurring_date", False)),
+            next_recurring_date=data.get("next_recurring_date"),
         )
 
         # Ticket status is NOT auto-changed — CSR decides manually (per Apr 16 feedback).
@@ -992,6 +994,8 @@ async def parkm_cancel_permit(request: Request, _auth=Depends(require_parkm_auth
             permit_id=permit_id,
             send_notice=data.get("send_notice", True),
             cancel_date=data.get("cancel_date"),
+            update_next_recurring_date=bool(data.get("update_next_recurring_date", False)),
+            next_recurring_date=data.get("next_recurring_date"),
         )
         return result
     except HTTPException:

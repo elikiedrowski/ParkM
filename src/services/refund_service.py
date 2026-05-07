@@ -336,6 +336,8 @@ class RefundService:
         permit_id: str,
         send_notice: bool = True,
         cancel_date: Optional[str] = None,
+        update_next_recurring_date: bool = False,
+        next_recurring_date: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Cancel a permit in ParkM (immediate or delayed).
 
@@ -344,13 +346,21 @@ class RefundService:
             send_notice: Whether to send cancellation notice to customer
             cancel_date: If provided (ISO-8601), schedule a delayed cancellation
                          instead of cancelling immediately.
+            update_next_recurring_date: If True (and cancel_date is set), also
+                update the permit's nextRecurringDate via the same edit call.
+            next_recurring_date: New value for nextRecurringDate (ISO-8601) or
+                None to clear it. Only used when update_next_recurring_date.
 
         Returns:
             {"success": bool, "permit_id": str, "message": str, "cancel_type": str}
         """
         if cancel_date:
             success = await self.parkm.delay_cancel_permit(
-                permit_id, cancel_date=cancel_date, send_notice=send_notice
+                permit_id,
+                cancel_date=cancel_date,
+                send_notice=send_notice,
+                update_next_recurring_date=update_next_recurring_date,
+                next_recurring_date=next_recurring_date,
             )
             return {
                 "success": success,
@@ -443,6 +453,8 @@ ParkM Support Team</p>"""
         ticket_id: str = "",
         auto_cancel: bool = False,
         cancel_date: Optional[str] = None,
+        update_next_recurring_date: bool = False,
+        next_recurring_date: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run the full refund evaluation workflow.
 
@@ -513,7 +525,10 @@ ParkM Support Team</p>"""
                     }
                 else:
                     cancel_result = await self.cancel_permit(
-                        permit["id"], cancel_date=cancel_date
+                        permit["id"],
+                        cancel_date=cancel_date,
+                        update_next_recurring_date=update_next_recurring_date,
+                        next_recurring_date=next_recurring_date,
                     )
 
             # Step 4: Build accounting email if eligible

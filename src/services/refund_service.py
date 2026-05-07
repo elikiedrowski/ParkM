@@ -114,6 +114,7 @@ class RefundService:
             "is_cancelled": p.get("isCancelled", False),
             "is_recurring": item.get("isRecurring", p.get("isRecurring", False)),
             "recurring_price": p.get("recurringPrice"),
+            "next_recurring_date": p.get("nextRecurringDate"),
             "permit_price": p.get("amountDue") or p.get("price"),
             "total_amount": p.get("amountDue") or p.get("price"),
             "stripe_id": None,
@@ -205,6 +206,7 @@ class RefundService:
                 "status": status,
                 "is_recurring": raw.get("isRecurring", False),
                 "recurring_price": permit_data.get("recurringPrice"),
+                "next_recurring_date": permit_data.get("nextRecurringDate"),
                 "permit_price": permit_data.get("permitPrice") or raw.get("permitPrice"),
                 "total_amount": raw.get("totalAmount"),
                 "vehicle": {

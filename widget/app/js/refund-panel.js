@@ -776,6 +776,7 @@ var RefundPanel = (function () {
         (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Effective:</span> ' + effDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
+        (permit.is_recurring && permit.next_recurring_date ? '<div class="refund-permit-detail"><span class="refund-detail-label">Next Renewal:</span> ' + _formatDate(permit.next_recurring_date) + '</div>' : '') +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Price:</span> ' + priceStr + recurStr + '</div>' +
         (permit.balance_due > 0 ? '<div class="refund-permit-detail refund-balance-due"><span class="refund-detail-label">Balance Due:</span> $' + parseFloat(permit.balance_due).toFixed(2) + '</div>' : '') +
         delayCancelLine +

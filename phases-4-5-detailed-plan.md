@@ -68,11 +68,6 @@ Eliminate the Zoho ↔ parkm.app context switch for **every** high-volume CSR wo
 - Required for CSR trust before we hand any decisions to the bot in Phase 5
 - Doubles as a debugging tool for Sadie when classification is off
 
-**4.5 — Productionization**
-- Performance tuning (parkm.app calls cached per-ticket where safe)
-- Telemetry: per-action timing, per-action success rate, per-CSR adoption
-- Error-handling polish (graceful degradation when parkm.app API is slow)
-
 ### Phase 4 parallelism
 Can run **fully in parallel** with Patrick's sales process work — different repo, different surface area, zero shared dependencies.
 
@@ -219,7 +214,7 @@ The only shared resource is my time. With the phased structure proposed here, I 
 
 ```
 Phase 4.1-4.2 (vehicle/account/property context)   ││ Patrick discovery
-Phase 4.3-4.5 (bidirectional, audit, perf)         ││ Launch-coord BPR
+Phase 4.3-4.4 (bidirectional sync, audit/reasoning) ││ Launch-coord BPR
 Phase 5.1 (simple cancel) + 5.2 (missing info)     ││ Patrick build
 Phase 5.1/5.2 monitoring                           ││ Launch-coord pilot
 Phase 5.3 (auto-submit refund)                     ││ — open —

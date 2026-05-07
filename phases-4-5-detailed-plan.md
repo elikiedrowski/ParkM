@@ -48,33 +48,33 @@ Eliminate the Zoho ↔ parkm.app context switch for **every** high-volume CSR wo
 
 ### Scope — concrete deliverables
 
-**4.1 — Embed parkm.app context for the next tier of tag types** *(~15 hours)*
+**4.1 — Embed parkm.app context for the next tier of tag types**
 - Vehicle Update tickets: pull customer + permits + active vehicle, render in wizard, one-click "Update Vehicle" via parkm.app API
 - Account / Login Issue tickets: customer lookup, account status, permit count, "Send Password Reset" one-click action
 - Payment Issue tickets: full transaction history (the same `Permits/GetAllPaymentsForPermit` we already use for refund eligibility), failed-payment detection, "Resend Receipt" action
 - Lockout / Override / Locked Permit tickets: permit status + override history, one-click "Issue Override" if API supports
 
-**4.2 — Property-side context (new data layer)** *(~10 hours)*
+**4.2 — Property-side context (new data layer)**
 - Many tickets are property-level rather than customer-level (sales-rep escalations, property-manager complaints, enforcement questions). Today the wizard has zero property context.
 - Add property lookup endpoint usage, render: property name, PM contact, total active permits, recent enforcement events
 - Enables the wizard to actually help on Sales-Rep and Property-tag tickets (currently 26 of our 51 tags are property/sales-rep — and the wizard for those is text-only)
 
-**4.3 — Bidirectional Zoho ↔ parkm.app sync** *(~10 hours)*
+**4.3 — Bidirectional Zoho ↔ parkm.app sync**
 - Today: actions write to parkm.app and Zoho separately. Phase 4 wraps these in a single transactional layer with rollback on partial failure.
 - Logging surface for Sadie to audit "what did the bot do on this ticket" — needed before Phase 5 can ride on top.
 
-**4.4 — Inline "Why am I seeing this?" reasoning panel** *(~5 hours)*
+**4.4 — Inline "Why am I seeing this?" reasoning panel**
 - Show the AI's reasoning + extracted entities + which template was suggested and why
 - Required for CSR trust before we hand any decisions to the bot in Phase 5
 - Doubles as a debugging tool for Sadie when classification is off
 
-**4.5 — Productionization** *(~5–10 hours)*
+**4.5 — Productionization**
 - Performance tuning (parkm.app calls cached per-ticket where safe)
 - Telemetry: per-action timing, per-action success rate, per-CSR adoption
 - Error-handling polish (graceful degradation when parkm.app API is slow)
 
-### Phase 4 effort
-**40–50 hours** total. Deliverable in 4–5 weeks of calendar time at our current pace. Can run **fully in parallel** with Patrick's sales process work — different repo, different surface area, zero shared dependencies.
+### Phase 4 parallelism
+Can run **fully in parallel** with Patrick's sales process work — different repo, different surface area, zero shared dependencies.
 
 ### Phase 4 success metrics
 - CSR can resolve **≥80% of all ticket types** without leaving Zoho Desk (today: ~25%, mostly refunds)
@@ -100,7 +100,7 @@ A single jump from "CSR clicks every step" to "no CSR involvement" is too aggres
 
 ---
 
-### Stage 5.1 — Auto-handle "simple cancellation, no refund" tickets *(~10 hours)*
+### Stage 5.1 — Auto-handle "simple cancellation, no refund" tickets
 
 **The case:** Customer says some variant of "please cancel my permit, I moved out." No refund mentioned. Permit not yet cancelled in parkm.app. License plate or email lets us identify them unambiguously.
 
@@ -121,7 +121,7 @@ A single jump from "CSR clicks every step" to "no CSR involvement" is too aggres
 
 ---
 
-### Stage 5.2 — Auto-handle "missing info" requests *(~8 hours)*
+### Stage 5.2 — Auto-handle "missing info" requests
 
 **The case:** Customer requests a refund or cancellation but didn't include their license plate, or didn't include a bank-statement screenshot, or didn't include a move-out date.
 
@@ -141,7 +141,7 @@ A single jump from "CSR clicks every step" to "no CSR involvement" is too aggres
 
 ---
 
-### Stage 5.3 — Auto-submit refund-eligible tickets to accounting *(~12 hours)*
+### Stage 5.3 — Auto-submit refund-eligible tickets to accounting
 
 **The case:** Customer requests a refund. Bot validates: single permit, within 30-day window, charge confirmed in parkm.app, no dispute language, license plate matches.
 
@@ -162,7 +162,7 @@ A single jump from "CSR clicks every step" to "no CSR involvement" is too aggres
 
 ---
 
-### Stage 5.4 — End-to-end refund automation including accounting *(~15–20 hours)*
+### Stage 5.4 — End-to-end refund automation including accounting
 
 **The case:** Same as Stage 5.3, but the bot also performs the Reverse Charge in parkm.app (currently done manually by accounting) and sends the customer their refund confirmation.
 
@@ -184,8 +184,8 @@ A single jump from "CSR clicks every step" to "no CSR involvement" is too aggres
 - Accounting team explicitly comfortable with the daily reconciliation flow
 - Chad sign-off on the final cutover
 
-### Phase 5 effort
-**45–55 hours** total across all four stages. Stage-by-stage breakdown means you only spend hours on the stages you decide to do.
+### Phase 5 commitment model
+Stage-by-stage. ParkM only commits to the next stage when the prior stage has met its stop condition — no upfront commitment to the full Phase 5 scope.
 
 ### Phase 5 success metrics
 - Stage 5.1: ≥30% of CSR's daily ticket volume now bot-handled
@@ -215,18 +215,18 @@ The May 7 call raised the question of whether ParkM should pivot to Patrick's sa
 
 The only shared resource is my time. With the phased structure proposed here, I can **interleave** these workstreams: Phase 4 ships in parallel with Patrick's discovery sprint; Phase 5 Stage 1 ships in parallel with Katie's launch-coordinator pilot; etc. ParkM gets all three initiatives moving rather than picking one.
 
-**What this looks like calendar-wise (illustrative):**
+**Sequencing (illustrative):**
 
 ```
-Week 1-2:  Phase 4.1-4.2 (vehicle/account/property context)  ││ Patrick discovery
-Week 3-4:  Phase 4.3-4.5 (bidirectional, audit, perf)        ││ Launch-coord BPR
-Week 5-6:  Phase 5.1 (simple cancel) + 5.2 (missing info)    ││ Patrick build
-Week 7-8:  Phase 5.1/5.2 monitoring                          ││ Launch-coord pilot
-Week 9-10: Phase 5.3 (auto-submit refund)                    ││ — open —
-Week 11+:  Phase 5.4 (end-to-end) — gated on Stage 5.3 data  ││ — open —
+Phase 4.1-4.2 (vehicle/account/property context)   ││ Patrick discovery
+Phase 4.3-4.5 (bidirectional, audit, perf)         ││ Launch-coord BPR
+Phase 5.1 (simple cancel) + 5.2 (missing info)     ││ Patrick build
+Phase 5.1/5.2 monitoring                           ││ Launch-coord pilot
+Phase 5.3 (auto-submit refund)                     ││ — open —
+Phase 5.4 (end-to-end) — gated on Stage 5.3 data   ││ — open —
 ```
 
-This is **not** a sequential 10-week burn — it's a phased rollout that yields production value every 2 weeks.
+This is a phased rollout that yields production value at the end of each block — not a single all-or-nothing delivery.
 
 ---
 
@@ -235,10 +235,10 @@ This is **not** a sequential 10-week burn — it's a phased rollout that yields 
 I'm asking for **three decisions**, not one:
 
 **Decision 1 — Approve Phase 4 to start immediately.**
-Low risk (extends a pattern already proven in production), high CSR-productivity payoff, and unblocks Phase 5. ~40–50 hours.
+Low risk (extends a pattern already proven in production), high CSR-productivity payoff, and unblocks Phase 5.
 
 **Decision 2 — Approve Phase 5 Stage 1 ("simple cancellations") to start in parallel with Phase 4.**
-Smallest, safest piece of automation. Proves the bot can act autonomously on the lowest-risk ticket type. ~10 hours. **All later Phase 5 stages stay gated on Stage 1 results — you're not committing to anything beyond this with this decision.**
+Smallest, safest piece of automation. Proves the bot can act autonomously on the lowest-risk ticket type. **All later Phase 5 stages stay gated on Stage 1 results — you're not committing to anything beyond this with this decision.**
 
 **Decision 3 — Defer Phase 5 Stages 2–4 until Stage 1 has run for ≥2 weeks.**
 Explicit "we'll decide later." Keeps us honest about the crawl-walk-run framing, gives Chad and the accounting team data to react to instead of promises.

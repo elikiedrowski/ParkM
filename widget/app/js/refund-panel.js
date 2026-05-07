@@ -980,7 +980,10 @@ var RefundPanel = (function () {
     } else if (cancelOk) {
       cancelMsg = "Permit cancelled";
     } else {
-      cancelMsg = "Cancel may have failed — verify in ParkM";
+      var cancelErr = (cancelResult && (cancelResult.error || cancelResult.message)) || "";
+      cancelMsg = cancelErr
+        ? "Cancel failed — " + cancelErr + " — verify in ParkM"
+        : "Cancel may have failed — verify in ParkM";
     }
     html += '<div class="refund-process-step ' + (cancelOk ? 'step-ok' : 'step-fail') + '">';
     html += cancelMsg;
@@ -1051,7 +1054,11 @@ var RefundPanel = (function () {
             card.classList.add("refund-permit-card--cancelled");
             _refreshPermits();
           } else {
-            resultDiv.innerHTML = '<div class="refund-process-step step-fail">Cancel failed — try manually in ParkM</div>';
+            var failMsg = (data && (data.error || data.message)) || "";
+            var failHtml = failMsg
+              ? '<div class="refund-process-step step-fail">Cancel failed: ' + _esc(failMsg) + ' — try manually in ParkM</div>'
+              : '<div class="refund-process-step step-fail">Cancel failed — try manually in ParkM</div>';
+            resultDiv.innerHTML = failHtml;
             var btns2 = card.querySelectorAll(".refund-action-btn");
             for (var j = 0; j < btns2.length; j++) btns2[j].disabled = false;
           }

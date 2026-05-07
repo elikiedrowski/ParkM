@@ -78,9 +78,27 @@ class RefundService:
             permit_summary = self._build_permit_summary(p, item, v)
             permits.append(permit_summary)
 
-        # Fetch all permits (active + inactive) to find recently-charged inactive ones
+        # Fetch all permits once — used by two helpers below.
+        try:
+            all_permits_raw = await self.parkm.get_all_permits(customer_id)
+        except Exception:
+            logger.warning(f"Could not fetch all permits for {customer_id}")
+            all_permits_raw = []
+
+        # Once a permit has delayCancellationDate set, ParkM stops returning it
+        # as the vehicle's activePermit, but Permits/GetAll still reports it as
+        # status=Active. Merge those scheduled-to-cancel permits into the
+        # active list so they don't disappear from the wizard.
+        scheduled_to_cancel = await self._get_scheduled_to_cancel_permits(
+            customer_id, active_permit_ids, all_permits_raw
+        )
+        for sp in scheduled_to_cancel:
+            active_permit_ids.add(sp["id"])
+            permits.append(sp)
+
+        # Fetch inactive permits (cancelled/expired) for the 30-day window.
         inactive_permits = await self._get_inactive_permits(
-            customer_id, active_permit_ids, transactions
+            customer_id, active_permit_ids, transactions, all_permits_raw
         )
 
         return {
@@ -132,24 +150,94 @@ class RefundService:
             "delay_cancellation_date": p.get("delayCancellationDate"),
         }
 
+    async def _get_scheduled_to_cancel_permits(
+        self,
+        customer_id: str,
+        active_permit_ids: set,
+        all_permits_raw: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Find permits that are scheduled-to-cancel (delayCancellationDate set)
+        but no longer returned by GetActiveCustomerVehicles.
+
+        ParkM removes a permit from the vehicle's activePermit slot the moment
+        delayCancellationDate is set, even though the permit is still status=
+        Active until the cancellation date arrives. Without this helper those
+        permits disappear from the wizard entirely. We scan Permits/GetAll
+        for status=Active permits not in active_permit_ids, then call
+        GetPermitForEdit on each to read delayCancellationDate (Permits/GetAll
+        summaries omit that field — same gotcha as in scripts/reactivate_all
+        _permits.py). Permits with the delay date set get a normal active-
+        shape summary so the existing widget banner renders.
+        """
+        if not all_permits_raw:
+            return []
+
+        results: List[Dict[str, Any]] = []
+        for raw in all_permits_raw:
+            permit_data = raw.get("permit") or raw
+            permit_id = permit_data.get("id")
+            if not permit_id or permit_id in active_permit_ids:
+                continue
+            status = permit_data.get("status", "")
+            if status != "Active":
+                continue
+
+            # GetAll omits delayCancellationDate — fetch the edit DTO to confirm.
+            try:
+                edit_data = await self.parkm._get(
+                    "/api/services/app/Permits/GetPermitForEdit",
+                    params={"Id": permit_id},
+                )
+            except Exception:
+                logger.warning(
+                    f"Could not fetch edit DTO for permit {permit_id} (scheduled-cancel scan)"
+                )
+                continue
+            permit_dto = (edit_data.get("result") or {}).get("permit") or edit_data.get("result") or {}
+            delay_date = permit_dto.get("delayCancellationDate")
+            if not delay_date:
+                # Active in GetAll but not actually scheduled to cancel — skip.
+                continue
+
+            results.append({
+                "id": permit_id,
+                "type_name": raw.get("permitTypeName") or raw.get("communityName") or "Unknown",
+                "effective_date": permit_dto.get("effectiveDate") or permit_data.get("effectiveDate"),
+                "expiration_date": permit_dto.get("expirationDate") or permit_data.get("expirationDate"),
+                "is_cancelled": False,
+                "status": status,
+                "is_recurring": raw.get("isRecurring") or permit_dto.get("isRecurring", False),
+                "recurring_price": permit_dto.get("recurringPrice"),
+                "next_recurring_date": permit_dto.get("nextRecurringDate"),
+                "permit_price": permit_dto.get("price") or permit_dto.get("amountDue"),
+                "total_amount": permit_dto.get("amountDue"),
+                "vehicle": {
+                    "plate": raw.get("licensePlate"),
+                    "make": raw.get("vehicleMakeName"),
+                    "model": raw.get("vehicleModelName"),
+                    "color": raw.get("vehicleColorName"),
+                    "year": raw.get("vehicleYear"),
+                },
+                "community": raw.get("communityName"),
+                "balance_due": raw.get("balanceDue", 0),
+                "permit_name": permit_dto.get("name") or permit_data.get("name"),
+                "delay_cancellation_date": delay_date,
+            })
+        return results
+
     async def _get_inactive_permits(
         self,
         customer_id: str,
         active_permit_ids: set,
         transactions: List[Dict[str, Any]],
+        all_permits_raw: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """Find inactive permits with activity within the last 30 days.
 
-        Uses Permits/GetAll (per Stephen's guidance) to get all permits
-        including cancelled/expired, then filters to those not in the active
-        set and within the 30-day window based on last charge or effective date.
+        Filters all_permits_raw (already fetched once at the call site) to
+        permits not in the active set and within the 30-day window based on
+        last charge or effective date.
         """
-        try:
-            all_permits_raw = await self.parkm.get_all_permits(customer_id)
-        except Exception:
-            logger.warning(f"Could not fetch all permits for {customer_id}")
-            return []
-
         if not all_permits_raw:
             return []
 
@@ -355,22 +443,25 @@ class RefundService:
             {"success": bool, "permit_id": str, "message": str, "cancel_type": str}
         """
         if cancel_date:
-            success = await self.parkm.delay_cancel_permit(
+            delay_result = await self.parkm.delay_cancel_permit(
                 permit_id,
                 cancel_date=cancel_date,
                 send_notice=send_notice,
                 update_next_recurring_date=update_next_recurring_date,
                 next_recurring_date=next_recurring_date,
             )
+            success = bool(delay_result.get("success"))
+            err = delay_result.get("error")
             return {
                 "success": success,
                 "permit_id": permit_id,
                 "cancel_type": "delayed",
                 "cancel_date": cancel_date,
+                "error": err,
                 "message": (
                     f"Permit cancellation scheduled for {cancel_date}"
                     if success
-                    else "Failed to schedule permit cancellation"
+                    else (err or "Failed to schedule permit cancellation")
                 ),
             }
         else:

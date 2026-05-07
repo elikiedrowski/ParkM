@@ -290,7 +290,7 @@ class ParkMClient:
         send_notice: bool = True,
         update_next_recurring_date: bool = False,
         next_recurring_date: Optional[str] = None,
-    ) -> bool:
+    ) -> Dict[str, Any]:
         """Schedule a delayed cancellation for a permit.
 
         Instead of cancelling immediately, sets the permit's delayCancellationDate
@@ -319,7 +319,10 @@ class ParkMClient:
                 None to clear it. Only applied when update_next_recurring_date
                 is True.
         Returns:
-            True if the delay cancellation was scheduled successfully
+            Dict with `success` (bool) and `error` (str|None). On failure, the
+            error string captures whatever ParkM gave us (HTTP status + body, or
+            ABP error.message/details) so the caller can surface a useful
+            message to the CSR instead of a generic "try manually" fallback.
         """
         try:
             # Step 1: Get current permit data
@@ -329,8 +332,9 @@ class ParkMClient:
             )
             permit_dto = edit_data.get("result", {}).get("permit", edit_data.get("result", {}))
             if not permit_dto or not permit_dto.get("id"):
-                logger.error(f"Could not fetch permit {permit_id} for delay cancel")
-                return False
+                msg = f"Could not fetch permit {permit_id} for delay cancel (no DTO returned)"
+                logger.error(msg)
+                return {"success": False, "error": msg}
 
             # Step 2: Set delay cancellation date and notice preference
             permit_dto["delayCancellationDate"] = cancel_date
@@ -352,12 +356,42 @@ class ParkMClient:
             success = result.get("success", False)
             if success:
                 logger.info(f"Permit {permit_id} delay-cancel scheduled for {cancel_date} (notice={send_notice})")
-            else:
-                logger.error(f"Permit delay-cancel returned success=false: {result}")
-            return success
+                return {"success": True, "error": None}
+
+            # ABP error structure is {success: false, error: {message, details}}.
+            # Surface message + details explicitly so logs aren't truncated and
+            # the widget can show something useful.
+            err_obj = result.get("error") or {}
+            err_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+            err_details = err_obj.get("details") if isinstance(err_obj, dict) else None
+            logger.error(
+                f"Permit {permit_id} delay-cancel returned success=false: "
+                f"message={err_msg!r} details={err_details!r} full={result!r}"
+            )
+            return {
+                "success": False,
+                "error": err_msg or err_details or "ParkM CreateOrEdit returned success=false",
+            }
+        except httpx.HTTPStatusError as e:
+            # The most useful failure case: ParkM returned a non-2xx with a
+            # body explaining what's wrong. Capture both for the logs and the
+            # caller. Without this we used to lose the body entirely.
+            body = ""
+            try:
+                body = e.response.text
+            except Exception:
+                pass
+            status = e.response.status_code if e.response is not None else "?"
+            logger.error(
+                f"Failed to delay-cancel permit {permit_id}: HTTP {status} body={body[:1000]!r}"
+            )
+            return {
+                "success": False,
+                "error": f"ParkM HTTP {status}: {body[:300]}" if body else f"ParkM HTTP {status}",
+            }
         except Exception as e:
-            logger.error(f"Failed to delay-cancel permit {permit_id}: {e}")
-            return False
+            logger.error(f"Failed to delay-cancel permit {permit_id}: {e}", exc_info=True)
+            return {"success": False, "error": str(e) or "Unknown error"}
 
     # ── Vehicles ──────────────────────────────────────────────────────
 

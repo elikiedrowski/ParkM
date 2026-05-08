@@ -183,33 +183,6 @@ Stage-by-stage. ParkM only commits to the next stage when the prior stage has me
 
 ---
 
-## Why this is parallel-friendly with Patrick's and the Launch-Coordinator work
-
-The May 7 call raised the question of whether ParkM should pivot to Patrick's sales process work or Katie's launch-coordinator automation **instead of** Phases 4 and 5. **The answer is they're not mutually exclusive.** Different work streams, different surface areas, different developer focus:
-
-| Workstream | Surface area | Repo | Critical-path conflict with Phase 4/5? |
-|---|---|---|---|
-| Phases 4 & 5 (this doc) | Zoho Desk widget, parkm.app API integration | `ParmM_Zoho` | — |
-| Patrick's sales process | Zoho **CRM** (different module), sales rep workflow | New repo / CRM extension | **None** — different Zoho product, different users |
-| Katie's launch-coordinator automation | parkm.app PM portal, bulk send to residents | New repo / parkm.app extension | **None** — PM-facing UI, not CSR-facing |
-
-The only shared resource is my time. With the phased structure proposed here, I can **interleave** these workstreams: Phase 4 ships in parallel with Patrick's discovery sprint; Phase 5 Stage 1 ships in parallel with Katie's launch-coordinator pilot; etc. ParkM gets all three initiatives moving rather than picking one.
-
-**Sequencing (illustrative):**
-
-```
-Phase 4.1-4.2 (vehicle/account/property context)   ││ Patrick discovery
-Phase 4.3-4.4 (bidirectional sync, audit/reasoning) ││ Launch-coord BPR
-Phase 5.1 (simple cancel) + 5.2 (missing info)     ││ Patrick build
-Phase 5.1/5.2 monitoring                           ││ Launch-coord pilot
-Phase 5.3 (auto-submit refund)                     ││ — open —
-Phase 5.4 (end-to-end) — gated on Stage 5.3 data   ││ — open —
-```
-
-This is a phased rollout that yields production value at the end of each block — not a single all-or-nothing delivery.
-
----
-
 ## Recommended decisions for ParkM
 
 I'm asking for **three decisions**, not one:

@@ -179,8 +179,6 @@ Stage-by-stage. ParkM only commits to the next stage when the prior stage has me
 
 ## Recommended decisions for ParkM
 
-I'm asking for **two decisions**, not one:
-
 **Decision 1 — Approve Phase 4 to start immediately.**
 Low risk (extends a pattern already proven in production), high CSR-productivity payoff, and unblocks Phase 5.
 

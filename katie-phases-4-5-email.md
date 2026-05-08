@@ -13,8 +13,6 @@ Following up on our May 7 call — attached is the detailed Phase 4 and Phase 5 
 
 The short version: **Phase 4** extends the wizard's "single pane of glass" beyond refunds to the other ~80% of CSR ticket types (vehicle updates, account/payment, lockouts, property/sales-rep tickets), and **Phase 5** progresses the refund flow toward the 100% bot-driven end state you described — but structured as four explicit stages so risk stays contained and ParkM can stop at any stage if results aren't compelling. Both can run in parallel with Patrick's sales-process work and the launch-coordinator initiative; they're separate surface areas, so picking Phase 4/5 doesn't mean deferring the others.
 
-I'm asking for **two decisions** so you have something concrete to bring to Chad/Patrick:
-
 1. Approve **Phase 4** to start now — low-risk extension of a pattern already proven in production, big CSR-productivity payoff.
 2. Approve **Phase 5 Stage 1** ("simple cancellations, no refund") to start in parallel — the smallest, safest piece of autonomous-bot work. All later Phase 5 stages stay gated on Stage 1 results, so this isn't a commitment to the full end-state.
 

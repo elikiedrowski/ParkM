@@ -194,31 +194,3 @@ Low risk (extends a pattern already proven in production), high CSR-productivity
 Smallest, safest piece of automation. Proves the bot can act autonomously on the lowest-risk ticket type. **All later Phase 5 stages stay gated on Stage 1 results — you're not committing to anything beyond this with this decision.**
 
 This structure lets ParkM commit to a small, well-scoped piece of autonomous-bot work *now* without committing to the full end-state until the data supports it — which is exactly the calculated rollout style Chad has already endorsed.
-
----
-
-## What I need from ParkM to start
-
-- **Decision 1 + Decision 2 sign-off** from Katie/Chad
-- **Stephen availability for a 30-min API discovery** in week 1 — confirm endpoints for vehicle update, override, property metadata; flag whether a reverse-charge endpoint exists or could be built
-- **Sadie's continued feedback cadence** (already in motion from Phase 1–3 wrap-up)
-- **No** additional ParkM headcount, no infrastructure changes, no Zoho admin work beyond what's already in flight
-
----
-
-## Out of scope (intentionally)
-
-To keep this proposal focused, the following are **not** in Phase 4 or Phase 5 — flagging them so we don't accidentally scope-creep:
-
-- Sentiment analysis / customer satisfaction prediction (interesting but separate initiative)
-- Outbound proactive customer communication (different problem space)
-- Reporting dashboards beyond Sadie's audit log (Zoho's native reporting + the bot's audit log are sufficient for now)
-- The launch-coordinator automation Katie proposed (separate proposal, see `katie-launch-workflow-email.md`)
-- Patrick's sales-process work (separate proposal, see `sales-productivity-sow.md`)
-- Spanish-language wizard (already partially supported via classifier; not a Phase 4/5 deliverable)
-
----
-
-**Last updated:** May 7, 2026
-**Awaiting:** Decisions 1 and 2 from Katie/Chad
-**Next milestone if approved:** Stephen API discovery call + Phase 4.1 kickoff within 1 week of sign-off

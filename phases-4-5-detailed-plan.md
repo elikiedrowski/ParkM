@@ -1,10 +1,4 @@
 # ParkM Zoho Desk Automation — Phases 4 & 5 Detailed Plan
-**Prepared for:** Katie Schaeffer, Chad, Patrick
-**Prepared by:** Eli Kiedrowski
-**Date:** May 7, 2026
-**Status:** For decision
-
----
 
 ## TL;DR (one-page version)
 

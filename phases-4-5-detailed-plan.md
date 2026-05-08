@@ -185,16 +185,13 @@ Stage-by-stage. ParkM only commits to the next stage when the prior stage has me
 
 ## Recommended decisions for ParkM
 
-I'm asking for **three decisions**, not one:
+I'm asking for **two decisions**, not one:
 
 **Decision 1 — Approve Phase 4 to start immediately.**
 Low risk (extends a pattern already proven in production), high CSR-productivity payoff, and unblocks Phase 5.
 
 **Decision 2 — Approve Phase 5 Stage 1 ("simple cancellations") to start in parallel with Phase 4.**
 Smallest, safest piece of automation. Proves the bot can act autonomously on the lowest-risk ticket type. **All later Phase 5 stages stay gated on Stage 1 results — you're not committing to anything beyond this with this decision.**
-
-**Decision 3 — Defer Phase 5 Stages 2–4 until Stage 1 has run for ≥2 weeks.**
-Explicit "we'll decide later." Keeps us honest about the crawl-walk-run framing, gives Chad and the accounting team data to react to instead of promises.
 
 This structure lets ParkM commit to a small, well-scoped piece of autonomous-bot work *now* without committing to the full end-state until the data supports it — which is exactly the calculated rollout style Chad has already endorsed.
 
@@ -223,5 +220,5 @@ To keep this proposal focused, the following are **not** in Phase 4 or Phase 5 �
 ---
 
 **Last updated:** May 7, 2026
-**Awaiting:** Decisions 1, 2, 3 from Katie/Chad
+**Awaiting:** Decisions 1 and 2 from Katie/Chad
 **Next milestone if approved:** Stephen API discovery call + Phase 4.1 kickoff within 1 week of sign-off

@@ -76,13 +76,6 @@ Can run **fully in parallel** with Patrick's sales process work — different re
 - Average ticket handle time: 30–40% reduction across non-refund tickets
 - Zero increase in incorrect actions (audit log shows actions match CSR intent)
 
-### Phase 4 risks
-| Risk | Mitigation |
-|---|---|
-| ParkM.app API gaps for non-refund actions (e.g., vehicle update endpoint missing or limited) | Discovery sprint in week 1 with Stephen — confirm endpoints exist before building UI for them |
-| Wizard becomes cluttered as more tag types add data panels | Tabbed/collapsible panels in widget; only show what the current tag needs |
-| Sadie's pilot expands to Delaney + McKenzie mid-Phase-4 — increased feedback volume | Already planned; widget supports it; Phase 4 changes are additive, not destructive |
-
 ---
 
 ## PHASE 5 — Progressive Refund Automation (toward 100% bot-driven)

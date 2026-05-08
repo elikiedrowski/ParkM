@@ -181,14 +181,6 @@ Stage-by-stage. ParkM only commits to the next stage when the prior stage has me
 - Stage 5.3: ≥80% of refund-eligible tickets handled without CSR click
 - Stage 5.4: ≥80% of all refund tickets handled without **any** human until accounting reconciliation, fulfilling Katie's stated end state
 
-### Phase 5 risks
-| Risk | Mitigation |
-|---|---|
-| Bot makes an incorrect cancellation/refund | Each stage gates on zero-error periods. Audit log + reactivation script means recovery is fast. CSR can override at any time. |
-| ParkM.app reverse-charge endpoint doesn't exist (Stage 5.4 blocker) | Stage 5.4 is gated on Stephen confirming the endpoint. If unavailable, we ship Stages 5.1–5.3 (which is still ~80% of Katie's vision) and revisit 5.4 when the endpoint exists. |
-| Customer complaints about "robotic" experience | Templates are already Sadie-approved and customer-tested. Bot adds a soft signature option ("If anything looks off, just reply and a person will jump in"). |
-| Accounting team resistance to losing per-refund review | Stage 5.4 requires their explicit sign-off. Until then they keep the per-refund review they have today. |
-
 ---
 
 ## Why this is parallel-friendly with Patrick's and the Launch-Coordinator work

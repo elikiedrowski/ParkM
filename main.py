@@ -630,11 +630,22 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
             if ticket_data:
                 # Read entities from custom fields instead of re-classifying
                 cf = ticket_data.get("cf", ticket_data.get("customFields", {})) or {}
+                license_plate = cf.get("cf_license_plate_number") or cf.get("cf_license_plate")
+                # Read-time fallback for tickets classified before the
+                # classifier regex backfill landed (ticket #95071, May 2026).
+                # Only runs when Zoho has no stored plate, so a real manually-
+                # entered value is never overwritten.
+                if not license_plate:
+                    from src.services.classifier import _extract_license_plate
+                    license_plate = _extract_license_plate(
+                        ticket_data.get("subject") or "",
+                        ticket_data.get("description") or "",
+                    )
                 classification = {
                     "confidence": cf.get("cf_ai_confidence"),
                     "requires_human_review": cf.get("cf_requires_human_review") == "true",
                     "key_entities": {
-                        "license_plate": cf.get("cf_license_plate_number") or cf.get("cf_license_plate"),
+                        "license_plate": license_plate,
                         "move_out_date": cf.get("cf_move_out_date"),
                     }
                 }

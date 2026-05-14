@@ -6,6 +6,7 @@ Tags align with the Zoho Desk 'Tagging' picklist values.
 import json
 import logging
 import os
+import re
 import time
 from typing import Dict, Any, List, Optional
 from openai import OpenAI
@@ -96,6 +97,63 @@ def _build_live_learning_block(department_id: Optional[str]) -> str:
     return block
 
 
+# ── License-plate regex fallback ────────────────────────────────────────────
+# Two high-precision patterns. State-prefix requires both a real US state code
+# AND a separator (so "CA" doesn't grab "CANCEL"); the value must contain a
+# digit (so it doesn't grab "ORDER" off "OR"). Context-word scan looks for a
+# plate-shaped token within ~40 chars after "plate" / "license" / "tag".
+_US_STATE_SET = frozenset({
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID",
+    "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS",
+    "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK",
+    "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+    "WI", "WY", "DC",
+})
+_PLATE_STATE_PREFIX_RE = re.compile(
+    r"\b([A-Z]{2})[-\s]+([A-Z0-9]{3,8})\b", re.IGNORECASE
+)
+_PLATE_CONTEXT_KEYWORD_RE = re.compile(
+    r"\b(?:license\s+plate|plate|tag|license)\b", re.IGNORECASE
+)
+_PLATE_TOKEN_RE = re.compile(r"\b([A-Z0-9][A-Z0-9-]{2,9})\b", re.IGNORECASE)
+
+
+def _looks_like_plate(token: str) -> bool:
+    """Plate-shape heuristic: 3-9 alphanumeric chars with at least one digit."""
+    stripped = token.replace("-", "")
+    if not (3 <= len(stripped) <= 9):
+        return False
+    if not any(c.isdigit() for c in stripped):
+        return False
+    return all(c.isalnum() for c in stripped)
+
+
+def _extract_license_plate(subject: str, body: str) -> Optional[str]:
+    """Pull a likely license plate out of subject + body when the LLM missed it.
+
+    Returns the first high-confidence match (state-prefix wins over context-word),
+    uppercased. Returns None if nothing matches.
+    """
+    text = f"{subject or ''}\n{body or ''}"
+
+    # 1. State-prefix: "CO-7705793", "TX 12345"
+    for m in _PLATE_STATE_PREFIX_RE.finditer(text):
+        state = m.group(1).upper()
+        value = m.group(2).upper()
+        if state in _US_STATE_SET and _looks_like_plate(value):
+            return f"{state}-{value}"
+
+    # 2. Context keyword followed by a plate-shaped token within ~40 chars
+    for m in _PLATE_CONTEXT_KEYWORD_RE.finditer(text):
+        snippet = text[m.end():m.end() + 40]
+        for tm in _PLATE_TOKEN_RE.finditer(snippet):
+            token = tm.group(1).upper()
+            if _looks_like_plate(token):
+                return token
+
+    return None
+
+
 class EmailClassifier:
     """Classifies support emails using AI"""
 
@@ -164,6 +222,18 @@ class EmailClassifier:
 
         # Backwards compat: set "intent" to primary (first) tag for routing/logging
         result["intent"] = result["tags"][0]
+
+        # License-plate fallback: GPT-4o-mini sometimes misses state-prefixed
+        # ("CO-7705793") or short numeric plates that are clearly in the subject
+        # line. Caught in production on ticket #95071. Run a high-precision
+        # regex only when the LLM returned no plate, so we never overwrite a
+        # genuine extraction with a false positive.
+        entities = result.get("key_entities") or {}
+        if not entities.get("license_plate"):
+            fallback = _extract_license_plate(subject, body)
+            if fallback:
+                entities["license_plate"] = fallback
+                result["key_entities"] = entities
 
         return result
 

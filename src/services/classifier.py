@@ -131,17 +131,19 @@ def _looks_like_plate(token: str) -> bool:
 def _extract_license_plate(subject: str, body: str) -> Optional[str]:
     """Pull a likely license plate out of subject + body when the LLM missed it.
 
-    Returns the first high-confidence match (state-prefix wins over context-word),
-    uppercased. Returns None if nothing matches.
+    Returns just the plate value (the state code, when present, is stripped —
+    ParkM's permit naming convention is "CO-7705793" but the actual license
+    plate is the numeric part). State-prefix matches win over context-word
+    matches. Returns None if nothing matches.
     """
     text = f"{subject or ''}\n{body or ''}"
 
-    # 1. State-prefix: "CO-7705793", "TX 12345"
+    # 1. State-prefix: "CO-7705793" → "7705793", "TX 12345" → "12345"
     for m in _PLATE_STATE_PREFIX_RE.finditer(text):
         state = m.group(1).upper()
         value = m.group(2).upper()
         if state in _US_STATE_SET and _looks_like_plate(value):
-            return f"{state}-{value}"
+            return value
 
     # 2. Context keyword followed by a plate-shaped token within ~40 chars
     for m in _PLATE_CONTEXT_KEYWORD_RE.finditer(text):

@@ -117,6 +117,11 @@ var WizardRenderer = (function () {
 
     panel.style.display = "block";
 
+    // Track which fields a wizard step already covers so we don't double-
+    // render the same entity twice when both a step flag and a raw entity
+    // value exist.
+    var renderedFields = {};
+
     // Show extracted entities from steps
     entitySteps.forEach(function (step) {
       var card = document.createElement("div");
@@ -155,6 +160,32 @@ var WizardRenderer = (function () {
 
       card.appendChild(labelSpan);
       card.appendChild(rightDiv);
+      list.appendChild(card);
+      renderedFields[step.entity_field] = true;
+    });
+
+    // Surface any extracted entity that isn't already covered by a wizard
+    // step. This is what lets Payment Help (and any other tag whose wizard
+    // doesn't flag entity_field) still show the license plate in the
+    // Extracted Information panel.
+    Object.keys(entities).forEach(function (field) {
+      if (renderedFields[field]) return;
+      var value = entities[field];
+      if (value === null || value === undefined || value === "") return;
+
+      var card = document.createElement("div");
+      card.className = "entity-card";
+
+      var labelSpan = document.createElement("span");
+      labelSpan.className = "entity-label";
+      labelSpan.textContent = field.replace(/_/g, " ");
+
+      var valueSpan = document.createElement("span");
+      valueSpan.className = "entity-value";
+      valueSpan.textContent = value;
+
+      card.appendChild(labelSpan);
+      card.appendChild(valueSpan);
       list.appendChild(card);
     });
   }

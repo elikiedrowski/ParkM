@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 import hashlib
 import hmac
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 
 from src.api.webhooks import process_ticket_webhook, process_correction_webhook
 from src.services.classifier import EmailClassifier
@@ -612,6 +612,40 @@ async def batch_reclassify(
     }
 
 
+async def _scan_threads_for_plate(ticket_id: str, subject: str) -> Optional[str]:
+    """Fetch up to 10 ticket threads in parallel and run the license-plate
+    regex over their combined content. Used only when the initial email
+    doesn't yield a plate, so the cost (1 list call + N parallel content
+    fetches) is paid only on tickets that genuinely need it.
+
+    Returns the first matched plate or None. Never raises — any Zoho hiccup
+    is swallowed so the wizard endpoint still returns successfully.
+    """
+    from src.services.classifier import _extract_license_plate
+    try:
+        threads = await zoho_client.list_threads(ticket_id, limit=10)
+        thread_ids = [t.get("id") for t in (threads or []) if t.get("id")]
+        if not thread_ids:
+            return None
+        contents = await asyncio.gather(
+            *(zoho_client.get_thread_content(ticket_id, tid) for tid in thread_ids),
+            return_exceptions=True,
+        )
+        combined: List[str] = []
+        for tc in contents:
+            if isinstance(tc, Exception) or not isinstance(tc, dict):
+                continue
+            text = tc.get("content") or tc.get("plainText") or tc.get("summary") or ""
+            if text:
+                combined.append(text)
+        if not combined:
+            return None
+        return _extract_license_plate(subject, "\n".join(combined))
+    except Exception as e:
+        logger.warning(f"[{ticket_id}] Thread scan for plate failed: {e}")
+        return None
+
+
 @app.get("/wizard/{intent}")
 async def get_wizard_content(intent: str, ticket_id: str = None):
     """
@@ -634,13 +668,20 @@ async def get_wizard_content(intent: str, ticket_id: str = None):
                 # Read-time fallback for tickets classified before the
                 # classifier regex backfill landed (ticket #95071, May 2026).
                 # Only runs when Zoho has no stored plate, so a real manually-
-                # entered value is never overwritten.
+                # entered value is never overwritten. Falls through to scanning
+                # the conversation thread so plates arriving in a customer
+                # reply are also picked up (ticket #95129, May 2026) —
+                # classification only runs on Ticket_Add, so reply content
+                # isn't otherwise re-extracted.
                 if not license_plate:
                     from src.services.classifier import _extract_license_plate
-                    license_plate = _extract_license_plate(
-                        ticket_data.get("subject") or "",
-                        ticket_data.get("description") or "",
-                    )
+                    subject = ticket_data.get("subject") or ""
+                    description = ticket_data.get("description") or ""
+                    license_plate = _extract_license_plate(subject, description)
+                    if not license_plate:
+                        license_plate = await _scan_threads_for_plate(
+                            ticket_id, subject
+                        )
                 classification = {
                     "confidence": cf.get("cf_ai_confidence"),
                     "requires_human_review": cf.get("cf_requires_human_review") == "true",

@@ -265,11 +265,12 @@ class RefundService:
             except (ValueError, TypeError):
                 continue
 
-        # First pass: collect non-active permits and decide which need a
-        # per-permit Stripe lookup. We skip the lookup for permits whose
-        # effectiveDate already proves they're within the 30-day window
-        # (e.g. a Daily Guest issued yesterday).
-        candidates: List[Tuple[Dict[str, Any], Optional[datetime], bool]] = []
+        # First pass: collect non-active permits and seed ref_date from any
+        # cheap signal (customer-wide transactions list, or effectiveDate if
+        # in-window). We always follow up with the per-permit Stripe feed —
+        # it's the only way to know whether the customer was ever actually
+        # charged (free permits look identical to paid permits otherwise).
+        candidates: List[Tuple[Dict[str, Any], Optional[datetime]]] = []
         for raw in all_permits_raw:
             permit_data = raw.get("permit", raw)
             permit_id = permit_data.get("id")
@@ -291,21 +292,12 @@ class RefundService:
             if ref_date is None and eff_dt is not None and eff_dt >= cutoff:
                 ref_date = eff_dt
 
-            # Look up the per-permit Stripe feed whenever we don't already have
-            # a date inside the refund window. PermitPortal/GetAllTransactions
-            # can be partially stale — returning an old date for a permit that
-            # was charged again recently — so an in-buffer ref_date isn't
-            # automatically trustworthy.
-            needs_lookup = ref_date is None or ref_date < cutoff
-            candidates.append((raw, ref_date, needs_lookup))
+            candidates.append((raw, ref_date))
 
-        # Second pass: fetch payment history concurrently for the permits
-        # where we still don't have a date.
-        lookup_ids = [
-            (raw.get("permit", raw)).get("id")
-            for raw, _, needs in candidates
-            if needs
-        ]
+        # Second pass: fetch payment history concurrently for every candidate.
+        # We need the amount totals, not just the date, to distinguish
+        # free permits from real charges.
+        lookup_ids = [(raw.get("permit", raw)).get("id") for raw, _ in candidates]
         payments_by_permit: Dict[str, List[Dict[str, Any]]] = {}
         if lookup_ids:
             results = await asyncio.gather(
@@ -320,18 +312,19 @@ class RefundService:
                     payments_by_permit[pid] = result or []
 
         inactive_permits: List[Dict[str, Any]] = []
-        for raw, ref_date, needs_lookup in candidates:
+        for raw, ref_date in candidates:
             permit_data = raw.get("permit", raw)
             permit_id = permit_data.get("id")
             status = permit_data.get("status", "")
 
-            if needs_lookup:
-                latest = self._latest_payment_date(payments_by_permit.get(permit_id, []))
-                # Take the more recent of the two — the per-permit Stripe feed
-                # may show a newer charge than the customer-wide transactions
-                # list (which can be stale).
-                if latest is not None and (ref_date is None or latest > ref_date):
-                    ref_date = latest
+            latest, total_paid_in_window = self._payment_window_summary(
+                payments_by_permit.get(permit_id, []),
+                window_start=cutoff,
+            )
+            # Per-permit Stripe feed wins if it shows a more recent charge —
+            # the customer-wide transactions list can be stale.
+            if latest is not None and (ref_date is None or latest > ref_date):
+                ref_date = latest
 
             if ref_date is None or ref_date < cutoff:
                 continue
@@ -359,6 +352,7 @@ class RefundService:
                 "balance_due": raw.get("balanceDue", 0),
                 "permit_name": permit_data.get("name"),
                 "last_charge_date": ref_date.isoformat(),
+                "total_paid_within_window": total_paid_in_window,
             }
             inactive_permits.append(summary)
 
@@ -376,17 +370,25 @@ class RefundService:
     })
 
     @classmethod
-    def _latest_payment_date(cls, payments: List[Dict[str, Any]]) -> Optional[datetime]:
-        """Return the most recent successful payment date from a
-        Permits/GetAllPaymentsForPermit list.
+    def _payment_window_summary(
+        cls,
+        payments: List[Dict[str, Any]],
+        window_start: Optional[datetime] = None,
+    ) -> Tuple[Optional[datetime], float]:
+        """Inspect a Permits/GetAllPaymentsForPermit list and return
+        (latest_successful_date, total_paid_within_window).
 
         Skips payment intents whose status indicates the charge never
-        completed (failed, canceled, requires_*). Stripe creates intent
-        records for every checkout attempt, including abandoned ones, so
-        treating their `created` timestamp as a real charge would inflate
-        the inactive list with false positives.
+        completed (failed, canceled, requires_*) — Stripe creates intent
+        records for every abandoned checkout, and counting those as charges
+        would let free/abandoned permits look eligible for refund.
+
+        If `window_start` is provided, `total_paid_within_window` only sums
+        successful payments dated at-or-after that cutoff. Otherwise sums all
+        successful payments in the list.
         """
         latest: Optional[datetime] = None
+        total: float = 0.0
         for pay in payments:
             status = str(pay.get("status") or pay.get("state") or "").strip().lower()
             if status in cls._NON_CHARGE_STATUSES:
@@ -400,7 +402,14 @@ class RefundService:
                 continue
             if latest is None or dt > latest:
                 latest = dt
-        return latest
+            if window_start is None or dt >= window_start:
+                try:
+                    amount = float(pay.get("amount") or 0)
+                except (TypeError, ValueError):
+                    amount = 0.0
+                if amount > 0:
+                    total += amount
+        return latest, total
 
     # ── Step 2: Evaluate Refund Eligibility ───────────────────────────
 
@@ -438,6 +447,24 @@ class RefundService:
                 "last_charge_date": None,
                 "days_since_charge": None,
             }
+
+        # Free / unpaid permits — if the inactive-permits pass confirmed no
+        # actual money moved within the refund window, there's nothing to
+        # refund. Free permits used to slip through because effectiveDate was
+        # treated as a proxy for "last charge" (ticket #95512, May 2026).
+        if "total_paid_within_window" in permit:
+            try:
+                paid = float(permit.get("total_paid_within_window") or 0)
+            except (TypeError, ValueError):
+                paid = 0.0
+            if paid <= 0:
+                return {
+                    "eligible": False,
+                    "reason": "Free permit — customer was not charged within the refund window",
+                    "refund_amount": None,
+                    "last_charge_date": permit.get("last_charge_date"),
+                    "days_since_charge": None,
+                }
 
         # Find the most recent transaction date for this permit.
         # Inactive permits already carry last_charge_date (from _get_inactive_permits);

@@ -102,6 +102,14 @@ class RefundService:
             customer_id, active_permit_ids, transactions, all_permits_raw
         )
 
+        # Enrich active + scheduled-to-cancel permits with the same Stripe
+        # payment totals that inactive permits already carry. Without this,
+        # the free-permit eligibility guard in evaluate_refund_eligibility
+        # only fires for inactive permits — and "free monthly recurring"
+        # permits scheduled for cancellation (e.g. R000016, ticket #95512)
+        # were still showing ELIGIBLE FOR REFUND.
+        await self._enrich_permits_with_payment_totals(permits)
+
         return {
             "found": True,
             "customer": {
@@ -225,6 +233,42 @@ class RefundService:
                 "delay_cancellation_date": delay_date,
             })
         return results
+
+    async def _enrich_permits_with_payment_totals(
+        self, permits: List[Dict[str, Any]]
+    ) -> None:
+        """For each permit (modified in place), fetch its Stripe payment
+        history and attach `total_paid_within_window`. This is what lets the
+        free-permit eligibility guard fire for active and scheduled-to-cancel
+        permits, not just inactive ones — a "free monthly recurring" permit
+        looks identical to a paid one without this enrichment.
+        """
+        if not permits:
+            return
+        cutoff = datetime.now(timezone.utc) - timedelta(days=REFUND_WINDOW_DAYS)
+        ids = [p.get("id") for p in permits if p.get("id")]
+        if not ids:
+            return
+        results = await asyncio.gather(
+            *(self.parkm.get_payments_for_permit(pid) for pid in ids),
+            return_exceptions=True,
+        )
+        payments_by_id: Dict[str, List[Dict[str, Any]]] = {}
+        for pid, result in zip(ids, results):
+            if isinstance(result, Exception):
+                logger.warning(f"get_payments_for_permit failed for {pid}: {result}")
+                payments_by_id[pid] = []
+            else:
+                payments_by_id[pid] = result or []
+        for permit in permits:
+            pid = permit.get("id")
+            if not pid:
+                continue
+            _, total_paid = self._payment_window_summary(
+                payments_by_id.get(pid, []),
+                window_start=cutoff,
+            )
+            permit["total_paid_within_window"] = total_paid
 
     async def _get_inactive_permits(
         self,
@@ -448,19 +492,35 @@ class RefundService:
                 "days_since_charge": None,
             }
 
-        # Free / unpaid permits — if the inactive-permits pass confirmed no
-        # actual money moved within the refund window, there's nothing to
-        # refund. Free permits used to slip through because effectiveDate was
-        # treated as a proxy for "last charge" (ticket #95512, May 2026).
+        # No-money-moved guard — if the Stripe per-permit feed shows no
+        # successful charge with amount > 0 in the 30-day window, there's
+        # nothing to refund. Applies to inactive permits (caught ticket
+        # #95512 in the inactive list) AND active / scheduled-to-cancel
+        # permits with chargeFrequency=Free (caught the same #95512 R000016
+        # on Sadie's second pass — free monthly recurring still showed
+        # ELIGIBLE because we weren't enriching active permits with the
+        # payment totals).
         if "total_paid_within_window" in permit:
             try:
                 paid = float(permit.get("total_paid_within_window") or 0)
             except (TypeError, ValueError):
                 paid = 0.0
             if paid <= 0:
+                # Differentiate "truly free permit, no price configured"
+                # from "paid permit but no recent charge" — same outcome
+                # (no refund), clearer message for the CSR.
+                priced = any(
+                    permit.get(k) not in (None, 0, 0.0)
+                    for k in ("recurring_price", "permit_price", "total_amount")
+                )
+                reason = (
+                    "No charge within the 30-day refund window — nothing to refund"
+                    if priced
+                    else "Free permit — customer was not charged"
+                )
                 return {
                     "eligible": False,
-                    "reason": "Free permit — customer was not charged within the refund window",
+                    "reason": reason,
                     "refund_amount": None,
                     "last_charge_date": permit.get("last_charge_date"),
                     "days_since_charge": None,

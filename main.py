@@ -355,7 +355,7 @@ async def test_ticket_tagging(ticket_id: str):
         
         # Extract email content
         subject = ticket_data.get("subject", "")
-        description = ticket_data.get("description", "")
+        description = ticket_data.get("description") or ""
         sender_email = ticket_data.get("email", "")
         dept_id_for_llm = ticket_data.get("departmentId", "")
         if not description.strip():
@@ -457,7 +457,7 @@ async def batch_classify(limit: int = 25):
                 continue
 
             subject = ticket_data.get("subject", "")
-            description = ticket_data.get("description", "")
+            description = ticket_data.get("description") or ""
             sender_email = ticket_data.get("email", "")
             if not description.strip():
                 description = await _get_initial_email_thread_body(ticket_id) or description
@@ -562,7 +562,7 @@ async def batch_reclassify(
                 continue
 
             subject = ticket_data.get("subject", "")
-            description = ticket_data.get("description", "")
+            description = ticket_data.get("description") or ""
             sender_email = ticket_data.get("email", "")
             if not description.strip():
                 description = await _get_initial_email_thread_body(ticket_id) or description

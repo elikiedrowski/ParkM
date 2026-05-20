@@ -120,7 +120,7 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
 
         # Step 2: Extract email content
         subject = ticket_data.get("subject", "")
-        description = ticket_data.get("description", "")
+        description = ticket_data.get("description") or ""
         sender_email = ticket_data.get("email", "")
         department_id = ticket_data.get("departmentId", "")
 

@@ -9,7 +9,7 @@ class FakeZohoClient:
         self.ticket = {
             "id": "T1",
             "subject": "Cancelar",
-            "description": "",
+            "description": None,
             "email": "customer@example.com",
             "departmentId": "D1",
             "cf": {},

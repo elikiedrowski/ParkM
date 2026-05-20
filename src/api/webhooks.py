@@ -3,8 +3,10 @@ Webhook processing module
 Handles incoming Zoho Desk webhooks and triggers classification
 """
 import logging
+import html
+import re
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from src.services.classifier import EmailClassifier
 from src.services.tagger import TicketTagger
@@ -19,6 +21,67 @@ logger = logging.getLogger(__name__)
 classifier = EmailClassifier()
 tagger = TicketTagger()
 zoho_client = ZohoDeskClient()
+
+
+def _html_to_plain_text(value: str) -> str:
+    """Convert Zoho thread HTML/plain text into compact classifier input."""
+    if not value:
+        return ""
+
+    text = html.unescape(value)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</(?:p|div|tr|li|h[1-6])\s*>", "\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = html.unescape(text)
+    text = re.sub(r"[ \t\r\f\v]+", " ", text)
+    text = re.sub(r"\n[ \t]+", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _thread_created_key(thread: Dict[str, Any]) -> tuple:
+    created = (
+        thread.get("createdTime")
+        or thread.get("createdAt")
+        or thread.get("created_time")
+        or thread.get("created")
+    )
+    return (0, created) if created else (1, "")
+
+
+async def _get_initial_email_thread_body(ticket_id: str) -> Optional[str]:
+    """Fetch the oldest inbound email thread body for Zoho tickets whose
+    top-level `description` is blank. Zoho email tickets often store the real
+    customer email in threads instead of the ticket description.
+    """
+    try:
+        threads = await zoho_client.list_threads(ticket_id, limit=10)
+    except Exception as e:
+        logger.warning(f"[{ticket_id}] Failed to list threads for classifier body fallback: {e}")
+        return None
+
+    inbound = [
+        t for t in (threads or [])
+        if str(t.get("direction") or "").lower() in ("in", "incoming")
+    ]
+    candidates = sorted(inbound or (threads or []), key=_thread_created_key)
+
+    for thread in candidates:
+        thread_id = thread.get("id")
+        if not thread_id:
+            continue
+        try:
+            detail = await zoho_client.get_thread_content(ticket_id, thread_id)
+        except Exception as e:
+            logger.warning(f"[{ticket_id}] Failed to fetch thread {thread_id} for classifier body fallback: {e}")
+            continue
+
+        raw = detail.get("plainText") or detail.get("content") or detail.get("summary") or ""
+        text = _html_to_plain_text(raw)
+        if text:
+            return text
+
+    return None
 
 
 async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
@@ -75,6 +138,14 @@ async def process_ticket_webhook(ticket_id: str, payload: Dict[str, Any]):
                 "bot messages; other lines are the resident's responses.]\n\n"
                 + parker_ctx.transcript_text
             )
+        elif not description.strip():
+            thread_body = await _get_initial_email_thread_body(ticket_id)
+            if thread_body:
+                description = thread_body
+                logger.info(
+                    f"[{ticket_id}] Using initial email thread as classifier body "
+                    f"({len(description)} chars)"
+                )
 
         # Step 3: Classify email
         logger.info(f"[{ticket_id}] Classifying email with AI")

@@ -110,7 +110,7 @@ _US_STATE_SET = frozenset({
     "WI", "WY", "DC",
 })
 _PLATE_STATE_PREFIX_RE = re.compile(
-    r"\b([A-Z]{2})[-\s]+([A-Z0-9]{3,8})\b", re.IGNORECASE
+    r"\b([A-Z]{2})[-\s]+([A-Z0-9]{3,8})\b"
 )
 _PLATE_CONTEXT_KEYWORD_RE = re.compile(
     r"\b(?:license\s+plate|plate|tag|license)\b", re.IGNORECASE
@@ -125,6 +125,14 @@ def _looks_like_plate(token: str) -> bool:
         return False
     if not any(c.isdigit() for c in stripped):
         return False
+    if stripped.isdigit():
+        value = int(stripped)
+        if len(stripped) == 4 and 1900 <= value <= 2099:
+            return False
+        if len(stripped) == 5:
+            return False
+        if len(stripped) < 6:
+            return False
     return all(c.isalnum() for c in stripped)
 
 

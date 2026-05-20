@@ -15,7 +15,11 @@ import hashlib
 import hmac
 from typing import Dict, Any, List, Optional
 
-from src.api.webhooks import process_ticket_webhook, process_correction_webhook
+from src.api.webhooks import (
+    _get_initial_email_thread_body,
+    process_ticket_webhook,
+    process_correction_webhook,
+)
 from src.services.classifier import EmailClassifier
 from src.api.zoho_client import ZohoDeskClient
 from src.services.correction_logger import get_corrections_summary
@@ -354,6 +358,8 @@ async def test_ticket_tagging(ticket_id: str):
         description = ticket_data.get("description", "")
         sender_email = ticket_data.get("email", "")
         dept_id_for_llm = ticket_data.get("departmentId", "")
+        if not description.strip():
+            description = await _get_initial_email_thread_body(ticket_id) or description
 
         logger.info(f"Ticket: {subject}")
 
@@ -453,6 +459,8 @@ async def batch_classify(limit: int = 25):
             subject = ticket_data.get("subject", "")
             description = ticket_data.get("description", "")
             sender_email = ticket_data.get("email", "")
+            if not description.strip():
+                description = await _get_initial_email_thread_body(ticket_id) or description
 
             classification = classifier.classify_email(
                 subject, description, sender_email, ticket_id=ticket_id,
@@ -556,6 +564,8 @@ async def batch_reclassify(
             subject = ticket_data.get("subject", "")
             description = ticket_data.get("description", "")
             sender_email = ticket_data.get("email", "")
+            if not description.strip():
+                description = await _get_initial_email_thread_body(ticket_id) or description
 
             classification = classifier.classify_email(
                 subject, description, sender_email, ticket_id=ticket_id,

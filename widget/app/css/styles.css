@@ -944,13 +944,23 @@ body {
 
 .refund-permit-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 6px;
+}
+.refund-permit-heading {
+  flex: 1;
+  min-width: 0;
 }
 .refund-permit-type {
   font-size: 13px;
   font-weight: 600;
   color: #222;
+}
+.refund-permit-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: #666;
+  margin-top: 1px;
 }
 .refund-permit-community {
   font-size: 11px;

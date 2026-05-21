@@ -135,7 +135,13 @@ class RefundService:
             v = item.get("vehicle", {})
         return {
             "id": p.get("id"),
+            # type_name kept for backward-compat (it's the property name here).
+            # Prefer permit_type_name / community in the widget.
             "type_name": item.get("community") or p.get("communityName") or "Unknown",
+            "permit_type_name": item.get("permitTypeName"),
+            "permit_number": p.get("name"),
+            "space_number": item.get("lotSpace"),
+            "time_zone": item.get("timeZone"),
             "effective_date": p.get("effectiveDate"),
             "expiration_date": p.get("expirationDate"),
             "is_cancelled": p.get("isCancelled", False),
@@ -210,7 +216,13 @@ class RefundService:
 
             results.append({
                 "id": permit_id,
+                # type_name kept on its legacy meaning for backward compat with
+                # the old widget. New widget reads permit_type_name / community.
                 "type_name": raw.get("permitTypeName") or raw.get("communityName") or "Unknown",
+                "permit_type_name": raw.get("permitTypeName"),
+                "permit_number": permit_dto.get("name") or permit_data.get("name"),
+                "space_number": raw.get("spaceNumber"),
+                "time_zone": raw.get("timeZone"),
                 "effective_date": permit_dto.get("effectiveDate") or permit_data.get("effectiveDate"),
                 "expiration_date": permit_dto.get("expirationDate") or permit_data.get("expirationDate"),
                 "is_cancelled": False,
@@ -375,7 +387,14 @@ class RefundService:
 
             summary = {
                 "id": permit_id,
+                # type_name kept on its legacy meaning (permitTypeName-or-community)
+                # for backward compat with the old widget. New widget uses the
+                # explicit permit_type_name / community fields below.
                 "type_name": raw.get("permitTypeName") or raw.get("communityName") or "Unknown",
+                "permit_type_name": raw.get("permitTypeName"),
+                "permit_number": permit_data.get("name"),
+                "space_number": raw.get("spaceNumber"),
+                "time_zone": raw.get("timeZone"),
                 "effective_date": permit_data.get("effectiveDate"),
                 "expiration_date": permit_data.get("expirationDate"),
                 "is_cancelled": status == "Cancelled",
@@ -481,9 +500,15 @@ class RefundService:
                 "days_since_charge": int or None,
             }
         """
-        # Guest permits are never eligible for refund
-        permit_name = (permit.get("permit_name") or permit.get("type_name") or "").lower()
-        if "guest" in permit_name:
+        # Guest permits are never eligible for refund.
+        # Check across permit_type_name (e.g. "Guest Permit"), permit_name (the
+        # display code like GP000123), and the legacy type_name fallback.
+        guest_check = " ".join([
+            permit.get("permit_type_name") or "",
+            permit.get("permit_name") or "",
+            permit.get("type_name") or "",
+        ]).lower()
+        if "guest" in guest_check:
             return {
                 "eligible": False,
                 "reason": "Guest permits are not eligible for refund",

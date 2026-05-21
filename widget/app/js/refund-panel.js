@@ -698,14 +698,19 @@ var RefundPanel = (function () {
     var recurStr = permit.is_recurring ? " /mo" : " one-time";
 
     var statusLabel = permit.is_cancelled ? "Cancelled" : "Expired";
+    var headerTitle = _buildPermitHeaderTitle(permit);
+    var subtitle = permit.community || permit.type_name || "";
 
     card.innerHTML =
       '<div class="refund-permit-header">' +
-        '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
+        '<div class="refund-permit-heading">' +
+          '<div class="refund-permit-type">' + _esc(headerTitle) + '</div>' +
+          (subtitle ? '<div class="refund-permit-subtitle">' + _esc(subtitle) + '</div>' : '') +
+        '</div>' +
         '<span class="refund-inactive-badge">' + statusLabel + '</span>' +
       '</div>' +
       '<div class="refund-permit-details">' +
-        (permit.permit_name ? '<div class="refund-permit-detail"><span class="refund-detail-label">Permit:</span> ' + _esc(permit.permit_name) + '</div>' : '') +
+        (permit.space_number ? '<div class="refund-permit-detail"><span class="refund-detail-label">Space:</span> ' + _esc(permit.space_number) + '</div>' : '') +
         (vehicleLine ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleLine) + '</div>' : '') +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Effective:</span> ' + effDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
@@ -767,12 +772,19 @@ var RefundPanel = (function () {
       '</div>';
     }
 
+    var headerTitle = _buildPermitHeaderTitle(permit);
+    var subtitle = permit.community || permit.type_name || "";
+
     card.innerHTML =
       '<div class="refund-permit-header">' +
-        '<div class="refund-permit-type">' + _esc(permit.type_name) + '</div>' +
+        '<div class="refund-permit-heading">' +
+          '<div class="refund-permit-type">' + _esc(headerTitle) + '</div>' +
+          (subtitle ? '<div class="refund-permit-subtitle">' + _esc(subtitle) + '</div>' : '') +
+        '</div>' +
         (permit.delay_cancellation_date ? '<span class="refund-delay-badge">Permit Set to be Cancelled</span>' : '') +
       '</div>' +
       '<div class="refund-permit-details">' +
+        (permit.space_number ? '<div class="refund-permit-detail"><span class="refund-detail-label">Space:</span> ' + _esc(permit.space_number) + '</div>' : '') +
         (vehicleStr ? '<div class="refund-permit-detail"><span class="refund-detail-label">Vehicle:</span> ' + _esc(vehicleStr + plateStr) + '</div>' : '') +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Effective:</span> ' + effDate + '</div>' +
         '<div class="refund-permit-detail"><span class="refund-detail-label">Expires:</span> ' + expDate + '</div>' +
@@ -1084,10 +1096,12 @@ var RefundPanel = (function () {
     var existing = document.getElementById("cancel-dialog-overlay");
     if (existing) existing.remove();
 
-    // Default delay date: 1 week from now
-    var defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 7);
-    var defaultDateStr = defaultDate.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+    // Default delay date: 1 week from now @ 5:00 PM in the property's time zone
+    // (falls back to America/Denver). The datetime-local input interprets its
+    // value as the CSR's local time, so we render the equivalent local-clock
+    // string for the same instant as 5pm in the property tz.
+    var propTz = (permit && permit.time_zone) || "America/Denver";
+    var defaultDateStr = _buildDefaultCancelDateStr(7, propTz);
 
     var overlay = document.createElement("div");
     overlay.id = "cancel-dialog-overlay";
@@ -1423,6 +1437,15 @@ var RefundPanel = (function () {
     });
   }
 
+  function _buildPermitHeaderTitle(permit) {
+    var type = permit.permit_type_name || "";
+    var num = permit.permit_number || permit.permit_name || "";
+    if (type && num) return type + " - " + num;
+    if (type) return type;
+    if (num) return "Permit " + num;
+    return permit.type_name || "Permit";
+  }
+
   function _formatDate(isoStr) {
     try {
       var d = new Date(isoStr);
@@ -1430,6 +1453,61 @@ var RefundPanel = (function () {
     } catch (e) {
       return isoStr;
     }
+  }
+
+  // Returns a yyyy-MM-ddTHH:mm string for a <input type="datetime-local">
+  // that represents the same instant as 5:00 PM in tz on today+daysOffset
+  // (calendar in tz). Browser will display it in the CSR's local clock, and
+  // `new Date(value)` parses it back to that same instant.
+  function _buildDefaultCancelDateStr(daysOffset, tz) {
+    var TZ = tz || "America/Denver";
+    var now = new Date();
+
+    // Find today's Denver calendar date.
+    var parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(now);
+    var ymd = {};
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i].type !== "literal") ymd[parts[i].type] = parts[i].value;
+    }
+    // Add daysOffset on the Denver calendar (UTC arithmetic is safe here).
+    var base = new Date(Date.UTC(+ymd.year, +ymd.month - 1, +ymd.day));
+    base.setUTCDate(base.getUTCDate() + daysOffset);
+    var y = base.getUTCFullYear();
+    var m = String(base.getUTCMonth() + 1).padStart(2, "0");
+    var d = String(base.getUTCDate()).padStart(2, "0");
+
+    // Find Denver's UTC offset (in minutes) for 5pm local on that date.
+    // Probe by formatting a UTC noon on that date in Denver, then read the
+    // GMT offset chunk.
+    var probe = new Date(y + "-" + m + "-" + d + "T12:00:00Z");
+    var tzParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: TZ, timeZoneName: "longOffset", hour: "2-digit"
+    }).formatToParts(probe);
+    var offsetMin = 0;
+    for (var j = 0; j < tzParts.length; j++) {
+      if (tzParts[j].type === "timeZoneName") {
+        var match = tzParts[j].value.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+        if (match) {
+          var sign = match[1] === "-" ? -1 : 1;
+          var h = parseInt(match[2], 10);
+          var mm = match[3] ? parseInt(match[3], 10) : 0;
+          offsetMin = sign * (h * 60 + mm);
+        }
+        break;
+      }
+    }
+    // 5pm Denver on yyyy-mm-dd as a UTC instant.
+    var fivePmUtc = Date.UTC(+y, +m - 1, +d, 17, 0) - offsetMin * 60000;
+    var target = new Date(fivePmUtc);
+    // Format as the CSR's local yyyy-MM-ddTHH:mm.
+    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return target.getFullYear() + "-" +
+           pad(target.getMonth() + 1) + "-" +
+           pad(target.getDate()) + "T" +
+           pad(target.getHours()) + ":" +
+           pad(target.getMinutes());
   }
 
   /* ── Public API ─────────────────────────────────────────────────── */

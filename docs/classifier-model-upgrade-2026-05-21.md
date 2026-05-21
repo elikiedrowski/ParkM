@@ -29,7 +29,11 @@ Going from `gpt-4o` → `gpt-4.1-mini` cuts per-token cost by ~84%.
 ### 2. Production Railway (ParkM_Production / ParkM service)
 - `AI_MODEL` env var updated: `gpt-4o` → `gpt-4.1-mini`. Setting a variable on Railway auto-triggers a redeploy; the next webhook-classified ticket runs on the new model.
 
+### 3. Sandbox parity (ParkM_Sandbox / ParkM service)
+- Same code edits applied to the sandbox repo and pushed.
+- Sandbox Railway `AI_MODEL` env var also flipped: `gpt-4o` → `gpt-4.1-mini` (sandbox had been silently running `gpt-4o` as well).
+- Access note: the `ParkM_Sandbox` Railway project lives under the `elikiedrowski` personal workspace, but the `eli@thecrmwizards.com` account has team access — no account switch was needed.
+
 ## What to watch for
 - **Calibrated confidence ranges**: the classifier prompt in `src/services/classifier.py` includes calibration guidance originally tuned for GPT-4o-mini. GPT-4.1-mini follows instructions differently and may produce a different confidence distribution. Check the next batch of `cf_ai_confidence` values vs. agent correction rates and re-tune if needed.
 - **Classification accuracy**: spot-check the first ~50 tickets classified under the new model to confirm tag quality holds (or improves) vs. the previous GPT-4o baseline.
-- **Sandbox parity**: this change was made directly in the production repo/Railway project per explicit request. The sandbox repo (`ParkM_Sandbox` remote) should be brought to parity before its next deploy.

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
     ai_provider: str = "openai"  # or "anthropic"
-    ai_model: str = "gpt-4o-mini"  # or "claude-3-5-sonnet-20241022"
+    ai_model: str = "gpt-4.1-mini"
     
     # ParkM App API
     parkm_api_url: str = "https://app-api-dev-parkm.azurewebsites.net"

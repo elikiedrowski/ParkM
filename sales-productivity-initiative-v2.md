@@ -137,3 +137,49 @@ Creating a centralized intelligence hub and automated delivery mechanism that eq
 ### Estimated impact
 
 Reps walk into every meeting prepared; eliminates manual research time; standardizes pre-sales intelligence across the team; enables data-driven route planning. Identifies revenue opportunities reps didn't know existed; creates a new prospecting category (venue-adjacent properties). Replaces manual ALN queries with AI-enriched, prioritized target lists; surfaces highest-opportunity properties first; differentiates ParkM's prospecting from competitors with basic ALN access.
+
+---
+
+## Proposed Investment
+
+| Development Phase | Focus Area | Estimated Hours |
+|---|---|---|
+| 1 | Google Reviews as Valuable Lead Source | 60 – 65 |
+| 2 | AI-Generated Account Briefs + Smart Target List Generation | 90 – 95 |
+| | **Development Subtotal** | **150 – 160** |
+| Cross-Cutting | Project Mgmt, Meetings, & Demos | 14 – 18 |
+| | **Total Anticipated Hours** | **164 – 178** |
+
+---
+
+## Estimated Third-Party Tool Costs (Ongoing, Paid by Customer)
+
+| Item | Monthly Cost | Notes |
+|---|---|---|
+| Automated review scraping | ~$10–30/month | Starts at $10/mo (~10K credits). Scales with property count. |
+| Google Maps API | ~$5–20 | Distance calculations for venue proximity. Free tier covers most usage. |
+| LLM | ~$20–50 | Classification, scoring, talking point generation. |
+| **Subtotal — Third-Party Tools** | **~$35–120/month** | |
+
+---
+
+## Estimated Hosting & Infrastructure Costs (Ongoing, Paid by Customer)
+
+| Item | Monthly Cost | Notes |
+|---|---|---|
+| Application hosting (Railway or similar PaaS) | ~$5–20 | Depends on traffic volume and compute needs. |
+| Database (PostgreSQL on Railway/Supabase) | ~$0–20 | Free tier likely sufficient initially; scales with data volume. |
+| File storage (S3 or equivalent for generated PDFs) | ~$1–5 | Minimal — PDF briefs are small files. |
+| **Subtotal — Hosting & Infrastructure** | **~$6–45/month** | |
+
+---
+
+## Estimated Total Ongoing Customer Costs (Excluding ALN)
+
+| Category | Monthly Cost |
+|---|---|
+| Third-party tools | ~$35–120 |
+| Hosting & infrastructure | ~$6–45 |
+| **Total ongoing (excl. ALN)** | **~$41–165/month** |
+
+*Note: ALN subscription is an existing ParkM cost.*

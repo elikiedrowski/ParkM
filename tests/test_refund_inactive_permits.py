@@ -43,6 +43,43 @@ def _make_payment(days_ago, amount=10.0):
 
 
 @pytest.mark.asyncio
+async def test_active_permit_enrichment_sets_last_charge_date_for_eligibility():
+    """
+    Reproduces Sadie's CP2000004 case: an active/scheduled recurring permit
+    with an old effectiveDate but a recent per-permit Stripe charge. The
+    customer-wide transaction feed can be empty, so eligibility must use the
+    date from GetAllPaymentsForPermit.
+    """
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=[
+        _make_payment(days_ago=27, amount=10.0),
+        _make_payment(days_ago=58, amount=10.0),
+    ])
+    effective = datetime.now(timezone.utc) - timedelta(days=209)
+    permit = {
+        "id": "cp2000004",
+        "permit_type_name": "Carport Permit",
+        "permit_name": "CP2000004",
+        "effective_date": effective.isoformat().replace("+00:00", "Z"),
+        "recurring_price": 10.0,
+        "permit_price": 10.0,
+        "is_cancelled": False,
+    }
+
+    await svc._enrich_permits_with_payment_totals([permit])
+    eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
+
+    assert permit["total_paid_within_window"] == 10.0
+    last_charge = datetime.fromisoformat(permit["last_charge_date"])
+    assert (datetime.now(timezone.utc) - last_charge).days < 30
+    assert eligibility["eligible"] is True
+    assert eligibility["refund_amount"] == 10.0
+    assert eligibility["days_since_charge"] < 30
+    svc.parkm.get_payments_for_permit.assert_awaited_once_with("cp2000004")
+
+
+@pytest.mark.asyncio
 async def test_cancelled_permit_with_recent_payment_is_included():
     """
     Reproduces ticket #93450: cancelled recurring permit, signed up a year
@@ -97,9 +134,10 @@ async def test_cancelled_permit_with_only_old_payments_is_excluded():
 
 
 @pytest.mark.asyncio
-async def test_recent_effective_date_skips_payment_lookup():
-    """A Daily Guest issued 4 days ago passes on effectiveDate alone; we
-    should not waste an API call on it."""
+async def test_recent_effective_date_permit_included():
+    """A Daily Guest issued 4 days ago passes via effectiveDate. The per-permit
+    Stripe lookup now always runs (needed to distinguish free vs paid permits
+    via amount totals), but the permit must still surface in the result."""
     svc = RefundService.__new__(RefundService)
     svc.parkm = AsyncMock()
     expired_recent = _make_permit(
@@ -117,7 +155,6 @@ async def test_recent_effective_date_skips_payment_lookup():
 
     assert len(result) == 1
     assert result[0]["id"] == "vt2000003"
-    svc.parkm.get_payments_for_permit.assert_not_awaited()
 
 
 @pytest.mark.asyncio

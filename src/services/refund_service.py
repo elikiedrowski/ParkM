@@ -276,11 +276,17 @@ class RefundService:
             pid = permit.get("id")
             if not pid:
                 continue
-            _, total_paid = self._payment_window_summary(
+            latest, total_paid = self._payment_window_summary(
                 payments_by_id.get(pid, []),
                 window_start=cutoff,
             )
             permit["total_paid_within_window"] = total_paid
+            # Active permits don't otherwise carry last_charge_date. Without
+            # this, evaluate_refund_eligibility falls back to effective_date
+            # (the original sign-up date for recurring permits) even when the
+            # per-permit payment feed shows a recent charge.
+            if latest is not None:
+                permit["last_charge_date"] = latest.isoformat()
 
     async def _get_inactive_permits(
         self,

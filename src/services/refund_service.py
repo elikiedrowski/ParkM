@@ -276,11 +276,15 @@ class RefundService:
             pid = permit.get("id")
             if not pid:
                 continue
-            latest, total_paid = self._payment_window_summary(
+            latest, total_paid, latest_amount = self._payment_window_summary(
                 payments_by_id.get(pid, []),
                 window_start=cutoff,
             )
             permit["total_paid_within_window"] = total_paid
+            # Actual total charged on the most recent charge (incl. credit-card
+            # surcharge / convenience fee). Used as the refund amount so the
+            # wizard stops under-reporting it as the permit's base price.
+            permit["last_charge_amount"] = latest_amount
             # Active permits don't otherwise carry last_charge_date. Without
             # this, evaluate_refund_eligibility falls back to effective_date
             # (the original sign-up date for recurring permits) even when the
@@ -379,7 +383,7 @@ class RefundService:
             permit_id = permit_data.get("id")
             status = permit_data.get("status", "")
 
-            latest, total_paid_in_window = self._payment_window_summary(
+            latest, total_paid_in_window, latest_amount = self._payment_window_summary(
                 payments_by_permit.get(permit_id, []),
                 window_start=cutoff,
             )
@@ -422,6 +426,9 @@ class RefundService:
                 "permit_name": permit_data.get("name"),
                 "last_charge_date": ref_date.isoformat(),
                 "total_paid_within_window": total_paid_in_window,
+                # Full amount billed on the most recent charge (incl. CC
+                # surcharge / convenience fee) — used as the refund amount.
+                "last_charge_amount": latest_amount,
             }
             inactive_permits.append(summary)
 
@@ -443,9 +450,9 @@ class RefundService:
         cls,
         payments: List[Dict[str, Any]],
         window_start: Optional[datetime] = None,
-    ) -> Tuple[Optional[datetime], float]:
+    ) -> Tuple[Optional[datetime], float, float]:
         """Inspect a Permits/GetAllPaymentsForPermit list and return
-        (latest_successful_date, total_paid_within_window).
+        (latest_successful_date, total_paid_within_window, latest_charge_amount).
 
         Skips payment intents whose status indicates the charge never
         completed (failed, canceled, requires_*) — Stripe creates intent
@@ -455,8 +462,16 @@ class RefundService:
         If `window_start` is provided, `total_paid_within_window` only sums
         successful payments dated at-or-after that cutoff. Otherwise sums all
         successful payments in the list.
+
+        `latest_charge_amount` is the amount of the most recent successful
+        charge — i.e. the full total billed to the card, which already
+        includes the credit-card surcharge / convenience fee (ParkM bills the
+        permit price + that fee as a single Stripe charge). This is what the
+        refund amount should be, not the permit's configured base price.
+        Returns 0.0 if there were no successful charges.
         """
         latest: Optional[datetime] = None
+        latest_amount: float = 0.0
         total: float = 0.0
         for pay in payments:
             status = str(pay.get("status") or pay.get("state") or "").strip().lower()
@@ -469,16 +484,17 @@ class RefundService:
                 dt = datetime.fromisoformat(d.replace("Z", "+00:00"))
             except (ValueError, TypeError):
                 continue
+            try:
+                amount = float(pay.get("amount") or 0)
+            except (TypeError, ValueError):
+                amount = 0.0
             if latest is None or dt > latest:
                 latest = dt
+                latest_amount = amount
             if window_start is None or dt >= window_start:
-                try:
-                    amount = float(pay.get("amount") or 0)
-                except (TypeError, ValueError):
-                    amount = 0.0
                 if amount > 0:
                     total += amount
-        return latest, total
+        return latest, total, latest_amount
 
     # ── Step 2: Evaluate Refund Eligibility ───────────────────────────
 
@@ -602,8 +618,30 @@ class RefundService:
         # Check 30-day window
         within_window = days_since <= REFUND_WINDOW_DAYS
 
-        # Determine refund amount (use explicit None checks to handle 0 correctly)
-        refund_amount = permit.get("recurring_price")
+        # Determine refund amount.
+        #
+        # Prefer the ACTUAL total billed on the most recent charge
+        # (last_charge_amount, from the Stripe per-permit feed). That figure
+        # already includes the credit-card surcharge / convenience fee — both
+        # are billed as part of the same charge — and excludes ACH bounce fees
+        # (those are separate balance charges, not permit payments, and per
+        # ParkM policy are never refunded). Sadie flagged 2026-05-28 that the
+        # wizard was reporting only the permit's base price ($10) and dropping
+        # the surcharge ($0.44), so accounting received a short refund amount.
+        #
+        # Fall back to the permit's configured price when there's no charge
+        # data (use explicit None checks to handle a configured price of 0).
+        refund_amount = None
+        charged = permit.get("last_charge_amount")
+        if charged is not None:
+            try:
+                charged = float(charged)
+            except (TypeError, ValueError):
+                charged = 0.0
+            if charged > 0:
+                refund_amount = charged
+        if refund_amount is None:
+            refund_amount = permit.get("recurring_price")
         if refund_amount is None:
             refund_amount = permit.get("permit_price")
         if refund_amount is None:

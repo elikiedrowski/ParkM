@@ -268,3 +268,58 @@ async def test_succeeded_payment_among_failed_intents_is_counted():
     # failed-but-newer one (1 day ago).
     age_days = (datetime.now(timezone.utc) - last_charge).days
     assert 4 <= age_days <= 6
+
+
+@pytest.mark.asyncio
+async def test_refund_amount_uses_charged_total_including_surcharge():
+    """Sadie 2026-05-28, ticket #98779: the refund amount must be the actual
+    total billed to the card (permit price + credit-card surcharge), not the
+    permit's configured base price. A $10 permit charged with a $0.44 CC
+    surcharge bills $10.44 — that's the refund amount."""
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    # Stripe feed reports the full charged total ($10.44), not the $10 base.
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=[
+        _make_payment(days_ago=3, amount=10.44),
+    ])
+    permit = {
+        "id": "r000017",
+        "permit_type_name": "Resident Open Lot Permit",
+        "permit_name": "R000017",
+        "recurring_price": 10.0,
+        "permit_price": 10.0,
+        "total_amount": 10.0,
+        "is_cancelled": False,
+    }
+
+    await svc._enrich_permits_with_payment_totals([permit])
+    eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
+
+    assert permit["last_charge_amount"] == 10.44
+    assert eligibility["eligible"] is True
+    # NOT 10.0 — the surcharge must be included.
+    assert eligibility["refund_amount"] == 10.44
+
+
+@pytest.mark.asyncio
+async def test_refund_amount_falls_back_to_base_price_without_charge_data():
+    """When the per-permit Stripe feed has no charge amount (e.g. lookup
+    failed), the refund amount falls back to the permit's configured price
+    rather than reporting nothing."""
+    svc = RefundService.__new__(RefundService)
+    permit = {
+        "id": "r000018",
+        "permit_type_name": "Resident Open Lot Permit",
+        "permit_name": "R000018",
+        "recurring_price": 25.0,
+        "permit_price": 25.0,
+        "last_charge_amount": 0.0,  # no usable charge total
+        "last_charge_date": (datetime.now(timezone.utc) - timedelta(days=2))
+            .isoformat().replace("+00:00", "Z"),
+        "total_paid_within_window": 25.0,
+        "is_cancelled": False,
+    }
+
+    eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
+    assert eligibility["eligible"] is True
+    assert eligibility["refund_amount"] == 25.0

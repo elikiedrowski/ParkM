@@ -323,3 +323,48 @@ async def test_refund_amount_falls_back_to_base_price_without_charge_data():
     eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
     assert eligibility["eligible"] is True
     assert eligibility["refund_amount"] == 25.0
+
+
+def test_park_guard_first_month_is_not_refundable():
+    svc = RefundService.__new__(RefundService)
+    permit = {
+        "id": "pg-1",
+        "permit_type_name": "Park Guard",
+        "permit_name": "PG000001",
+        "recurring_price": 12.0,
+        "last_charge_amount": 12.0,
+        "last_charge_date": (datetime.now(timezone.utc) - timedelta(days=5))
+            .isoformat().replace("+00:00", "Z"),
+        "effective_date": (datetime.now(timezone.utc) - timedelta(days=5))
+            .isoformat().replace("+00:00", "Z"),
+        "total_paid_within_window": 12.0,
+        "is_cancelled": False,
+    }
+
+    eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
+
+    assert eligibility["eligible"] is False
+    assert "Park Guard" in eligibility["reason"]
+    assert eligibility["refund_amount"] is None
+
+
+def test_park_guard_after_first_month_can_be_refunded():
+    svc = RefundService.__new__(RefundService)
+    permit = {
+        "id": "pg-2",
+        "permit_type_name": "Park Guard",
+        "permit_name": "PG000002",
+        "recurring_price": 12.0,
+        "last_charge_amount": 12.0,
+        "last_charge_date": (datetime.now(timezone.utc) - timedelta(days=5))
+            .isoformat().replace("+00:00", "Z"),
+        "effective_date": (datetime.now(timezone.utc) - timedelta(days=45))
+            .isoformat().replace("+00:00", "Z"),
+        "total_paid_within_window": 12.0,
+        "is_cancelled": False,
+    }
+
+    eligibility = svc.evaluate_refund_eligibility(permit, transactions=[])
+
+    assert eligibility["eligible"] is True
+    assert eligibility["refund_amount"] == 12.0

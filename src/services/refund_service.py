@@ -539,6 +539,35 @@ class RefundService:
                 "days_since_charge": None,
             }
 
+        # Park Guard can be refunded after the first month, but ParkM policy
+        # does not refund the first payment / first month.
+        park_guard_check = " ".join([
+            permit.get("permit_type_name") or "",
+            permit.get("permit_name") or "",
+            permit.get("type_name") or "",
+            permit.get("community") or "",
+        ]).lower()
+        if "park guard" in park_guard_check:
+            effective_str = permit.get("effective_date")
+            try:
+                effective_date = (
+                    datetime.fromisoformat(effective_str.replace("Z", "+00:00"))
+                    if effective_str
+                    else None
+                )
+            except (ValueError, TypeError):
+                effective_date = None
+            if effective_date is not None:
+                first_month_days = (datetime.now(timezone.utc) - effective_date).days
+                if first_month_days <= REFUND_WINDOW_DAYS:
+                    return {
+                        "eligible": False,
+                        "reason": "Park Guard first payment / first month is not eligible for refund",
+                        "refund_amount": None,
+                        "last_charge_date": permit.get("last_charge_date"),
+                        "days_since_charge": first_month_days,
+                    }
+
         # No-money-moved guard — if the Stripe per-permit feed shows no
         # successful charge with amount > 0 in the 30-day window, there's
         # nothing to refund. Applies to inactive permits (caught ticket

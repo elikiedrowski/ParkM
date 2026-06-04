@@ -990,6 +990,8 @@ var RefundPanel = (function () {
       cancelMsg = "Permit cancellation scheduled for " + _formatDate(cancelResult.cancel_date);
     } else if (cancelOk && cancelResult.cancel_type === "already_cancelled") {
       cancelMsg = "Permit was already cancelled";
+    } else if (cancelOk && cancelResult.cancel_type === "overdue_converted_to_immediate") {
+      cancelMsg = "Scheduled cancellation was overdue — permit cancelled immediately";
     } else if (cancelOk) {
       cancelMsg = "Permit cancelled";
     } else {

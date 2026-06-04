@@ -27,6 +27,25 @@ REFUND_WINDOW_DAYS = 30
 ACCOUNTING_EMAIL = os.environ.get("ACCOUNTING_EMAIL", "accounting@parkm.com")
 
 
+def _parse_iso_utc(value: Optional[str]) -> Optional[datetime]:
+    """Parse a ParkM/ISO-8601 datetime string to an aware UTC datetime.
+
+    Returns None when the value is missing or unparseable. Naive timestamps
+    (no offset) are assumed to be UTC. Callers must treat None as "cannot
+    confirm" rather than "safe" — a bad date must never let a failed
+    cancellation masquerade as handled.
+    """
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 class RefundService:
     """Orchestrates the refund/cancellation workflow."""
 
@@ -890,17 +909,55 @@ ParkM Support Team</p>"""
                         "message": "Permit was already cancelled",
                     }
                 elif permit.get("delay_cancellation_date"):
-                    # Already scheduled to cancel — re-running delay_cancel_permit
-                    # would mutate the existing schedule (or fail). Return a
-                    # synthetic success so the widget renders the right message
-                    # and continues to the accounting-email step.
-                    cancel_result = {
-                        "success": True,
-                        "permit_id": permit["id"],
-                        "cancel_type": "already_scheduled",
-                        "cancel_date": permit.get("delay_cancellation_date"),
-                        "message": "Permit was already scheduled to cancel",
-                    }
+                    # A cancellation is already scheduled — but distinguish a
+                    # still-pending FUTURE schedule from one whose date has
+                    # already PASSED while the permit lingers in status=Active
+                    # (observed in production: ParkM did not actually cancel on
+                    # the delay date). For the overdue case we must NOT report
+                    # synthetic success, or we'd quietly forward a permit that
+                    # was never cancelled on to accounting. Cancel it immediately
+                    # to reach the intended end state. An unparseable date is
+                    # treated as overdue — fail toward acting, never toward
+                    # masking.
+                    scheduled_dt = _parse_iso_utc(permit.get("delay_cancellation_date"))
+                    if scheduled_dt is not None and scheduled_dt > datetime.now(timezone.utc):
+                        # Legitimately scheduled for the future — leave the
+                        # existing schedule untouched (re-running delay_cancel
+                        # would mutate or fail).
+                        cancel_result = {
+                            "success": True,
+                            "permit_id": permit["id"],
+                            "cancel_type": "already_scheduled",
+                            "cancel_date": permit.get("delay_cancellation_date"),
+                            "message": "Permit was already scheduled to cancel",
+                        }
+                    else:
+                        immediate = await self.cancel_permit(
+                            permit["id"], send_notice=send_notice
+                        )
+                        ok = immediate.get("success", False)
+                        logger.warning(
+                            "Permit %s had an overdue delay_cancellation_date "
+                            "(%s) but was still active; immediate cancel %s",
+                            permit["id"],
+                            permit.get("delay_cancellation_date"),
+                            "succeeded" if ok else "FAILED",
+                        )
+                        cancel_result = {
+                            "success": ok,
+                            "permit_id": permit["id"],
+                            "cancel_type": "overdue_converted_to_immediate",
+                            "scheduled_date": permit.get("delay_cancellation_date"),
+                            "error": immediate.get("error"),
+                            "message": (
+                                "Scheduled cancellation was overdue and had not "
+                                "executed; permit cancelled immediately instead."
+                                if ok
+                                else "Scheduled cancellation was overdue and the "
+                                "immediate cancellation attempt failed — cancel "
+                                "manually in ParkM."
+                            ),
+                        }
                 else:
                     cancel_result = await self.cancel_permit(
                         permit["id"],

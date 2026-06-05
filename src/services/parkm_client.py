@@ -319,13 +319,22 @@ class ParkMClient:
     ) -> Dict[str, Any]:
         """Schedule a delayed cancellation for a permit.
 
-        Instead of cancelling immediately, sets the permit's delayCancellationDate
-        field. ParkM's background job cancels the permit when that date arrives.
-        The resident receives a cancellation notice so they can correct mistakes.
+        Instead of cancelling immediately, flags the permit for cancellation
+        (isCancelled=true) with a future delayCancellationDate. ParkM's
+        background job cancels the permit when that date arrives. The resident
+        receives a cancellation notice so they can correct mistakes.
 
-        Approach (discovered via Swagger):
+        Approach (confirmed with ParkM/Stephen Lambert + a live test permit
+        2026-06-04): setting delayCancellationDate ALONE persists the date (it
+        displays on Permit Details) but never enqueues the cancellation — the
+        permit lingers Active past its date. ParkM's job only acts on permits
+        with isCancelled=true. With isCancelled=true AND a *future*
+        delayCancellationDate, the permit stays Active/usable until that date,
+        then cancels on schedule (validated: it fired exactly on time and the
+        permit's expirationDate is moved to the delay date). permitCancellation
+        Reason is NOT required.
         1. GET Permits/GetPermitForEdit — fetch current permit data
-        2. Set delayCancellationDate on the DTO
+        2. Set isCancelled=true + delayCancellationDate on the DTO
         3. (Optionally) set nextRecurringDate to a new value or null to clear
         4. POST Permits/CreateOrEdit — save it back
 
@@ -362,7 +371,13 @@ class ParkMClient:
                 logger.error(msg)
                 return {"success": False, "error": msg}
 
-            # Step 2: Set delay cancellation date and notice preference
+            # Step 2: Flag the permit for cancellation and set the date.
+            # isCancelled=true is REQUIRED — without it ParkM's background job
+            # never picks up the permit and the cancellation silently never
+            # fires (the date alone only updates a display column). A future
+            # delayCancellationDate makes this a *scheduled* cancel: the permit
+            # stays Active until the date, then cancels.
+            permit_dto["isCancelled"] = True
             permit_dto["delayCancellationDate"] = cancel_date
             permit_dto["dontSendNotifications"] = not send_notice
 

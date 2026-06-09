@@ -15,6 +15,29 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
+def _friendly_cancel_error(raw_text: Optional[str]) -> Optional[str]:
+    """Translate a known ParkM/Stripe cancellation error into a clean,
+    actionable CSR message. Returns None if no known pattern matches.
+
+    ParkM surfaces raw Stripe errors as opaque 500s. The common one: when a
+    permit's underlying Stripe subscription is already canceled, scheduling a
+    (delayed) cancellation fails with "A canceled subscription can only update
+    its cancellation_details and metadata." This also reproduces in native
+    .APP — it's a ParkM/Stripe state issue, not a wizard bug — so the best we
+    can do is guide the CSR to the immediate-cancel path that does work.
+    """
+    if not raw_text:
+        return None
+    t = str(raw_text).lower()
+    if "canceled subscription can only update" in t or "cancellation_details" in t:
+        return (
+            "This permit's billing subscription is already canceled in Stripe, "
+            "so it can't be scheduled for a delayed cancellation. Use "
+            '"Cancel Permit" (immediate) instead, or cancel it directly in ParkM.'
+        )
+    return None
+
+
 class ParkMClient:
     """Client for ParkM REST API (Azure-hosted, Bearer token auth)."""
 
@@ -409,9 +432,10 @@ class ParkMClient:
                 f"Permit {permit_id} delay-cancel returned success=false: "
                 f"message={err_msg!r} details={err_details!r} full={result!r}"
             )
+            friendly = _friendly_cancel_error(f"{err_msg} {err_details}")
             return {
                 "success": False,
-                "error": err_msg or err_details or "ParkM CreateOrEdit returned success=false",
+                "error": friendly or err_msg or err_details or "ParkM CreateOrEdit returned success=false",
             }
         except httpx.HTTPStatusError as e:
             # The most useful failure case: ParkM returned a non-2xx with a
@@ -426,9 +450,10 @@ class ParkMClient:
             logger.error(
                 f"Failed to delay-cancel permit {permit_id}: HTTP {status} body={body[:1000]!r}"
             )
+            friendly = _friendly_cancel_error(body)
             return {
                 "success": False,
-                "error": f"ParkM HTTP {status}: {body[:300]}" if body else f"ParkM HTTP {status}",
+                "error": friendly or (f"ParkM HTTP {status}: {body[:300]}" if body else f"ParkM HTTP {status}"),
             }
         except Exception as e:
             logger.error(f"Failed to delay-cancel permit {permit_id}: {e}", exc_info=True)

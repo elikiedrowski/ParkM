@@ -46,6 +46,28 @@ def _parse_iso_utc(value: Optional[str]) -> Optional[datetime]:
     return dt.astimezone(timezone.utc)
 
 
+def _is_effective_date_reactivation_artifact(
+    effective: Optional[str],
+    reactivation: Optional[str],
+    tolerance_seconds: int = 120,
+) -> bool:
+    """True when a permit's effectiveDate merely reflects a reactivation.
+
+    When a permit is reactivated, ParkM stamps effectiveDate and
+    reactivationDate together (they differ only by sub-seconds). In that state
+    effectiveDate is the reactivation moment, not a charge — a reactivation
+    moves no money — so it must NOT be used as a "last charge" proxy. We
+    compare with a small tolerance rather than exact equality (the two
+    timestamps differ by ~ms) and rather than a bare presence check (ParkM may
+    retain an older reactivationDate after a later legitimate charge/edit).
+    """
+    eff = _parse_iso_utc(effective)
+    react = _parse_iso_utc(reactivation)
+    if eff is None or react is None:
+        return False
+    return abs((eff - react).total_seconds()) <= tolerance_seconds
+
+
 class RefundService:
     """Orchestrates the refund/cancellation workflow."""
 
@@ -182,6 +204,7 @@ class RefundService:
             "balance_due": p.get("amountDue", 0),
             "permit_name": p.get("name"),
             "delay_cancellation_date": p.get("delayCancellationDate"),
+            "reactivation_date": p.get("reactivationDate"),
         }
 
     async def _get_scheduled_to_cancel_permits(
@@ -262,6 +285,7 @@ class RefundService:
                 "balance_due": raw.get("balanceDue", 0),
                 "permit_name": permit_dto.get("name") or permit_data.get("name"),
                 "delay_cancellation_date": delay_date,
+                "reactivation_date": permit_dto.get("reactivationDate"),
             })
         return results
 
@@ -374,7 +398,17 @@ class RefundService:
                 except (ValueError, TypeError):
                     eff_dt = None
 
-            if ref_date is None and eff_dt is not None and eff_dt >= cutoff:
+            # effectiveDate is only a charge proxy for genuine signups. After a
+            # reactivation ParkM stamps effectiveDate = reactivationDate (no
+            # charge occurred), so don't seed last-charge from it in that case.
+            if (
+                ref_date is None
+                and eff_dt is not None
+                and eff_dt >= cutoff
+                and not _is_effective_date_reactivation_artifact(
+                    eff_str, permit_data.get("reactivationDate")
+                )
+            ):
                 ref_date = eff_dt
 
             candidates.append((raw, ref_date))
@@ -406,9 +440,13 @@ class RefundService:
                 payments_by_permit.get(permit_id, []),
                 window_start=cutoff,
             )
-            # Per-permit Stripe feed wins if it shows a more recent charge —
-            # the customer-wide transactions list can be stale.
-            if latest is not None and (ref_date is None or latest > ref_date):
+            # The per-permit Stripe feed is the authoritative "last charge"
+            # signal, so a real charge wins whenever one exists — even if it's
+            # OLDER than effectiveDate. (effectiveDate can be newer than the
+            # real charge after a reactivation, which moved no money; letting it
+            # win is exactly the bug Sadie hit on R000018, ticket #102525.) The
+            # customer-wide transactions list is also stale/best-effort.
+            if latest is not None:
                 ref_date = latest
 
             if ref_date is None or ref_date < cutoff:
@@ -443,6 +481,7 @@ class RefundService:
                 "community": raw.get("communityName"),
                 "balance_due": raw.get("balanceDue", 0),
                 "permit_name": permit_data.get("name"),
+                "reactivation_date": permit_data.get("reactivationDate"),
                 "last_charge_date": ref_date.isoformat(),
                 "total_paid_within_window": total_paid_in_window,
                 # Full amount billed on the most recent charge (incl. CC
@@ -638,7 +677,15 @@ class RefundService:
                 last_charge_str = permit_txns[0]
 
         if not last_charge_str:
-            last_charge_str = permit.get("effective_date")
+            # effective_date is a last-resort "last charge" proxy — but a
+            # reactivation stamps effectiveDate without a charge, so don't use
+            # it in that case (matters only for active permits with no feed
+            # charge; the inactive path already excludes reactivation dates).
+            effective_str = permit.get("effective_date")
+            if effective_str and not _is_effective_date_reactivation_artifact(
+                effective_str, permit.get("reactivation_date")
+            ):
+                last_charge_str = effective_str
 
         if not last_charge_str:
             return {

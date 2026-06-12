@@ -368,3 +368,97 @@ def test_park_guard_after_first_month_can_be_refunded():
 
     assert eligibility["eligible"] is True
     assert eligibility["refund_amount"] == 12.0
+
+
+# ── Reactivation-date vs. last-charge (ticket #102525, permit R000018) ──────
+
+
+@pytest.mark.asyncio
+async def test_reactivation_date_is_not_treated_as_last_charge():
+    """Ticket #102525 (R000018): a reactivated permit has effectiveDate ==
+    reactivationDate (1 day ago) but its real last charge was 7 days ago. The
+    reactivation moved no money, so last_charge_date must be the real charge,
+    not the newer reactivation date."""
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    cancelled = _make_permit(permit_id="r000018", status="Cancelled", effective_days_ago=1)
+    # ParkM stamps effectiveDate and reactivationDate together (~ms apart).
+    react = datetime.now(timezone.utc) - timedelta(days=1)
+    cancelled["permit"]["reactivationDate"] = (
+        (react + timedelta(milliseconds=2)).isoformat().replace("+00:00", "Z")
+    )
+    svc.parkm.get_payments_for_permit = AsyncMock(
+        return_value=[_make_payment(days_ago=7, amount=10.44)]
+    )
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1", active_permit_ids=set(), transactions=[],
+        all_permits_raw=[cancelled],
+    )
+
+    assert len(result) == 1
+    last_charge = datetime.fromisoformat(result[0]["last_charge_date"])
+    assert (datetime.now(timezone.utc) - last_charge).days == 7
+    assert result[0]["last_charge_amount"] == 10.44
+
+
+@pytest.mark.asyncio
+async def test_reactivated_permit_without_payment_is_not_surfaced():
+    """A reactivated permit with no real charge must not look recently charged
+    just because its effectiveDate was bumped to the reactivation date."""
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    cancelled = _make_permit(permit_id="r000018b", status="Cancelled", effective_days_ago=1)
+    cancelled["permit"]["reactivationDate"] = cancelled["permit"]["effectiveDate"]
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=[])
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1", active_permit_ids=set(), transactions=[],
+        all_permits_raw=[cancelled],
+    )
+
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_recent_effective_date_without_reactivation_still_seeds():
+    """Preserve the effectiveDate fallback for recent no-payment permits that
+    were NOT reactivated. The reactivation guard must not strip a genuine
+    recent effectiveDate (e.g. a freshly issued short-lived permit)."""
+    svc = RefundService.__new__(RefundService)
+    svc.parkm = AsyncMock()
+    recent = _make_permit(
+        permit_id="vt-noreact", status="Expired", effective_days_ago=3,
+        name="Daily Guest Permit",
+    )
+    # No reactivationDate on the DTO.
+    svc.parkm.get_payments_for_permit = AsyncMock(return_value=[])
+
+    result = await svc._get_inactive_permits(
+        customer_id="cust-1", active_permit_ids=set(), transactions=[],
+        all_permits_raw=[recent],
+    )
+
+    assert len(result) == 1
+    assert result[0]["id"] == "vt-noreact"
+
+
+def test_evaluate_ignores_reactivation_date_as_charge():
+    """Active path: with no payment-feed charge, evaluate must not use a
+    reactivation-stamped effective_date as the last charge."""
+    svc = RefundService.__new__(RefundService)
+    react = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat().replace("+00:00", "Z")
+    permit = {
+        "id": "r-active",
+        "permit_type_name": "Resident Open Lot Permit",
+        "permit_name": "R000099",
+        "effective_date": react,
+        "reactivation_date": react,
+        "recurring_price": 10.0,
+    }
+
+    result = svc.evaluate_refund_eligibility(permit, transactions=[])
+
+    assert result["last_charge_date"] is None
+    assert result["eligible"] is False
+    assert result["reason"] == "Cannot determine last charge date"

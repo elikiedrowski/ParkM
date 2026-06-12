@@ -52,17 +52,42 @@ to **both** prod and sandbox Railway.
   *"A canceled subscription can only update its cancellation_details and
   metadata."* Reproduced in native .APP too (ticket #102166, permit OP1000168,
   ethan.ferfie@yahoo.com).
-- **Cause:** the permit's underlying Stripe subscription was already canceled
-  while the permit still showed active/recurring. Stripe blocks scheduling a
-  cancel on an already-canceled subscription. **ParkM/Stripe state issue, not a
-  wizard bug.**
-- **Workaround (correct):** immediate `CancelPermit` works — it doesn't reschedule
-  the subscription. The CSR did this and it succeeded.
-- **Fix:** `_friendly_cancel_error()` in `parkm_client.py` translates that known
-  error into a clean CSR message pointing to the immediate-cancel path.
-  Backend-only (no widget rebuild needed).
+- **Cause (original assumption — since DISPROVEN, see UPDATE below):** the
+  permit's underlying Stripe subscription was already canceled while the permit
+  still showed active/recurring, so Stripe blocked scheduling a cancel on it.
+- **Workaround:** immediate `CancelPermit` works — it doesn't reschedule the
+  subscription. The CSR did this and it succeeded.
+- **Fix (original):** `_friendly_cancel_error()` in `parkm_client.py` translated
+  the error into a CSR message pointing to the immediate-cancel path.
 - **Commit:** prod `3541005` / sandbox `b8c8a2d` (+ `c2ffb52` retrigger after a
   transient sandbox build flake).
+
+> **UPDATE (June 11, 2026) — "already-canceled" cause DISPROVEN; failure is
+> state-dependent.** A second case (ticket #102434, permit MOL000621) plus a
+> production-log + ParkM-API review overturned the original diagnosis:
+> - It's **not all paid recurring permits.** Genuine paid-recurring delay-cancels
+>   succeed — R000679 (sub *Active*) and MO000337 (sub *Trialing*) both scheduled
+>   with `delayCancellationDate=2026-06-16` and still have live subs.
+> - The failing permits were **NOT pre-canceled.** They were billing normally
+>   right up to the attempt (last charges: MOL000621 5/29, RT000752 6/9,
+>   OG000601 6/10 hours before, SC1000281 5/11). A canceled sub can't bill.
+> - **MOL000621 is the clearest case:** our failing call ran 2026-06-10 11:57:50
+>   UTC and Stripe shows the sub *Ended* 5:57 AM the same instant — strongly
+>   suggesting **the failed attempt itself canceled the sub**, then failed before
+>   persisting the schedule (permit left Active, `isCancelled=false`,
+>   `delayCancellationDate=null`).
+> - Failures are **not uniform**: all 4 now show 0 active subs, but SC1000281
+>   still ended up with `isCancelled=true` + `delayCancellationDate=2026-06-17`.
+> - **Message corrected** in `_friendly_cancel_error()` to a neutral, non-
+>   committal wording (no longer claims "already canceled" or pushes immediate
+>   cancel — Sadie's feedback was that delayed cancel should work even with no
+>   active Stripe sub, as free permits prove).
+> - **Open with Stephen (ParkM):** the internal Stripe call ordering in the
+>   delay-cancel path, and what differs between subs that schedule cleanly vs.
+>   error (suspect open/past-due invoice, proration, or billing-cycle state).
+>   Also requested 3-4 paid recurring test permits w/ active subs in the
+>   **Testing** environment (Stripe test mode, prod fallback) to reproduce safely
+>   and validate a fix. See memory `project_delaycancel_stripe_root_cause`.
 
 ---
 

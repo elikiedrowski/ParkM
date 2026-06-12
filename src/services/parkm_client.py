@@ -16,24 +16,28 @@ logger = logging.getLogger(__name__)
 
 
 def _friendly_cancel_error(raw_text: Optional[str]) -> Optional[str]:
-    """Translate a known ParkM/Stripe cancellation error into a clean,
-    actionable CSR message. Returns None if no known pattern matches.
+    """Translate the known ParkM/Stripe delayed-cancellation error into a
+    clean, neutral CSR message. Returns None if no known pattern matches.
 
-    ParkM surfaces raw Stripe errors as opaque 500s. The common one: when a
-    permit's underlying Stripe subscription is already canceled, scheduling a
-    (delayed) cancellation fails with "A canceled subscription can only update
-    its cancellation_details and metadata." This also reproduces in native
-    .APP — it's a ParkM/Stripe state issue, not a wizard bug — so the best we
-    can do is guide the CSR to the immediate-cancel path that does work.
+    ParkM surfaces raw Stripe errors as opaque 500s. On delayed cancels we see
+    "A canceled subscription can only update its cancellation_details and
+    metadata." Investigation (June 2026) found this is *state-dependent* — not
+    all paid recurring permits, and NOT (as previously assumed) a subscription
+    that was already canceled beforehand: the failing permits were billing
+    normally right up to the attempt, and the failed call itself appears to
+    cancel the subscription (MOL000621: our call's timestamp matched Stripe's
+    "Ended" time to the second). It also reproduces in native .APP, so it's a
+    ParkM-side issue, not a wizard bug. Root cause is still under confirmation
+    with ParkM (Stephen), so keep this message neutral on cause and remedy.
     """
     if not raw_text:
         return None
     t = str(raw_text).lower()
     if "canceled subscription can only update" in t or "cancellation_details" in t:
         return (
-            "This permit's billing subscription is already canceled in Stripe, "
-            "so it can't be scheduled for a delayed cancellation. Use "
-            '"Cancel Permit" (immediate) instead, or cancel it directly in ParkM.'
+            "ParkM returned a Stripe billing-subscription error, so this "
+            "delayed cancellation didn't complete. Please verify the permit's "
+            "status in ParkM and flag it to support if it needs follow-up."
         )
     return None
 

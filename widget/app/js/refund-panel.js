@@ -933,10 +933,6 @@ var RefundPanel = (function () {
         cancel_date: opts.cancel_date,
         send_notice: opts.send_notice !== false
       };
-      if (opts.update_next_recurring_date) {
-        body.update_next_recurring_date = true;
-        body.next_recurring_date = opts.next_recurring_date; // null = clear
-      }
 
       _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/refund/process", {
         method: "POST",
@@ -1053,10 +1049,6 @@ var RefundPanel = (function () {
         send_notice: opts.send_notice,
         cancel_date: opts.cancel_date
       };
-      if (opts.update_next_recurring_date) {
-        cancelBody.update_next_recurring_date = true;
-        cancelBody.next_recurring_date = opts.next_recurring_date; // null = clear
-      }
       _fetchWithTimeout(ParkMConfig.API_BASE_URL + "/parkm/permit/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1211,22 +1203,11 @@ var RefundPanel = (function () {
     // Replace the overlay entirely to avoid stacking event listeners
     overlay.remove();
 
-    // Pre-fill the next-recurring-date field with the permit's current value,
-    // formatted as datetime-local expects (yyyy-MM-ddTHH:mm). Empty if the
-    // permit has no upcoming recurring charge.
-    var originalNextRecurring = (permit && permit.next_recurring_date) || "";
-    var nextRecurringDefault = "";
-    if (originalNextRecurring) {
-      var d = new Date(originalNextRecurring);
-      if (!isNaN(d.getTime())) {
-        // Strip seconds and timezone for datetime-local
-        var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
-        nextRecurringDefault =
-          d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
-          "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
-      }
-    }
-
+    // We no longer let CSRs edit/clear the next recurring date here. Changing
+    // it during a cancellation triggers a Stripe price/cycle update on the sub
+    // being canceled, which fails the whole call (ParkM ticket #5685). Instead
+    // we surface a read-only renewal warning below so the CSR knows a charge
+    // may still occur before the scheduled cancel date.
     var overlay2 = document.createElement("div");
     overlay2.id = "cancel-dialog-overlay";
     overlay2.className = "cancel-dialog-overlay";
@@ -1246,12 +1227,11 @@ var RefundPanel = (function () {
             '<input type="checkbox" class="cancel-dialog-notice-check" checked> ' +
             'Send cancellation notice to resident' +
           '</label>' +
-          '<p style="margin-top:14px;">Next recurring date:</p>' +
-          '<div class="cancel-dialog-date-row" style="display:flex; align-items:center; gap:8px;">' +
-            '<input type="datetime-local" class="cancel-dialog-next-recurring-input" value="' + nextRecurringDefault + '" style="flex:1;">' +
-            '<button type="button" class="btn btn-link cancel-dialog-clear-recurring" data-action="clear-recurring" style="padding:4px 8px;">Clear</button>' +
-          '</div>' +
-          '<div style="font-size:11px; color:#6b7280; margin-top:4px;">Clear this to prevent the next auto-charge before the cancellation date.</div>' +
+          (permit && permit.is_recurring && permit.next_recurring_date ?
+            '<div class="cancel-dialog-renewal-note" style="margin-top:14px; font-size:12px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; border-radius:6px; padding:8px 10px;">' +
+              '⚠️ This permit renews on <strong>' + _formatDate(permit.next_recurring_date) + '</strong>. ' +
+              'If the cancellation date is after that, the resident will be charged once more before it cancels.' +
+            '</div>' : '') +
         '</div>' +
         '<div class="cancel-dialog-footer">' +
           '<button class="btn btn-link cancel-dialog-btn" data-action="back">Back</button>' +
@@ -1276,13 +1256,9 @@ var RefundPanel = (function () {
       } else if (action === "back") {
         overlay2.remove();
         _showCancelDialog(permit, onConfirm, requireReason); // re-show step 1
-      } else if (action === "clear-recurring") {
-        var nextInput = dialog.querySelector(".cancel-dialog-next-recurring-input");
-        if (nextInput) nextInput.value = "";
       } else if (action === "schedule") {
         var dateInput = dialog.querySelector(".cancel-dialog-date-input");
         var noticeCheck = dialog.querySelector(".cancel-dialog-notice-check");
-        var nextRecurringInput = dialog.querySelector(".cancel-dialog-next-recurring-input");
         var dateVal = dateInput ? dateInput.value : "";
         if (!dateVal) {
           dateInput.style.borderColor = "#e74c3c";
@@ -1300,18 +1276,6 @@ var RefundPanel = (function () {
           cancel_date: selectedDate.toISOString(),
           send_notice: noticeCheck ? noticeCheck.checked : true
         };
-        // Detect whether the CSR changed the next-recurring-date field. If so,
-        // include the change in the payload so the backend can update ParkM.
-        var newRecurringVal = nextRecurringInput ? nextRecurringInput.value : "";
-        if (newRecurringVal !== nextRecurringDefault) {
-          scheduledOpts.update_next_recurring_date = true;
-          if (newRecurringVal) {
-            var nrd = new Date(newRecurringVal);
-            scheduledOpts.next_recurring_date = isNaN(nrd.getTime()) ? null : nrd.toISOString();
-          } else {
-            scheduledOpts.next_recurring_date = null; // explicit clear
-          }
-        }
         if (requireReason) {
           _showRefundReasonDialog(scheduledOpts, onConfirm);
         } else {

@@ -89,6 +89,27 @@ to **both** prod and sandbox Railway.
 >   **Testing** environment (Stripe test mode, prod fallback) to reproduce safely
 >   and validate a fix. See memory `project_delaycancel_stripe_root_cause`.
 
+> **RESOLVED (June 2026) — root cause was OUR `nextRecurringDate` clearing.**
+> Source Logic (ParkM vendor, support ticket #5685) confirmed: our delay-cancel
+> was *clearing* `nextRecurringDate`, which triggers a Stripe **price/cycle
+> update** on the very subscription being canceled — that update collides with
+> the cancellation and throws "A canceled subscription can only update its
+> cancellation_details and metadata," tearing down the sub and leaving the
+> permit Active with no schedule. Their guidance: **do not change
+> `nextRecurringDate` or `recurringPrice` when canceling.**
+> - **Backend fix:** `delay_cancel_permit` no longer modifies `nextRecurringDate`
+>   /`recurringPrice` — round-trips them unchanged, sets only `isCancelled` +
+>   `delayCancellationDate`. The `update_next_recurring_date` params are now
+>   ignored (logged + dropped, ref #5685).
+> - **Widget fix:** removed the editable "Next recurring date" field + the
+>   misleading "clear this to prevent the next auto-charge" note (the backend now
+>   ignores it, so it was misleading CSRs about billing). Replaced with a
+>   read-only renewal warning ("⚠️ This permit renews on <date>; a cancellation
+>   after that date lets one more charge occur"). Requires a widget zip rebuild +
+>   re-install.
+> - **Still TODO:** validate end-to-end once Source Logic provisions the paid
+>   recurring test permits with active subs (requested).
+
 ---
 
 ## Key technical findings / gotchas (don't relearn these)

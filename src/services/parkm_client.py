@@ -362,24 +362,24 @@ class ParkMClient:
         Reason is NOT required.
         1. GET Permits/GetPermitForEdit — fetch current permit data
         2. Set isCancelled=true + delayCancellationDate on the DTO
-        3. (Optionally) set nextRecurringDate to a new value or null to clear
-        4. POST Permits/CreateOrEdit — save it back
+        3. POST Permits/CreateOrEdit — save it back
 
-        The nextRecurringDate update mirrors what .APP's "Actions > Edit >
-        Delete Next Recurring Date" does — same endpoint, same DTO field. CSRs
-        use this when scheduling a cancellation to prevent an auto-charge from
-        firing before the cancellation takes effect.
+        We deliberately do NOT modify nextRecurringDate or recurringPrice here.
+        Per ParkM / Source Logic (support ticket #5685): changing nextRecurring
+        Date during a cancellation triggers a Stripe price/cycle update on the
+        very subscription being canceled, which collides and fails with "A
+        canceled subscription can only update its cancellation_details and
+        metadata" — leaving the permit Active with no schedule and the Stripe
+        sub torn down. The existing nextRecurringDate is round-tripped unchanged.
 
         Args:
             permit_id: UUID of the permit
             cancel_date: ISO-8601 datetime string for when to cancel
             send_notice: Whether to send cancellation notice email
-            update_next_recurring_date: If True, also write nextRecurringDate
-                using the next_recurring_date param. If False (default), leave
-                the field untouched.
-            next_recurring_date: New value for nextRecurringDate (ISO-8601), or
-                None to clear it. Only applied when update_next_recurring_date
-                is True.
+            update_next_recurring_date: DEPRECATED / ignored. Changing
+                nextRecurringDate during a cancel breaks the Stripe subscription
+                (ticket #5685); a request to change it is logged and dropped.
+            next_recurring_date: DEPRECATED / ignored (see above).
         Returns:
             Dict with `success` (bool) and `error` (str|None). On failure, the
             error string captures whatever ParkM gave us (HTTP status + body, or
@@ -408,12 +408,20 @@ class ParkMClient:
             permit_dto["delayCancellationDate"] = cancel_date
             permit_dto["dontSendNotifications"] = not send_notice
 
-            # Step 3: Optionally adjust the next recurring date so the permit
-            # doesn't auto-charge before the scheduled cancellation fires.
+            # Step 3: Do NOT touch nextRecurringDate (or recurringPrice). Per
+            # ParkM/Source Logic (ticket #5685), changing nextRecurringDate
+            # during a cancellation triggers a Stripe price/cycle update on the
+            # subscription being canceled, which collides and throws "A canceled
+            # subscription can only update its cancellation_details and metadata"
+            # — leaving the permit Active with no schedule. We round-trip the
+            # existing nextRecurringDate unchanged. The params are retained for
+            # backward compatibility but intentionally ignored.
             if update_next_recurring_date:
-                permit_dto["nextRecurringDate"] = next_recurring_date
-                logger.info(
-                    f"Permit {permit_id} nextRecurringDate set to {next_recurring_date!r}"
+                logger.warning(
+                    "Permit %s: ignoring requested nextRecurringDate change (%r) "
+                    "during delay-cancel — changing it triggers a Stripe cycle "
+                    "update that breaks the cancellation (ParkM ticket #5685).",
+                    permit_id, next_recurring_date,
                 )
 
             # Step 4: Save back

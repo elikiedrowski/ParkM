@@ -107,8 +107,11 @@ to **both** prod and sandbox Railway.
 >   read-only renewal warning ("⚠️ This permit renews on <date>; a cancellation
 >   after that date lets one more charge occur"). Requires a widget zip rebuild +
 >   re-install.
-> - **Still TODO:** validate end-to-end once Source Logic provisions the paid
->   recurring test permits with active subs (requested).
+> - **DEPLOYED (June 26 2026):** backend + widget — prod `187b24a` / sandbox
+>   `8e3fe09` (sandbox rebased onto Phase 5, no history rewrite). Both environments
+>   healthy. Widget shipped via rebuilt zips (see Widget zips section).
+> - **Still TODO:** validate end-to-end once Source Logic provisions 3-4 paid
+>   recurring test permits with active subs (requested in support ticket #5685).
 
 ---
 
@@ -129,6 +132,23 @@ to **both** prod and sandbox Railway.
   not the per-permit path; the real mechanism is CreateOrEdit + isCancelled=true.
 - **Restore a test permit:** `Permits/ReActivatePermit?Id=X`, then `CreateOrEdit`
   to clear the date + restore the original expiration.
+- **Do NOT touch `nextRecurringDate`/`recurringPrice` when canceling** — changing
+  either triggers a Stripe price/cycle update on the sub being canceled, which
+  collides and throws "A canceled subscription can only update its
+  cancellation_details and metadata" (ParkM/Source Logic ticket #5685). This was
+  the REAL root cause of the delay-cancel failures.
+- **Railway CLI auth expires** and CANNOT be re-authed non-interactively (`railway
+  login` and `--browserless` both fail in a headless/sandboxed shell). Since ParkM
+  creds live in Railway, an expired session = no ParkM API access until you re-auth
+  in a real terminal, OR pass `RAILWAY_TOKEN=<project-token> railway variables`, OR
+  put `PARKM_API_*` in local `.env`. A sandboxed agent shell does NOT share your
+  terminal's Railway login.
+- **Refund/reversed charge status is NOT exposed by any permit-keyed ParkM
+  endpoint** (verified live June 26): `GetAllPaymentsForPermit` returns a slim DTO
+  `{id, created, description, amount}`; `GetPermitSubscriptions` has no charge/refund
+  detail; `GetAllTransactions` empty; `GetPayment` needs a session id; `GetPaymentResult`
+  is a bool. The data exists in the `Charge` schema (`refunded`/`amount_refunded`) but
+  isn't surfaced — needs Stephen to expose it.
 
 ---
 
@@ -156,13 +176,24 @@ to **both** prod and sandbox Railway.
 | Overdue-cancel safety net | `22904dc` | `b1fd62d` |
 | `isCancelled=true` (delayed-cancel + preview) | `8341dbc` | `89d6945` |
 | Clean Stripe error message | `3541005` | `b8c8a2d` (+`c2ffb52`) |
+| **Stop clearing `nextRecurringDate` (REAL root-cause fix) + widget control removal** | `187b24a` | `8e3fe09` |
 
-## Widget zip
-`parkm-widget.zip` rebuilt (production build, `API_BASE_URL` →
-`parkm-production-7e56.up.railway.app`). Contains the 5pm default cancel time
-(`9cb9bb0`) + overdue message (`22904dc`). User re-installed it. **The backend
-fixes do NOT require the zip.** Minor TODO: trim the widget's now-redundant
-"— try manually in ParkM" suffix on the next rebuild.
+## Widget zips — TWO of them, per environment (do NOT cross them)
+Build each zip from its **own folder** so `config.js` carries the right backend URL:
+- **`parkm-widget-prod.zip`** (build from `~/ParmM_Zoho`) → `API_BASE_URL` =
+  `parkm-production-7e56.up.railway.app` → install in the **PROD** Zoho org.
+- **`parkm-widget-sandbox.zip`** (build from `~/ParkM_Zoho_Sandbox`) → `API_BASE_URL`
+  = `parkm-production.up.railway.app` (NO `-7e56`) → install in the **SANDBOX** Zoho org.
+- **TRAP (this bit us):** the sandbox URL is literally `parkm-production…` (no suffix)
+  while prod is `parkm-production-7e56…`. Installing the sandbox zip into prod (or
+  vice-versa) makes the widget call the wrong backend → **"Failed to load wizard
+  data."** That symptom = wrong-zip/wrong-URL, NOT a code bug (verify the backend is
+  healthy and check the failed request URL in the Network tab).
+- Re-install via the **Install URL** (publishing alone won't update an installed
+  widget). Build with Python `zipfile` (no `zip` binary on this box): walk `widget/`,
+  arcnames relative to `widget/`, 14 files. **Backend fixes do NOT require a zip.**
+- Widget contents: 5pm default cancel time (`9cb9bb0`), overdue message (`22904dc`),
+  and next-recurring-control removal + renewal warning (`187b24a`/`8e3fe09`).
 
 ## Emails
 - **Stephen:** confirmed the `isCancelled` fix + requested the stuck-permit query
@@ -171,13 +202,34 @@ fixes do NOT require the zip.** Minor TODO: trim the widget's now-redundant
 - **Sadie:** root cause fixed + deployed; she tested E2E and confirmed both the
   delay-cancel and the Preview now work; explained the Stripe error is not a
   wizard bug.
+- **Combined support reply (ticket #5685, June 26):** confirmed the `nextRecurringDate`
+  root cause + that the fix is deployed; requested test permits to validate; folded
+  in the refund/reversed-status question for Stephen (all parties on the thread).
+- **Sadie / Phase 5 thread (June 26):** proposed starting **5.4** in sandbox now that
+  the delay-cancel blocker is resolved (5.2/5.3 stay parked in sandbox; nothing to
+  prod until she's satisfied 1-3 + the delay-cancel are solid).
+- **Sadie / refund-eligibility thread (June 26):** status update — refund data not
+  exposed by the API; re-asked Stephen; guardrail to follow once exposed.
 
 ---
 
-## OPEN ITEMS (waiting on Stephen)
-1. **Stuck-permit cleanup list** — Stephen to DB-query permits where
-   `delayCancellationDate IS NOT NULL AND isCancelled = false`. Then cancel each
-   via immediate `CancelPermit` (works even on the Stripe edge case) to stop any
-   ongoing charges.
-2. **Stripe root cause** — why some permits show Active while their Stripe
-   subscription is already canceled, and whether more permits are affected.
+## Refund-eligibility: reversed-charge guardrail (OPEN — separate from delay-cancel)
+Sadie's request (ticket #102525 / R000018): a charge already refunded/reversed in
+Stripe should be **excluded from refund eligibility** so a CSR can't double-refund.
+Wizard would show "Already refunded N days ago — check with accounting" in the
+"X days since last charge" slot. (The reactivation-as-last-charge half is already
+FIXED + live — R000018 shows the June 4 charge, not the June 10 reactivation.)
+
+**Blocker (confirmed via live API testing June 26):** the refund/reversed status is
+**not exposed by any reachable permit-keyed endpoint** — see the gotcha bullet above.
+The data exists in ParkM's `Charge` schema (`refunded`/`amount_refunded`/`refunds`/
+`status`) but isn't surfaced. **Asked Stephen** to (a) add `refunded`/`amount_refunded`
+(or a `reversed` flag) to `GetAllPaymentsForPermit`, or (b) point us at an endpoint
+returning the full Charge/PaymentIntent for a permit. Build the guardrail once exposed.
+
+## OPEN ITEMS
+1. **Validate the delay-cancel fix end-to-end** — waiting on Source Logic (ticket
+   #5685) to provision 3-4 paid recurring test permits w/ active Stripe subs; then
+   run a delayed cancel and confirm the sub cancels cleanly on schedule.
+2. **Refund-data exposure (Stephen)** — see refund-eligibility section above.
+3. **Phase 5.4** — proposed to Sadie; awaiting her go-ahead to build it in sandbox.

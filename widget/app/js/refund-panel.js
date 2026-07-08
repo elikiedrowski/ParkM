@@ -529,7 +529,11 @@ var RefundPanel = (function () {
 
     var active = (_lastPermitsData.permits || []).filter(function (p) {
       var now = new Date();
-      if (p.is_cancelled) return false;
+      // Keep scheduled-to-cancel permits (isCancelled=true + a delay date) in
+      // the active list so they show with the "Permit Set to be Cancelled"
+      // banner and stay usable for Evaluate Refund. Only drop *fully* cancelled
+      // permits (cancelled with no pending delay date) — those live in inactive.
+      if (p.is_cancelled && !p.delay_cancellation_date) return false;
       if (p.expiration_date && new Date(p.expiration_date) < now) return false;
       return true;
     });
@@ -592,7 +596,11 @@ var RefundPanel = (function () {
     var permits = data.permits || [];
     var now = new Date();
     var active = permits.filter(function (p) {
-      if (p.is_cancelled) return false;
+      // Keep scheduled-to-cancel permits (isCancelled=true + a delay date) in
+      // the active list so they show with the "Permit Set to be Cancelled"
+      // banner and stay usable for Evaluate Refund. Only drop *fully* cancelled
+      // permits (cancelled with no pending delay date) — those live in inactive.
+      if (p.is_cancelled && !p.delay_cancellation_date) return false;
       if (p.expiration_date && new Date(p.expiration_date) < now) return false;
       return true;
     });

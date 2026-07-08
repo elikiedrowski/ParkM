@@ -900,6 +900,10 @@ var RefundPanel = (function () {
       html += '<div class="refund-eval-actions">';
       html += '<button class="btn btn-primary refund-action-btn" id="' + btnId + '">' + processBtnLabel + '</button>';
       html += '</div>';
+    } else if (elig.already_refunded) {
+      html += '<div class="refund-eval-actions">';
+      html += '<div class="refund-eval-hint">This charge was already refunded — do not refund it again. Check with accounting if the resident is disputing.</div>';
+      html += '</div>';
     } else {
       html += '<div class="refund-eval-actions">';
       html += '<div class="refund-eval-hint">Inform customer they do not qualify. Send Terms & Conditions.</div>';

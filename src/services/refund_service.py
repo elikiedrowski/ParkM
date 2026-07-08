@@ -554,6 +554,48 @@ class RefundService:
                     total += amount
         return latest, total, latest_amount
 
+    async def _last_charge_refund_status(
+        self, permit_id: str
+    ) -> Tuple[bool, Optional[str]]:
+        """Return (is_refunded, voided_date_iso) for the permit's most recent
+        charge, detected via Receipts/GetAllByPermit.
+
+        When accounting reverses/refunds a charge in ParkM, the receipt is
+        VOIDED (isVoided=true + voidedDate). The Stripe payment feed
+        (GetAllPaymentsForPermit) does NOT expose refunds — its `status` stays
+        "succeeded" — so the voided receipt is the only reachable refund signal
+        (verified via API for R000018/R000020, ticket #102525). Returns
+        (False, None) on any error so the guardrail fails OPEN — a lookup
+        failure must never wrongly block a legitimate refund.
+        """
+        try:
+            data = await self.parkm._get(
+                "/api/services/app/Receipts/GetAllByPermit",
+                params={"PermitIdFilter": permit_id, "MaxResultCount": 50},
+            )
+        except Exception:
+            logger.warning(
+                f"Could not fetch receipts for permit {permit_id} (refund-void check)"
+            )
+            return False, None
+        items = (data.get("result") or {}).get("items") or []
+        charges = []
+        for it in items:
+            r = it.get("receipt") or it
+            try:
+                total = float(r.get("total") or 0)
+            except (TypeError, ValueError):
+                total = 0.0
+            if total > 0 and r.get("transactionDate"):
+                charges.append(r)
+        if not charges:
+            return False, None
+        charges.sort(key=lambda r: r.get("transactionDate") or "", reverse=True)
+        latest = charges[0]
+        if latest.get("isVoided"):
+            return True, latest.get("voidedDate")
+        return False, None
+
     # ── Step 2: Evaluate Refund Eligibility ───────────────────────────
 
     def evaluate_refund_eligibility(
@@ -709,6 +751,31 @@ class RefundService:
 
         now = datetime.now(timezone.utc)
         days_since = (now - last_charge).days
+
+        # Double-refund guardrail: if the last charge was already reversed/
+        # refunded (voided receipt, stamped upstream from Receipts/GetAllByPermit),
+        # do NOT show the permit as eligible — a CSR would otherwise refund it
+        # twice. This takes priority over the 30-day window. (ticket #102525)
+        if permit.get("last_charge_voided"):
+            voided_str = permit.get("last_charge_voided_date")
+            days_ago = None
+            if voided_str:
+                try:
+                    days_ago = (now - datetime.fromisoformat(voided_str.replace("Z", "+00:00"))).days
+                except (ValueError, TypeError):
+                    days_ago = None
+            when = "today" if days_ago == 0 else (
+                f"{days_ago} days ago" if days_ago is not None else "previously"
+            )
+            return {
+                "eligible": False,
+                "reason": f"Already refunded {when} — check with accounting",
+                "refund_amount": None,
+                "last_charge_date": last_charge_str,
+                "days_since_charge": days_since,
+                "already_refunded": True,
+                "refunded_days_ago": days_ago,
+            }
 
         # Check 30-day window
         within_window = days_since <= REFUND_WINDOW_DAYS
@@ -939,6 +1006,12 @@ ParkM Support Team</p>"""
         for permit in candidates:
             if permit_id and permit["id"] != permit_id:
                 continue
+
+            # Double-refund guardrail: stamp whether the last charge was already
+            # reversed/refunded (voided receipt) so eligibility can exclude it.
+            voided, voided_date = await self._last_charge_refund_status(permit["id"])
+            permit["last_charge_voided"] = voided
+            permit["last_charge_voided_date"] = voided_date
 
             eligibility = self.evaluate_refund_eligibility(permit, transactions)
 

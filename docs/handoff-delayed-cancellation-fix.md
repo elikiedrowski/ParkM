@@ -228,8 +228,19 @@ The data exists in ParkM's `Charge` schema (`refunded`/`amount_refunded`/`refund
 returning the full Charge/PaymentIntent for a permit. Build the guardrail once exposed.
 
 ## OPEN ITEMS
-1. **Validate the delay-cancel fix end-to-end** — waiting on Source Logic (ticket
-   #5685) to provision 3-4 paid recurring test permits w/ active Stripe subs; then
-   run a delayed cancel and confirm the sub cancels cleanly on schedule.
-2. **Refund-data exposure (Stephen)** — see refund-eligibility section above.
-3. **Phase 5.4** — proposed to Sadie; awaiting her go-ahead to build it in sandbox.
+1. **Renewal-date clear (Sadie, July 14 2026)** — she wants the "clear/delete next
+   renewal date so the resident is NOT charged" capability back (removed with the
+   `187b24a` fix). Joint email to Sadie + Stephen finalized July 16 with 5 gating
+   questions (standalone-clear safety, .APP Delete Next Recurring Date semantics,
+   clear-then-schedule ordering, already-scheduled permits). Interim CSR guidance:
+   schedule the cancel BEFORE the renewal date; no manual .APP clears after a
+   cancel is scheduled. Do NOT build until Stephen answers + a test permit
+   validates. Full detail: `docs/handoff-session-2026-07-16.md`.
+2. **Validate the delay-cancel fix end-to-end on a paid recurring sub** — the
+   Source Logic Testing-env permit request was dropped (July 16): per Eli, Sadie
+   has test permits. Note they live in PROD with real Stripe subs (e.g. R000020)
+   — time validation to catch a misfire before a billing event. Sadie confirmed
+   the flow works (July 14), but Stripe-side behavior on an active paid sub is
+   still unproven.
+3. **Refund-data exposure (Stephen)** — see refund-eligibility section above.
+4. **Phase 5.4** — proposed to Sadie; awaiting her go-ahead to build it in sandbox.
